@@ -1,6 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import routes from './routes';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -12,12 +13,10 @@ const app = express();
 app.use(bodyParser.json());
 
 // Routes
-app.get('/', (req, res) => {
-  res.send('Hello, world!');
-});
+app.use('/api', routes);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} : https://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}: https://localhost:${PORT}`);
 });
