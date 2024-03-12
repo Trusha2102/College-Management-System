@@ -50,8 +50,8 @@ model User {
   email              String        @unique
   mobile             String
   password           String
-  role               Role          @relation(fields: [role_id], references: [id])
   role_id            Int
+  role               Role          @relation(fields: [role_id], references: [id])
   profile_picture    String        @db.VarChar(255)
   is_active          Boolean       @default(true)
   gender             String
@@ -59,10 +59,10 @@ model User {
   marital_status     Boolean
   qualification      String
   work_experience    String
-  address            Address       @relation(fields: [address_id], references: [id])
-  address_id         Int           @unique
-  bank_details       BankAccount?  @relation(fields: [bank_details_id], references: [id])
-  bank_details_id    Int?          @unique
+  address            Address?
+  address_id         Int?
+  bank_details       BankAccount?
+  bank_details_id    Int?
   social_media_links String[]
   employee           Employee[]
   activityLog        ActivityLog[]
@@ -102,15 +102,15 @@ model Designation {
 }
 
 model Student {
-  id                  Int           @id @default(autoincrement())
-  admission_no        Int           @unique
-  student_session     Session       @relation(fields: [student_session_id], references: [id])
+  id                  Int            @id @default(autoincrement())
+  admission_no        Int            @unique
+  student_session     Session        @relation(fields: [student_session_id], references: [id])
   student_session_id  Int
   roll_no             Int
   category            String
-  class               Class         @relation(fields: [class_id], references: [id])
+  class               Class          @relation(fields: [class_id], references: [id])
   class_id            Int
-  section             Section       @relation(fields: [section_id], references: [id])
+  section             Section        @relation(fields: [section_id], references: [id])
   section_id          Int
   gender              String
   first_name          String
@@ -137,12 +137,9 @@ model Student {
   profile_picture     String
   other_docs          String
   password            String
-  address             Address       @relation(fields: [address_id], references: [id])
-  address_id          Int           @unique
-  parent_details      ParentDetails @relation(fields: [parent_details_id], references: [id])
-  parent_details_id   Int
-  bank_details        BankAccount?  @relation(fields: [bank_details_id], references: [id])
-  bank_details_id     Int           @unique
+  address             Address?
+  parent_details      ParentDetails?
+  bank_details        BankAccount?
   result              Result?
   fees_payment        FeesPayment[]
   fees_master         FeesMaster[]
@@ -202,35 +199,40 @@ model Section {
 }
 
 model ParentDetails {
-  id            Int       @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   relation_type String
   name          String
   occupation    String
   phone         String
   qualification String
   email         String
-  student       Student[]
+  student       Student @relation(fields: [student_id], references: [id])
+  student_id    Int     @unique
 }
 
 model Address {
-  id             Int      @id @default(autoincrement())
+  id             Int     @id @default(autoincrement())
   address_type   String
   house_no       String
   address_line_1 String
   address_line_2 String
-  user           User?
-  student        Student?
+  student        Student @relation(fields: [student_id], references: [id])
+  student_id     Int     @unique
+  user           User    @relation(fields: [user_id], references: [id])
+  user_id        Int     @unique
 }
 
 model BankAccount {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   bank_name  String
   pan_number String?
   ifsc       String
   branch     String
   account_no String
-  user       User?
-  student    Student?
+  student    Student @relation(fields: [student_id], references: [id])
+  student_id Int     @unique
+  user       User    @relation(fields: [user_id], references: [id])
+  user_id    Int     @unique
 }
 
 model ActivityLog {

@@ -15,6 +15,9 @@ app.use(bodyParser.json());
 // Routes
 app.use('/api', routes);
 
+//For File Upload
+app.use('/uploads', express.static('uploads'));
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
