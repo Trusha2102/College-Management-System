@@ -59,7 +59,7 @@ const deleteRoleById = async (req: Request, res: Response) => {
     await prisma.role.delete({
       where: { id: parseInt(id) }
     });
-    res.status(204).end();
+    res.status(200).end();
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to delete role' });
