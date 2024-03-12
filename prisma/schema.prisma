@@ -102,43 +102,50 @@ model Designation {
 }
 
 model Student {
-  id                 Int           @id @default(autoincrement())
-  admission_no       Int           @unique
-  student_session    Session       @relation(fields: [student_session_id], references: [id])
-  student_session_id Int
-  roll_no            Int
-  category           String
-  class              Class         @relation(fields: [class_id], references: [id])
-  class_id           Int
-  section            Section       @relation(fields: [section_id], references: [id])
-  section_id         Int
-  gender             String
-  first_name         String
-  last_name          String
-  middle_name        String
-  dob                DateTime
-  religion           String
-  caste              String
-  mobile             String
-  email              String
-  blood_group        String
-  height             String
-  weight             String
-  medical_history    String
-  aadhar_card        String
-  admission_date     DateTime
-  profile_picture    String
-  other_docs         String
-  password           String
-  address            Address       @relation(fields: [address_id], references: [id])
-  address_id         Int           @unique
-  parent_details     ParentDetails @relation(fields: [parent_details_id], references: [id])
-  parent_details_id  Int
-  bank_details       BankAccount?  @relation(fields: [bank_details_id], references: [id])
-  bank_details_id    Int           @unique
-  result             Result?
-  fees_payment       FeesPayment[]
-  fees_master        FeesMaster[]
+  id                  Int           @id @default(autoincrement())
+  admission_no        Int           @unique
+  student_session     Session       @relation(fields: [student_session_id], references: [id])
+  student_session_id  Int
+  roll_no             Int
+  category            String
+  class               Class         @relation(fields: [class_id], references: [id])
+  class_id            Int
+  section             Section       @relation(fields: [section_id], references: [id])
+  section_id          Int
+  gender              String
+  first_name          String
+  last_name           String
+  middle_name         String
+  dob                 DateTime
+  religion            String
+  caste               String
+  mobile              String
+  email               String
+  school_name         String
+  mother_tongue       String
+  ssc_board           String
+  year_of_passing_ssc String
+  examination_no      String
+  quota               String
+  joining_after       String
+  blood_group         String
+  height              String
+  weight              String
+  medical_history     String
+  aadhar_card         String
+  admission_date      DateTime
+  profile_picture     String
+  other_docs          String
+  password            String
+  address             Address       @relation(fields: [address_id], references: [id])
+  address_id          Int           @unique
+  parent_details      ParentDetails @relation(fields: [parent_details_id], references: [id])
+  parent_details_id   Int
+  bank_details        BankAccount?  @relation(fields: [bank_details_id], references: [id])
+  bank_details_id     Int           @unique
+  result              Result?
+  fees_payment        FeesPayment[]
+  fees_master         FeesMaster[]
 }
 
 model Result {
@@ -200,6 +207,8 @@ model ParentDetails {
   name          String
   occupation    String
   phone         String
+  qualification String
+  email         String
   student       Student[]
 }
 
