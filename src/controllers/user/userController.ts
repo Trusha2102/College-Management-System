@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import configureMulter from '../../utils/multerConfig';
+import { parse } from 'path';
 
 const prisma = new PrismaClient();
 
@@ -9,58 +10,56 @@ const upload = configureMulter('./uploads/profilePicture');
 
 const createUser = async (req: Request, res: Response) => {
   try {
-    const { role_id, ...userData } = req.body;
-
-    // Check if the role_id exists in the Role table
-    const role = await prisma.role.findUnique({
-      where: { id: role_id }
-    });
-
-    if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
-    }
-
-    const user = await prisma.user.create({
-      data: {
-        ...userData,
-        role: { connect: { id: role_id } },
-        dob: new Date(userData.dob),
-        address_id: userData.address_id || null,
-        bank_details_id: userData.bank_details_id || null,
-        profile_picture: ''
-      }
-    });
-
-    res.status(201).json(user);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to create user' });
-  }
-};
-
-const uploadProfilePicture = async (req: Request, res: Response) => {
-  try {
     upload.single('profile_picture')(req, res, async (err: any) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ message: 'Failed to upload profile picture' });
       }
 
-      const { id } = req.params;
+      // Now that multer has parsed the form data, you can access req.body
+      const { role_id, social_media_links, address_id, bank_details_id, ...userData } = req.body;
 
-      // Update the user's profile_picture field with the path of the uploaded image
-      const user = await prisma.user.update({
-        where: { id: parseInt(id) },
-        data: { profile_picture: req.file?.path }
+      // Check if the role_id exists in the Role table
+      const role = await prisma.role.findUnique({
+        where: { id: parseInt(role_id) }
+      });
+
+      if (!role) {
+        return res.status(404).json({ message: 'Role not found' });
+      }
+
+      // Parse marital_status as boolean
+      const marital_status = userData.marital_status === 'true';
+
+      // Parse social_media_links as array
+      const parsedSocialMediaLinks = social_media_links.split(',');
+
+      // Parse address_id and bank_details_id
+      const parsedAddressId = address_id === 'null' ? null : address_id;
+      const parsedBankAccountId = bank_details_id === 'null' ? null : bank_details_id;
+
+      // Create the user with the provided data and the path of the uploaded image
+      const user = await prisma.user.create({
+        data: {
+          ...userData,
+          is_active: true,
+          marital_status,
+          role: { connect: { id: parseInt(role_id) } },
+          dob: new Date(userData.dob),
+          profile_picture: req.file?.path || '',
+          social_media_links: parsedSocialMediaLinks,
+          address_id: parsedAddressId,
+          bank_details_id: parsedBankAccountId
+        }
       });
 
       res
-        .status(200)
-        .json({ message: 'Profile picture uploaded and user profile updated successfully', user });
+        .status(201)
+        .json({ user, message: 'User created and profile picture uploaded successfully' });
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to upload profile picture' });
+    res.status(500).json({ message: 'Failed to create user or upload profile picture' });
   }
 };
 
@@ -103,30 +102,52 @@ const getUserById = async (req: Request, res: Response) => {
 
 const updateUserById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { email, ...userData } = req.body;
-
-    // Check if the new email already exists
-    const existingUser = await prisma.user.findFirst({
-      where: { email: email, NOT: { id: parseInt(id) } }
-    });
-
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already in use' });
-    }
-
-    const user = await prisma.user.update({
-      where: { id: parseInt(id) },
-      data: {
-        ...userData,
-        email,
-        dob: new Date(userData.dob),
-        address_id: userData.address_id || null,
-        bank_details_id: userData.bank_details_id || null
+    upload.single('profile_picture')(req, res, async (err: any) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Failed to upload profile picture' });
       }
-    });
 
-    res.status(200).json(user);
+      const userId = parseInt(req.params.id);
+      const { role_id, social_media_links, address_id, bank_details_id, ...userData } = req.body;
+
+      // Check if the role_id exists in the Role table
+      const role = await prisma.role.findUnique({
+        where: { id: parseInt(role_id) }
+      });
+
+      if (!role) {
+        return res.status(404).json({ message: 'Role not found' });
+      }
+
+      // Parse marital_status as boolean
+      const marital_status = userData.marital_status === 'true';
+
+      // Parse social_media_links as array
+      const parsedSocialMediaLinks = social_media_links.split(',');
+
+      // Parse address_id and bank_details_id
+      const parsedAddressId = address_id === 'null' ? null : address_id;
+      const parsedBankAccountId = bank_details_id === 'null' ? null : bank_details_id;
+
+      // Update the user with the provided data
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...userData,
+          is_active: true,
+          marital_status,
+          role: { connect: { id: parseInt(role_id) } },
+          dob: new Date(userData.dob),
+          social_media_links: parsedSocialMediaLinks,
+          address_id: parsedAddressId,
+          bank_details_id: parsedBankAccountId,
+          profile_picture: req.file?.path || ''
+        }
+      });
+
+      res.status(200).json({ user: updatedUser, message: 'User updated successfully' });
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to update user' });
@@ -147,12 +168,4 @@ const deleteUserById = async (req: Request, res: Response) => {
   }
 };
 
-export {
-  createUser,
-  uploadProfilePicture,
-  getAllUsers,
-  getUserById,
-  updateUserById,
-  deleteUserById,
-  getAllDeletedUsers
-};
+export { createUser, getAllUsers, getUserById, updateUserById, deleteUserById, getAllDeletedUsers };

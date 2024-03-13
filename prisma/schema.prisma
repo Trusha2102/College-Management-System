@@ -55,7 +55,7 @@ model User {
   profile_picture    String        @db.VarChar(255)
   is_active          Boolean       @default(true)
   gender             String
-  dob                DateTime
+  dob                DateTime      @db.Date
   marital_status     Boolean
   qualification      String
   work_experience    String

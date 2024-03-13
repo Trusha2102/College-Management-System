@@ -5,7 +5,6 @@ const router = express.Router();
 
 router.post('/', userController.createUser);
 router.get('/', userController.getAllUsers);
-router.post('/upload-profile-picture/:id', userController.uploadProfilePicture);
 router.get('/in-active', userController.getAllDeletedUsers);
 router.get('/:id', userController.getUserById);
 router.put('/:id', userController.updateUserById);
