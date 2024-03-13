@@ -33,7 +33,7 @@ const login = async (req: Request, res: Response) => {
         role_id: user.role_id
       },
       process.env.JWT_SECRET || 'your_secret_key_here',
-      { expiresIn: '1h' }
+      { expiresIn: '30d' }
     );
 
     res.status(200).json({ token });
