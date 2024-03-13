@@ -1,50 +1,15 @@
 import { Request, Response } from 'express';
-import { Prisma, PrismaClient } from '@prisma/client';
-import multer from 'multer';
-import path from 'path';
-import { mkdirSync, existsSync } from 'fs';
+import { PrismaClient } from '@prisma/client';
+import configureMulter from '../../utils/multerConfig';
 
 const prisma = new PrismaClient();
 
-// Check if the 'uploads' folder exists, and create it if it doesn't
-const uploadsFolder = './uploads';
-if (!existsSync(uploadsFolder)) {
-  mkdirSync(uploadsFolder);
-}
-
-// Multer configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsFolder); // Use the 'uploads' folder for uploaded files
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`); // File naming
-  }
-});
-
-const upload = multer({ storage });
+// Specify the upload path
+const upload = configureMulter('./uploads/profilePicture');
 
 const createUser = async (req: Request, res: Response) => {
   try {
-    const {
-      first_name,
-      last_name,
-      father_name,
-      mother_name,
-      email,
-      mobile,
-      password,
-      is_active,
-      gender,
-      dob,
-      marital_status,
-      qualification,
-      work_experience,
-      address_id,
-      bank_details_id,
-      social_media_links,
-      role_id
-    } = req.body;
+    const { role_id, ...userData } = req.body;
 
     // Check if the role_id exists in the Role table
     const role = await prisma.role.findUnique({
@@ -57,23 +22,11 @@ const createUser = async (req: Request, res: Response) => {
 
     const user = await prisma.user.create({
       data: {
-        first_name,
-        last_name,
-        father_name,
-        mother_name,
-        email,
-        mobile,
-        password,
+        ...userData,
         role: { connect: { id: role_id } },
-        is_active,
-        gender,
-        dob: new Date(dob),
-        marital_status,
-        qualification,
-        work_experience,
-        address_id: address_id || null,
-        bank_details_id: bank_details_id || null,
-        social_media_links,
+        dob: new Date(userData.dob),
+        address_id: userData.address_id || null,
+        bank_details_id: userData.bank_details_id || null,
         profile_picture: ''
       }
     });
@@ -101,7 +54,6 @@ const uploadProfilePicture = async (req: Request, res: Response) => {
         data: { profile_picture: req.file?.path }
       });
 
-      // If the file was uploaded and user profile was updated successfully, respond with a success message
       res
         .status(200)
         .json({ message: 'Profile picture uploaded and user profile updated successfully', user });
@@ -125,7 +77,6 @@ const getAllUsers = async (req: Request, res: Response) => {
 };
 
 const getAllDeletedUsers = async (req: Request, res: Response) => {
-  console.log('here');
   try {
     const users = await prisma.user.findMany({
       where: { is_active: false }
@@ -153,26 +104,7 @@ const getUserById = async (req: Request, res: Response) => {
 const updateUserById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const {
-      first_name,
-      last_name,
-      father_name,
-      mother_name,
-      email,
-      mobile,
-      password,
-      role_id,
-      profile_picture,
-      is_active,
-      gender,
-      dob,
-      marital_status,
-      qualification,
-      work_experience,
-      address_id,
-      bank_details_id,
-      social_media_links
-    } = req.body;
+    const { email, ...userData } = req.body;
 
     // Check if the new email already exists
     const existingUser = await prisma.user.findFirst({
@@ -186,26 +118,14 @@ const updateUserById = async (req: Request, res: Response) => {
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
       data: {
-        first_name,
-        last_name,
-        father_name,
-        mother_name,
+        ...userData,
         email,
-        mobile,
-        password,
-        role_id,
-        profile_picture,
-        is_active,
-        gender,
-        dob,
-        marital_status,
-        qualification,
-        work_experience,
-        address_id,
-        bank_details_id,
-        social_media_links
+        dob: new Date(userData.dob),
+        address_id: userData.address_id || null,
+        bank_details_id: userData.bank_details_id || null
       }
     });
+
     res.status(200).json(user);
   } catch (error) {
     console.error(error);
