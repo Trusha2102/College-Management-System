@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import configureMulter from '../../utils/multerConfig';
-import { parse } from 'path';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +17,8 @@ const createUser = async (req: Request, res: Response) => {
       }
 
       // Now that multer has parsed the form data, you can access req.body
-      const { role_id, social_media_links, address_id, bank_details_id, ...userData } = req.body;
+      const { role_id, social_media_links, address_id, bank_details_id, password, ...userData } =
+        req.body;
 
       // Check if the role_id exists in the Role table
       const role = await prisma.role.findUnique({
@@ -38,6 +39,9 @@ const createUser = async (req: Request, res: Response) => {
       const parsedAddressId = address_id === 'null' ? null : address_id;
       const parsedBankAccountId = bank_details_id === 'null' ? null : bank_details_id;
 
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       // Create the user with the provided data and the path of the uploaded image
       const user = await prisma.user.create({
         data: {
@@ -46,6 +50,7 @@ const createUser = async (req: Request, res: Response) => {
           marital_status,
           role: { connect: { id: parseInt(role_id) } },
           dob: new Date(userData.dob),
+          password: hashedPassword,
           profile_picture: req.file?.path || '',
           social_media_links: parsedSocialMediaLinks,
           address_id: parsedAddressId,
