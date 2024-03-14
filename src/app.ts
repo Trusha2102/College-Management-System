@@ -1,7 +1,10 @@
+// app.ts
+
 import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import routes from './routes';
+import Casbin from './casbin/casbin.enforcer';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -16,11 +19,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Routes
 app.use('/api', routes);
 
-//For File Upload
+// For File Upload
 app.use('/uploads', express.static('uploads'));
 
-// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}: https://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}: https://localhost:${PORT}`);
 });
+
+export default app;

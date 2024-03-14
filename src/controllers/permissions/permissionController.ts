@@ -5,22 +5,12 @@ const prisma = new PrismaClient();
 
 const createPermission = async (req: Request, res: Response) => {
   try {
-    const {
-      roleId,
-      moduleId,
-      read_permission,
-      write_permission,
-      update_permission,
-      delete_permission
-    } = req.body;
+    const { roleId, moduleId, operation } = req.body;
     const permission = await prisma.permission.create({
       data: {
         roleId,
         moduleId,
-        read_permission,
-        write_permission,
-        update_permission,
-        delete_permission
+        operation
       }
     });
     res.status(201).json(permission);
@@ -56,23 +46,13 @@ const getPermissionById = async (req: Request, res: Response) => {
 const updatePermissionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const {
-      roleId,
-      moduleId,
-      read_permission,
-      write_permission,
-      update_permission,
-      delete_permission
-    } = req.body;
+    const { roleId, moduleId, operation } = req.body;
     const permission = await prisma.permission.update({
       where: { id: parseInt(id) },
       data: {
         roleId,
         moduleId,
-        read_permission,
-        write_permission,
-        update_permission,
-        delete_permission
+        operation
       }
     });
     res.status(200).json(permission);

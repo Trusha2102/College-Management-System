@@ -2,18 +2,29 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import configureMulter from '../../utils/multerConfig';
 import bcrypt from 'bcrypt';
+import multer from 'multer';
 
 const prisma = new PrismaClient();
 
 // Specify the upload path
-const upload = configureMulter('./uploads/profilePicture');
+const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024);
 
 const createUser = async (req: Request, res: Response) => {
   try {
     upload.single('profile_picture')(req, res, async (err: any) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ message: 'Failed to upload profile picture' });
+        if (err instanceof multer.MulterError) {
+          // Multer error occurred
+          return res.status(400).json({ message: 'File upload error: ' + err.message });
+        } else {
+          // Other errors
+          return res.status(500).json({ message: 'Failed to upload profile picture' });
+        }
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
       }
 
       // Now that multer has parsed the form data, you can access req.body
@@ -51,7 +62,7 @@ const createUser = async (req: Request, res: Response) => {
           role: { connect: { id: parseInt(role_id) } },
           dob: new Date(userData.dob),
           password: hashedPassword,
-          profile_picture: req.file?.path || '',
+          profile_picture: req.file.path,
           social_media_links: parsedSocialMediaLinks,
           address_id: parsedAddressId,
           bank_details_id: parsedBankAccountId
@@ -110,7 +121,17 @@ const updateUserById = async (req: Request, res: Response) => {
     upload.single('profile_picture')(req, res, async (err: any) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ message: 'Failed to upload profile picture' });
+        if (err instanceof multer.MulterError) {
+          // Multer error occurred
+          return res.status(400).json({ message: 'File upload error: ' + err.message });
+        } else {
+          // Other errors
+          return res.status(500).json({ message: 'Failed to upload profile picture' });
+        }
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
       }
 
       const userId = parseInt(req.params.id);
@@ -147,7 +168,7 @@ const updateUserById = async (req: Request, res: Response) => {
           social_media_links: parsedSocialMediaLinks,
           address_id: parsedAddressId,
           bank_details_id: parsedBankAccountId,
-          profile_picture: req.file?.path || ''
+          profile_picture: req.file.path
         }
       });
 
