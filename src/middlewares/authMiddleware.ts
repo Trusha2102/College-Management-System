@@ -26,12 +26,12 @@ export const authorizationMiddleware = async (req: Request, res: Response, next:
     console.log('THE EXIISTING POLICIES:', something);
 
     // // Define the parameters for the policy
-    // const sec = ''; // Specify the section if needed
-    // const ptype = 'p'; // Policy type
-    // const rule = ['1', '1', 'get']; // Rule array with roleId, moduleId, and operation
+    const sec = ''; // Specify the section if needed
+    const ptype = 'p'; // Policy type
+    const rule = ['1', '1', 'get']; // Rule array with roleId, moduleId, and operation
 
-    // const something2 = await casbin.addPolicy(sec, ptype, rule);
-    // console.log('THE POLICY THAT WE CREATED:', something2);
+    const something2 = await casbin.addPolicy(sec, ptype, rule);
+    console.log('THE POLICY THAT WE CREATED:', something2);
 
     const isAllowed = await casbin.checkPermission(role_id, module_id, req.method.toLowerCase());
     console.log('Permission check result:', isAllowed);

@@ -13,14 +13,14 @@ interface Policy {
 }
 
 export default class CasbinRule {
-  private static instance: CasbinRule;
+  public static instance: CasbinRule;
   protected enforcer: Promise<SyncedEnforcer>;
 
-  private constructor() {
+  public constructor() {
     this.enforcer = this.initializeEnforcer();
   }
 
-  private async initializeEnforcer() {
+  public async initializeEnforcer() {
     try {
       const adapter = await PrismaAdapter.newAdapter();
 
@@ -58,7 +58,7 @@ export default class CasbinRule {
 
     const enforcer = await this.enforcer;
 
-    console.log('---->', enforcer.enforce(`${roleId}`, `${moduleId}`, operation));
+    console.log('---->', await enforcer.enforce(`${roleId}`, `${moduleId}`, operation));
 
     return enforcer.enforce(`${roleId}`, `${moduleId}`, operation);
   }
@@ -73,8 +73,11 @@ export default class CasbinRule {
   public async getAllPolicies(): Promise<string[][]> {
     try {
       const enforcer = await this.enforcer;
-      const policies = await enforcer.getPolicy();
+      console.log('🚀 ~ CasbinRule ~ getAllPolicies ~ enforcer:', enforcer);
 
+      const policies = await enforcer.getPolicy();
+      console.log('🚀 ~ CasbinRule ~ getAllPolicies ~ policies:', policies);
+      console.log(await enforcer.getModel());
       // Filter out policies that are not active in the Casbin model
       const activePolicies = policies.filter((policy) => {
         const [ptype, ...rule] = policy;
@@ -153,15 +156,19 @@ export default class CasbinRule {
     }
   }
 
-  private savePolicyLine(ptype: string, rule: string[]): string {
+  public savePolicyLine(ptype: string, rule: string[]): string {
     return `${ptype},${rule.join(',')}`;
   }
 
   //extra
   public async addPolicy(sec: string, ptype: string, rule: string[]) {
+    console.log('🚀 ~ CasbinRule ~ addPolicy ~ rule:', rule);
+    console.log('🚀 ~ CasbinRule ~ addPolicy ~ ptype:', ptype);
+    console.log('🚀 ~ CasbinRule ~ addPolicy ~ sec:', sec);
     try {
       const line = this.savePolicyLine(ptype, rule);
-      await prisma.casbinRule.create({
+      console.log('-----------1');
+      const something = await prisma.casbinRule.create({
         data: {
           ptype: ptype,
           roleId: parseInt(rule[0]), // Convert roleId to number
@@ -169,8 +176,10 @@ export default class CasbinRule {
           operation: rule[2] // Assuming operation is the third element in the rule array
         }
       });
+      console.log('🚀 ~ CasbinRule ~ addPolicy ~ something-----:', something);
     } catch (error: any) {
-      throw new Error(`Failed to add policy: ${error.message || error}`);
+      console.log('🚀 ~ CasbinRule ~ addPolicy ~ error:', error);
+      throw new Error(`Failed to add policy: ${error?.message || error}`);
     }
   }
 }

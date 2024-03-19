@@ -1,15 +1,31 @@
 {
   "compilerOptions": {
-    "target": "es2017",
-    "outDir": "./dist",
+    "target": "ES2016",
     "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "baseUrl": "src",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "types": ["node"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
+    "strict": false,
+    "strictPropertyInitialization": false,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "sourceMap": true,
+    "paths": {
+      "*": ["src/*"]
+    }
   },
+  "ts-node": {
+    "files": true,
+    "transpileOnly": true,
+    "project": "tsconfig.json"
+  },
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "./uploads"]
 }

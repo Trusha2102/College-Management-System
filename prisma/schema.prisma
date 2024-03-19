@@ -38,19 +38,6 @@ model Module {
   permissions Permission[]
 }
 
-// Permissions table
-// model Permission {
-//   id                Int     @id @default(autoincrement())
-//   role              Role    @relation(fields: [roleId], references: [id])
-//   roleId            Int
-//   module            Module  @relation(fields: [moduleId], references: [id])
-//   moduleId          Int
-//   read_permission   Boolean
-//   write_permission  Boolean
-//   update_permission Boolean
-//   delete_permission Boolean
-// }
-
 model Permission {
   id        Int    @id @default(autoincrement())
   role      Role   @relation(fields: [roleId], references: [id])
@@ -235,6 +222,10 @@ model Address {
   house_no       String
   address_line_1 String
   address_line_2 String
+  state          String
+  city           String
+  pin_code       Int
+  country        String
   student        Student @relation(fields: [student_id], references: [id])
   student_id     Int     @unique
   user           User    @relation(fields: [user_id], references: [id])

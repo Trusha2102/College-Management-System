@@ -1,10 +1,10 @@
-// app.ts
-
 import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import routes from './routes';
-import Casbin from './casbin/casbin.enforcer';
+const routes = require('./routes');
+// import routes from './routes';
+import { AppDataSource } from './data-source';
+// const AppDataSource = require('./data-source');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -15,6 +15,14 @@ const app = express();
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+AppDataSource.initialize()
+  .then(() => {
+    console.log('Data Source has been initialized!');
+  })
+  .catch((err) => {
+    console.error('Error during Data Source initialization', err);
+  });
 
 // Routes
 app.use('/api', routes);
