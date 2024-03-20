@@ -7,19 +7,23 @@ import multer from 'multer';
 const prisma = new PrismaClient();
 
 // Specify the upload path
-const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024);
 
 const createUser = async (req: Request, res: Response) => {
+  const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024);
   try {
     upload.single('profile_picture')(req, res, async (err: any) => {
       if (err) {
         console.error(err);
         if (err instanceof multer.MulterError) {
           // Multer error occurred
-          return res.status(400).json({ message: 'File upload error: ' + err.message });
+          return res
+            .status(400)
+            .json({ message: 'File upload error: ' + err.message });
         } else {
           // Other errors
-          return res.status(500).json({ message: 'Failed to upload profile picture' });
+          return res
+            .status(500)
+            .json({ message: 'Failed to upload profile picture' });
         }
       }
 
@@ -28,12 +32,18 @@ const createUser = async (req: Request, res: Response) => {
       }
 
       // Now that multer has parsed the form data, you can access req.body
-      const { role_id, social_media_links, address_id, bank_details_id, password, ...userData } =
-        req.body;
+      const {
+        role_id,
+        social_media_links,
+        address_id,
+        bank_details_id,
+        password,
+        ...userData
+      } = req.body;
 
       // Check if the role_id exists in the Role table
       const role = await prisma.role.findUnique({
-        where: { id: parseInt(role_id) }
+        where: { id: parseInt(role_id) },
       });
 
       if (!role) {
@@ -48,7 +58,8 @@ const createUser = async (req: Request, res: Response) => {
 
       // Parse address_id and bank_details_id
       const parsedAddressId = address_id === 'null' ? null : address_id;
-      const parsedBankAccountId = bank_details_id === 'null' ? null : bank_details_id;
+      const parsedBankAccountId =
+        bank_details_id === 'null' ? null : bank_details_id;
 
       // Hash the password
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -65,24 +76,27 @@ const createUser = async (req: Request, res: Response) => {
           profile_picture: req.file.path,
           social_media_links: parsedSocialMediaLinks,
           address_id: parsedAddressId,
-          bank_details_id: parsedBankAccountId
-        }
+          bank_details_id: parsedBankAccountId,
+        },
       });
 
-      res
-        .status(201)
-        .json({ user, message: 'User created and profile picture uploaded successfully' });
+      res.status(201).json({
+        user,
+        message: 'User created and profile picture uploaded successfully',
+      });
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to create user or upload profile picture' });
+    res
+      .status(500)
+      .json({ message: 'Failed to create user or upload profile picture' });
   }
 };
 
 const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
-      where: { is_active: true }
+      where: { is_active: true },
     });
     res.status(200).json(users);
   } catch (error) {
@@ -94,7 +108,7 @@ const getAllUsers = async (req: Request, res: Response) => {
 const getAllDeletedUsers = async (req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
-      where: { is_active: false }
+      where: { is_active: false },
     });
     res.status(200).json(users);
   } catch (error) {
@@ -107,7 +121,7 @@ const getUserById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(id), is_active: true }
+      where: { id: parseInt(id), is_active: true },
     });
     res.status(200).json(user);
   } catch (error) {
@@ -117,16 +131,22 @@ const getUserById = async (req: Request, res: Response) => {
 };
 
 const updateUserById = async (req: Request, res: Response) => {
+  const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024);
+
   try {
     upload.single('profile_picture')(req, res, async (err: any) => {
       if (err) {
         console.error(err);
         if (err instanceof multer.MulterError) {
           // Multer error occurred
-          return res.status(400).json({ message: 'File upload error: ' + err.message });
+          return res
+            .status(400)
+            .json({ message: 'File upload error: ' + err.message });
         } else {
           // Other errors
-          return res.status(500).json({ message: 'Failed to upload profile picture' });
+          return res
+            .status(500)
+            .json({ message: 'Failed to upload profile picture' });
         }
       }
 
@@ -135,11 +155,17 @@ const updateUserById = async (req: Request, res: Response) => {
       }
 
       const userId = parseInt(req.params.id);
-      const { role_id, social_media_links, address_id, bank_details_id, ...userData } = req.body;
+      const {
+        role_id,
+        social_media_links,
+        address_id,
+        bank_details_id,
+        ...userData
+      } = req.body;
 
       // Check if the role_id exists in the Role table
       const role = await prisma.role.findUnique({
-        where: { id: parseInt(role_id) }
+        where: { id: parseInt(role_id) },
       });
 
       if (!role) {
@@ -154,7 +180,8 @@ const updateUserById = async (req: Request, res: Response) => {
 
       // Parse address_id and bank_details_id
       const parsedAddressId = address_id === 'null' ? null : address_id;
-      const parsedBankAccountId = bank_details_id === 'null' ? null : bank_details_id;
+      const parsedBankAccountId =
+        bank_details_id === 'null' ? null : bank_details_id;
 
       // Update the user with the provided data
       const updatedUser = await prisma.user.update({
@@ -168,11 +195,13 @@ const updateUserById = async (req: Request, res: Response) => {
           social_media_links: parsedSocialMediaLinks,
           address_id: parsedAddressId,
           bank_details_id: parsedBankAccountId,
-          profile_picture: req.file.path
-        }
+          profile_picture: req.file.path,
+        },
       });
 
-      res.status(200).json({ user: updatedUser, message: 'User updated successfully' });
+      res
+        .status(200)
+        .json({ user: updatedUser, message: 'User updated successfully' });
     });
   } catch (error) {
     console.error(error);
@@ -185,7 +214,7 @@ const deleteUserById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
-      data: { is_active: false }
+      data: { is_active: false },
     });
     res.status(200).json(user);
   } catch (error) {
@@ -194,4 +223,11 @@ const deleteUserById = async (req: Request, res: Response) => {
   }
 };
 
-export { createUser, getAllUsers, getUserById, updateUserById, deleteUserById, getAllDeletedUsers };
+export {
+  createUser,
+  getAllUsers,
+  getUserById,
+  updateUserById,
+  deleteUserById,
+  getAllDeletedUsers,
+};

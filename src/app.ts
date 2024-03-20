@@ -1,16 +1,15 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import bodyParser from 'body-parser';
-import dotenv from 'dotenv';
-const routes = require('./routes');
+import routes from './routes';
 // import routes from './routes';
 import { AppDataSource } from './data-source';
 // const AppDataSource = require('./data-source');
-
-// Load environment variables from .env file
-dotenv.config();
+const PORT = process?.env?.PORT || 3000;
 
 // Create Express app
-const app = express();
+let app = express();
 
 // Middleware
 app.use(bodyParser.json());
@@ -30,7 +29,6 @@ app.use('/api', routes);
 // For File Upload
 app.use('/uploads', express.static('uploads'));
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}: https://localhost:${PORT}`);
 });
