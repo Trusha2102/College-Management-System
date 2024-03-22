@@ -1,40 +1,44 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { Role } from '../../entity/Role';
+import { sendResponse, sendError } from '../../utils/commonResponse';
+import AppDataSource from '../../data-source';
 
 const createRole = async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
-    const role = await prisma.role.create({
-      data: { name }
+
+    const role = AppDataSource.manager.create(Role, {
+      name: name,
     });
-    res.status(201).json(role);
+    await AppDataSource.manager.save(role);
+
+    sendResponse(res, 200, 'Role', role);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to create role' });
+    sendError(res, 500, 'Failed to create role', null);
   }
 };
 
 const getAllRoles = async (req: Request, res: Response) => {
   try {
-    const roles = await prisma.role.findMany();
-    res.status(200).json(roles);
+    const roles = await AppDataSource.manager.find(Role);
+    sendResponse(res, 200, 'Role', roles);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to fetch roles' });
+    sendError(res, 500, 'Failed to fetch roles', null);
   }
 };
 
 const getRoleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const role = await prisma.role.findUnique({
-      where: { id: parseInt(id) }
+    const role = await AppDataSource.manager.findOne(Role, {
+      where: { id: parseInt(id, 10) },
     });
-    res.status(200).json(role);
+    sendResponse(res, 200, 'Role', role);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to fetch role' });
+    sendError(res, 500, 'Failed to fetch role', null);
   }
 };
 
@@ -42,27 +46,26 @@ const updateRoleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
-    const role = await prisma.role.update({
-      where: { id: parseInt(id) },
-      data: { name }
+    await AppDataSource.manager.update(Role, id, { name });
+    const updatedRole = await AppDataSource.manager.findOne(Role, {
+      where: { id: parseInt(id, 10) },
     });
-    res.status(200).json(role);
+    sendResponse(res, 200, 'Role', updatedRole);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to update role' });
+    sendError(res, 500, 'Failed to update role', null);
   }
 };
 
 const deleteRoleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.role.delete({
-      where: { id: parseInt(id) }
-    });
+    await AppDataSource.manager.delete(Role, parseInt(id, 10));
     res.status(200).end();
+    sendResponse(res, 200, 'Role Deleted Successfully!', null);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to delete role' });
+    sendError(res, 500, 'Failed to delete the role', null);
   }
 };
 

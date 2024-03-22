@@ -1,28 +1,16 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import AppDataSource from '../../data-source';
+import { Permission } from '../../entity/Permission';
 
 const createPermission = async (req: Request, res: Response) => {
   try {
-    const {
+    const { roleId, moduleId, operation } = req.body;
+    const permission = AppDataSource.manager.create(Permission, {
       roleId,
       moduleId,
-      read_permission,
-      write_permission,
-      update_permission,
-      delete_permission
-    } = req.body;
-    const permission = await prisma.permission.create({
-      data: {
-        roleId,
-        moduleId,
-        read_permission,
-        write_permission,
-        update_permission,
-        delete_permission
-      }
+      operation,
     });
+    await AppDataSource.manager.save(permission);
     res.status(201).json(permission);
   } catch (error) {
     console.error(error);
@@ -32,7 +20,7 @@ const createPermission = async (req: Request, res: Response) => {
 
 const getAllPermissions = async (req: Request, res: Response) => {
   try {
-    const permissions = await prisma.permission.findMany();
+    const permissions = await AppDataSource.manager.find(Permission);
     res.status(200).json(permissions);
   } catch (error) {
     console.error(error);
@@ -40,42 +28,19 @@ const getAllPermissions = async (req: Request, res: Response) => {
   }
 };
 
-const getPermissionById = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const permission = await prisma.permission.findUnique({
-      where: { id: parseInt(id) }
-    });
-    res.status(200).json(permission);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to fetch permission' });
-  }
-};
-
 const updatePermissionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const {
+    const { roleId, moduleId, operation } = req.body;
+    await AppDataSource.manager.update(Permission, parseInt(id, 10), {
       roleId,
       moduleId,
-      read_permission,
-      write_permission,
-      update_permission,
-      delete_permission
-    } = req.body;
-    const permission = await prisma.permission.update({
-      where: { id: parseInt(id) },
-      data: {
-        roleId,
-        moduleId,
-        read_permission,
-        write_permission,
-        update_permission,
-        delete_permission
-      }
+      operation,
     });
-    res.status(200).json(permission);
+    const updatedPermission = await AppDataSource.manager.findOne(Permission, {
+      where: { id: parseInt(id, 10) },
+    });
+    res.status(200).json(updatedPermission);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to update permission' });
@@ -85,9 +50,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
 const deletePermissionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.permission.delete({
-      where: { id: parseInt(id) }
-    });
+    await AppDataSource.manager.delete(Permission, parseInt(id, 10));
     res.status(200).end();
   } catch (error) {
     console.error(error);
@@ -98,7 +61,6 @@ const deletePermissionById = async (req: Request, res: Response) => {
 export {
   createPermission,
   getAllPermissions,
-  getPermissionById,
   updatePermissionById,
-  deletePermissionById
+  deletePermissionById,
 };

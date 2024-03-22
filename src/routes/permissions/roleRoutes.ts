@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const roleController = require('../../controllers/permissions/roleController');
+// import casbinEnforcerMiddleware from '../../middlewares/authMiddleware';
+// import { authorizationMiddleware } from '../../middlewares/authMiddleware';
+// import verifyToken from '../../utils/verifyToken'; // Assuming this is the path to your verifyToken middleware
 
 // Create a new role
 router.post('/', roleController.createRole);
 
 // Get all roles
-router.get('/', roleController.getAllRoles);
+router.get('/get-roles', roleController.getAllRoles);
 
 // Get a role by ID
 router.get('/:id', roleController.getRoleById);

@@ -1,22 +1,36 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import bodyParser from 'body-parser';
-import dotenv from 'dotenv';
 import routes from './routes';
-
-// Load environment variables from .env file
-dotenv.config();
+// import routes from './routes';
+import AppDataSource from './data-source';
+// const AppDataSource = require('./data-source');
+const PORT = process?.env?.PORT || 3000;
 
 // Create Express app
-const app = express();
+let app = express();
 
 // Middleware
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Routes
+AppDataSource.initialize()
+  .then(() => {
+    console.log('Data Source has been initialized!');
+  })
+  .catch((err) => {
+    console.error('Error during Data Source initialization', err);
+  });
+
+// Require router
 app.use('/api', routes);
 
-// Start the server
-const PORT = process.env.PORT || 3000;
+// For File Upload
+app.use('/uploads', express.static('uploads'));
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}: https://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}: https://localhost:${PORT}`);
 });
+
+export default app;
