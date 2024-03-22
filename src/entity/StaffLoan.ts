@@ -5,23 +5,23 @@ import { Employee } from './Employee';
 @Entity()
 export class StaffLoan {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Employee, (employee) => employee.id)
-  employee: Employee;
+  employee!: Employee;
 
   @Column()
-  loan_amount: number;
+  loan_amount!: number;
 
   @Column()
-  no_of_installments: number;
+  no_of_installments!: number;
 
   @Column()
-  installment_amount: number;
+  installment_amount!: number;
 
   @Column()
-  status: string;
+  status!: string;
 
   @Column()
-  action_by: number;
+  action_by!: number;
 }

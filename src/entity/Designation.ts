@@ -4,11 +4,11 @@ import { Employee } from './Employee';
 @Entity()
 export class Designation {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  designation: string;
+  designation!: string;
 
   @OneToMany(() => Employee, (employee) => employee.designation)
-  employees: Employee[];
+  employees!: Employee[];
 }

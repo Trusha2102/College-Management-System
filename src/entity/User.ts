@@ -1,5 +1,11 @@
-// src/entities/User.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  BaseEntity,
+  OneToMany,
+  ManyToOne,
+} from 'typeorm';
 import { Role } from './Role';
 import { Address } from './Address';
 import { BankAccount } from './BankAccount';
@@ -9,74 +15,88 @@ import { ActivityLog } from './ActivityLog';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ length: 255 })
-  first_name: string;
+  first_name!: string;
 
   @Column({ length: 255 })
-  last_name: string;
+  last_name!: string;
 
   @Column({ length: 255 })
-  father_name: string;
+  father_name!: string;
 
   @Column({ length: 255 })
-  mother_name: string;
+  mother_name!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  mobile: string;
+  mobile!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column()
-  role_id: number;
+  role_id!: number;
 
-  @ManyToOne(() => Role, (role) => role.user)
-  role: Role;
+  @ManyToOne(() => Role, (role: { user: any }) => role.user)
+  role!: Role;
 
   @Column({ length: 255, nullable: true })
-  profile_picture: string;
+  profile_picture!: string;
 
   @Column({ default: true })
-  is_active: boolean;
+  is_active!: boolean;
 
   @Column()
-  gender: string;
+  gender!: string;
 
   @Column({ type: 'date' })
-  dob: Date;
+  dob!: Date;
 
   @Column()
-  marital_status: boolean;
+  marital_status!: boolean;
 
   @Column({ length: 255 })
-  qualification: string;
+  qualification!: string;
 
   @Column({ length: 255 })
-  work_experience: string;
+  work_experience!: string;
 
-  @ManyToOne(() => Address, (address) => address.user, { nullable: true })
-  address: Address;
+  @Column()
+  aadhar_card!: string;
+
+  @ManyToOne(() => Address, (address: { user: any }) => address.user, {
+    nullable: true,
+  })
+  address!: Address;
 
   @Column({ nullable: true })
-  address_id: number;
+  address_id!: number;
 
-  @ManyToOne(() => BankAccount, (bankAccount) => bankAccount.user, { nullable: true })
-  bank_details: BankAccount;
+  @ManyToOne(
+    () => BankAccount,
+    (bankAccount: { user: any }) => bankAccount.user,
+    {
+      nullable: true,
+    },
+  )
+  bank_details!: BankAccount;
 
   @Column({ nullable: true })
-  bank_details_id: number;
+  bank_details_id!: number;
 
   @Column('simple-array')
-  social_media_links: string[];
+  social_media_links!: string[];
 
-  @OneToMany(() => Employee, (employee) => employee.user)
-  employee: Employee[];
+  @OneToMany(() => Employee, (employee: { user: any }) => employee.user)
+  employee!: Employee[];
 
-  @OneToMany(() => ActivityLog, (activityLog) => activityLog.user)
-  activityLog: ActivityLog[];
+  @OneToMany(
+    () => ActivityLog,
+    (activityLog: { user: any }) => activityLog.user,
+  )
+  activityLog!: ActivityLog[];
 }

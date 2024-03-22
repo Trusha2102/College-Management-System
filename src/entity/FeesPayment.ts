@@ -6,35 +6,35 @@ import { FeesMaster } from './FeesMaster';
 @Entity()
 export class FeesPayment {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Student, (student) => student.fees_payment)
-  student: Student;
+  student!: Student;
 
   @ManyToOne(() => FeesMaster, (feesMaster) => feesMaster.fees_payment)
-  feesMaster: FeesMaster;
+  feesMaster!: FeesMaster;
 
   @Column()
-  dos: Date;
+  dos!: Date;
 
   @Column({ nullable: true })
-  approved_or_rejected_date: Date;
+  approved_or_rejected_date!: Date;
 
   @Column()
-  status: string;
+  status!: string;
 
   @Column()
-  amount: number;
+  amount!: number;
 
   @Column()
-  payment_from: string;
+  payment_from!: string;
 
   @Column()
-  payment_mode: string;
+  payment_mode!: string;
 
   @Column()
-  payment_proof: string;
+  payment_proof!: string;
 
   @Column({ nullable: true })
-  comment: string;
+  comment!: string;
 }

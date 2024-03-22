@@ -1,5 +1,11 @@
-// src/entities/Student.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToOne,
+  OneToMany,
+} from 'typeorm';
 import { Session } from './Session';
 import { Class } from './Class';
 import { Section } from './Section';
@@ -13,125 +19,129 @@ import { FeesMaster } from './FeesMaster';
 @Entity()
 export class Student {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ unique: true })
-  admission_no: number;
+  admission_no!: number;
 
   @ManyToOne(() => Session, (session) => session.students)
-  student_session: Session;
+  student_session!: Session;
 
   @Column()
-  student_session_id: number;
+  student_session_id!: number;
 
   @Column()
-  roll_no: number;
+  roll_no!: number;
 
   @Column()
-  category: string;
+  category!: string;
 
   @ManyToOne(() => Class, (cls) => cls.students)
-  class: Class;
+  class!: Class;
 
   @Column()
-  class_id: number;
+  class_id!: number;
 
   @ManyToOne(() => Section, (section) => section.students)
-  section: Section;
+  section!: Section;
 
   @Column()
-  section_id: number;
+  section_id!: number;
 
   @Column()
-  gender: string;
+  gender!: string;
 
   @Column()
-  first_name: string;
+  first_name!: string;
 
   @Column()
-  last_name: string;
+  last_name!: string;
 
   @Column()
-  middle_name: string;
+  middle_name!: string;
 
   @Column()
-  dob: Date;
+  dob!: Date;
 
   @Column()
-  religion: string;
+  religion!: string;
 
   @Column()
-  caste: string;
+  caste!: string;
 
   @Column()
-  mobile: string;
+  mobile!: string;
 
   @Column()
-  email: string;
+  email!: string;
 
   @Column()
-  school_name: string;
+  school_name!: string;
 
   @Column()
-  mother_tongue: string;
+  mother_tongue!: string;
 
   @Column()
-  ssc_board: string;
+  ssc_board!: string;
 
   @Column()
-  year_of_passing_ssc: string;
+  year_of_passing_ssc!: string;
 
   @Column()
-  examination_no: string;
+  examination_no!: string;
 
   @Column()
-  quota: string;
+  quota!: string;
 
   @Column()
-  joining_after: string;
+  joining_after!: string;
 
   @Column()
-  blood_group: string;
+  blood_group!: string;
 
   @Column()
-  height: string;
+  height!: string;
 
   @Column()
-  weight: string;
+  weight!: string;
 
   @Column()
-  medical_history: string;
+  medical_history!: string;
 
   @Column()
-  aadhar_card: string;
+  aadhar_card!: string;
 
   @Column()
-  admission_date: Date;
+  admission_date!: Date;
 
   @Column()
-  profile_picture: string;
+  profile_picture!: string;
 
   @Column()
-  other_docs: string;
+  other_docs!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @OneToOne(() => Address, (address) => address.student, { nullable: true })
-  address: Address;
+  address!: Address;
 
-  @OneToOne(() => ParentDetails, (parentDetails) => parentDetails.student, { nullable: true })
-  parent_details: ParentDetails;
+  @OneToOne(() => ParentDetails, (parentDetails) => parentDetails.student, {
+    nullable: true,
+  })
+  parent_details!: ParentDetails;
 
-  @OneToOne(() => BankAccount, (bankAccount) => bankAccount.student, { nullable: true })
-  bank_details: BankAccount;
+  @OneToOne(() => BankAccount, (bankAccount) => bankAccount.student, {
+    nullable: true,
+  })
+  bank_details!: BankAccount;
 
   @OneToOne(() => Result, (result) => result.student, { nullable: true })
-  result: Result;
+  result!: Result;
 
   @OneToMany(() => FeesPayment, (feesPayment) => feesPayment.student)
-  fees_payment: FeesPayment[];
+  fees_payment!: FeesPayment[];
 
   @OneToMany(() => FeesMaster, (feesMaster) => feesMaster.student)
-  fees_master: FeesMaster[];
+  fees_master!: FeesMaster[];
 }

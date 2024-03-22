@@ -1,62 +1,68 @@
 // Employee.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { User } from './User';
 import { Designation } from './Designation';
 import { Department } from './Department';
 import { Attendance } from './Attendance';
 import { Payroll } from './Payroll';
-import { StaffLoan } from './Staffloan';
+import { StaffLoan } from './StaffLoan';
 
 @Entity()
 export class Employee {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => User, (user) => user.id)
-  user: User;
+  user!: User;
 
   @Column()
-  staff_id: number;
+  staff_id!: number;
 
   @ManyToOne(() => Designation, (designation) => designation.id)
-  designation: Designation;
+  designation!: Designation;
 
   @Column()
-  designation_id: number;
+  designation_id!: number;
 
   @ManyToOne(() => Department, (department) => department.id)
-  department: Department;
+  department!: Department;
 
   @Column()
-  department_id: number;
+  department_id!: number;
 
   @Column()
-  salary: number;
+  salary!: number;
 
   @Column()
-  deduction: number;
+  deduction!: number;
 
   @Column()
-  contract_type: string;
+  contract_type!: string;
 
   @Column()
-  DOJ: Date;
+  DOJ!: Date;
 
   @Column({ nullable: true })
-  DOL: Date;
+  DOL!: Date;
 
   @Column()
-  work_shift: string;
+  work_shift!: string;
 
   @Column()
-  work_location: string;
+  work_location!: string;
 
   @OneToMany(() => Attendance, (attendance) => attendance.staff)
-  attendance: Attendance[];
+  attendance!: Attendance[];
 
   @OneToMany(() => Payroll, (payroll) => payroll.employee)
-  payroll: Payroll[];
+  payroll!: Payroll[];
 
   @OneToMany(() => StaffLoan, (staffLoan) => staffLoan.employee)
-  staff_loan: StaffLoan[];
+  staff_loan!: StaffLoan[];
 }

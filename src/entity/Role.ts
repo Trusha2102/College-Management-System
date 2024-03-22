@@ -6,17 +6,21 @@ import { ActivityLog } from './ActivityLog';
 @Entity()
 export class Role {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @OneToMany(() => Permission, (permission) => permission.role)
-  permissions: Permission[];
+  permissions!: Permission[];
 
   @OneToMany(() => User, (user) => user.role)
-  user: User[];
+  user!: User[];
 
   @OneToMany(() => ActivityLog, (activityLog) => activityLog.role)
-  activityLog: ActivityLog[];
+  activityLog!: ActivityLog[];
+
+  static async findOne(roleId: number): Promise<Role | undefined> {
+    return await this.findOne(roleId);
+  }
 }

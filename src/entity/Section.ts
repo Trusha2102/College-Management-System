@@ -1,22 +1,28 @@
 // src/entities/Section.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { Class } from './Class';
 import { Student } from './Student';
 
 @Entity()
 export class Section {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Class, (cls) => cls.sections)
-  class: Class;
+  class!: Class;
 
   @Column()
-  class_id: number;
+  class_id!: number;
 
   @Column()
-  section: string;
+  section!: string;
 
   @OneToMany(() => Student, (student) => student.section)
-  students: Student[];
+  students!: Student[];
 }

@@ -3,23 +3,23 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 @Entity()
 export class Notice {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  title: string;
+  title!: string;
 
   @Column({ name: 'notice_date', type: 'timestamp' })
-  noticeDate: Date;
+  noticeDate!: Date;
 
   @Column({ name: 'publish_on', type: 'timestamp' })
-  publishOn: Date;
+  publishOn!: Date;
 
   @Column({ name: 'message_to', type: 'simple-array' })
-  messageTo: string[];
+  messageTo!: string[];
 
   @Column()
-  message: string;
+  message!: string;
 
   @Column({ nullable: true })
-  attachment: string;
+  attachment!: string;
 }

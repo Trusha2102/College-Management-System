@@ -1,33 +1,39 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { Course } from './Course';
 import { FeesMaster } from './FeesMaster';
 
 @Entity()
 export class FeesType {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Course, (course) => course.fees_type)
-  course: Course;
+  course!: Course;
 
   @Column()
-  course_id: number;
+  course_id!: number;
 
   @Column()
-  semester: string;
+  semester!: string;
 
   @Column()
-  amount: number;
+  amount!: number;
 
   @Column()
-  extra_fees_type: string;
+  extra_fees_type!: string;
 
   @Column()
-  extra_amount: string;
+  extra_amount!: string;
 
   @Column()
-  due_date: Date;
+  due_date!: Date;
 
   @OneToMany(() => FeesMaster, (feesMaster) => feesMaster.feesType)
-  fees_master: FeesMaster[];
+  fees_master!: FeesMaster[];
 }

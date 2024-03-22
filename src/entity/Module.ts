@@ -4,11 +4,11 @@ import { Permission } from './Permission';
 @Entity()
 export class Module {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @OneToMany(() => Permission, (permission) => permission.module)
-  permissions: Permission[];
+  permissions!: Permission[];
 }

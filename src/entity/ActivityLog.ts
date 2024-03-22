@@ -6,20 +6,20 @@ import { Role } from './Role';
 @Entity()
 export class ActivityLog {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => User, (user) => user.activityLog)
-  user: User;
+  user!: User;
 
   @Column()
-  user_id: number;
+  user_id!: number;
 
   @ManyToOne(() => Role, (role) => role.activityLog)
-  role: Role;
+  role!: Role;
 
   @Column()
-  role_id: number;
+  role_id!: number;
 
   @Column()
-  action: string;
+  action!: string;
 }

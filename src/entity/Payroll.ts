@@ -5,32 +5,32 @@ import { Employee } from './Employee';
 @Entity()
 export class Payroll {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Employee, (employee) => employee.id)
-  employee: Employee;
+  employee!: Employee;
 
   @Column()
-  month: string;
+  month!: string;
 
   @Column()
-  year: string;
+  year!: string;
 
   @Column()
-  status: string;
+  status!: string;
 
   @Column()
-  earning: number;
+  earning!: number;
 
   @Column()
-  deduction: number;
+  deduction!: number;
 
   @Column()
-  net_amount: number;
+  net_amount!: number;
 
   @Column()
-  is_staff_loan: boolean;
+  is_staff_loan!: boolean;
 
   @Column()
-  loan_deduction_amount: number;
+  loan_deduction_amount!: number;
 }

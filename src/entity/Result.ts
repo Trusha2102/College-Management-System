@@ -7,17 +7,21 @@ import { Semester } from './Semester';
 @Entity()
 export class Result {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
-  @ManyToOne(() => Student, (student) => student.result, { onDelete: 'CASCADE' })
-  student: Student;
+  @ManyToOne(() => Student, (student) => student.result, {
+    onDelete: 'CASCADE',
+  })
+  student!: Student;
 
   @ManyToOne(() => Course, (course) => course.result, { onDelete: 'CASCADE' })
-  course: Course;
+  course!: Course;
 
-  @ManyToOne(() => Semester, (semester) => semester.result, { onDelete: 'CASCADE' })
-  semester: Semester;
+  @ManyToOne(() => Semester, (semester) => semester.result, {
+    onDelete: 'CASCADE',
+  })
+  semester!: Semester;
 
   @Column()
-  result: string;
+  result!: string;
 }

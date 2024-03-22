@@ -5,14 +5,14 @@ import { Employee } from './Employee';
 @Entity()
 export class Attendance {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Employee, (employee) => employee.id)
-  staff: Employee;
+  staff!: Employee;
 
   @Column()
-  date: Date;
+  date!: Date;
 
   @Column()
-  attendance: string;
+  attendance!: string;
 }

@@ -1,41 +1,40 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import AppDataSource from '../../data-source'; // Import your DataSource from the correct location
+import { Module } from '../../entity/Module';
+import { sendResponse, sendError } from '../../utils/commonResponse';
 
 const createModule = async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
-    const module = await prisma.module.create({
-      data: { name }
-    });
-    res.status(201).json(module);
+    const module = AppDataSource.manager.create(Module, { name });
+    await AppDataSource.manager.save(module);
+    sendResponse(res, 201, 'Module', module);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to create module' });
+    sendError(res, 500, 'Failed to create module', null);
   }
 };
 
 const getAllModules = async (req: Request, res: Response) => {
   try {
-    const modules = await prisma.module.findMany();
-    res.status(200).json(modules);
+    const modules = await AppDataSource.manager.find(Module);
+    sendResponse(res, 200, 'Modules', modules);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to fetch modules' });
+    sendError(res, 500, 'Failed to fetch modules', null);
   }
 };
 
 const getModuleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const module = await prisma.module.findUnique({
-      where: { id: parseInt(id) }
+    const module = await AppDataSource.manager.findOne(Module, {
+      where: { id: parseInt(id) },
     });
-    res.status(200).json(module);
+    sendResponse(res, 200, 'Module', module);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to fetch module' });
+    sendError(res, 500, 'Failed to fetch module', null);
   }
 };
 
@@ -43,28 +42,32 @@ const updateModuleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
-    const module = await prisma.module.update({
+    await AppDataSource.manager.update(Module, id, { name });
+    const updatedModule = await AppDataSource.manager.findOne(Module, {
       where: { id: parseInt(id) },
-      data: { name }
     });
-    res.status(200).json(module);
+    sendResponse(res, 200, 'Module', updatedModule);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to update module' });
+    sendError(res, 500, 'Failed to update module', null);
   }
 };
 
 const deleteModuleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.module.delete({
-      where: { id: parseInt(id) }
-    });
+    await AppDataSource.manager.delete(Module, id);
     res.status(200).end();
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to delete module' });
+    sendError(res, 500, 'Failed to delete module', null);
   }
 };
 
-export { createModule, getAllModules, getModuleById, updateModuleById, deleteModuleById };
+export {
+  createModule,
+  getAllModules,
+  getModuleById,
+  updateModuleById,
+  deleteModuleById,
+};

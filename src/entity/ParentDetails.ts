@@ -5,26 +5,28 @@ import { Student } from './Student';
 @Entity()
 export class ParentDetails {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  relation_type: string;
+  relation_type!: string;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column()
-  occupation: string;
+  occupation!: string;
 
   @Column()
-  phone: string;
+  phone!: string;
 
   @Column()
-  qualification: string;
+  qualification!: string;
 
   @Column()
-  email: string;
+  email!: string;
 
-  @ManyToOne(() => Student, (student) => student.parent_details, { onDelete: 'CASCADE' })
-  student: Student;
+  @ManyToOne(() => Student, (student) => student.parent_details, {
+    onDelete: 'CASCADE',
+  })
+  student!: Student;
 }

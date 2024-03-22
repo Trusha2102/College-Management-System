@@ -6,17 +6,17 @@ import { Student } from './Student';
 @Entity()
 export class Session {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  session: string;
+  session!: string;
 
   @Column()
-  is_active: boolean;
+  is_active!: boolean;
 
   @OneToMany(() => Course, (course) => course.session)
-  courses: Course[];
+  courses!: Course[];
 
   @OneToMany(() => Student, (student) => student.student_session)
-  students: Student[];
+  students!: Student[];
 }

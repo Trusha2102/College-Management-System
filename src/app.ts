@@ -4,7 +4,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import routes from './routes';
 // import routes from './routes';
-import { AppDataSource } from './data-source';
+import AppDataSource from './data-source';
 // const AppDataSource = require('./data-source');
 const PORT = process?.env?.PORT || 3000;
 
@@ -23,7 +23,7 @@ AppDataSource.initialize()
     console.error('Error during Data Source initialization', err);
   });
 
-// Routes
+// Require router
 app.use('/api', routes);
 
 // For File Upload
