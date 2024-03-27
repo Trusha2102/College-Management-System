@@ -10,6 +10,9 @@ import courseRoutes from './student/courseRoutes';
 import semesterRoutes from './student/semesterRoutes';
 import classRoutes from './student/classRoutes';
 import sectionRoutes from './student/sectionRoutes';
+import employeeRoutes from './employee/employeeRoutes';
+import departmentRoutes from './employee/departmentRoutes';
+import designationRoutes from './employee/designationRoutes';
 
 const router = express.Router();
 
@@ -24,5 +27,8 @@ router.use('/course', courseRoutes);
 router.use('/semester', semesterRoutes);
 router.use('/class', classRoutes);
 router.use('/section', sectionRoutes);
+router.use('/employee', employeeRoutes);
+router.use('/department', departmentRoutes);
+router.use('/designation', designationRoutes);
 
 export default router;
