@@ -33,6 +33,14 @@ const createUser = async (req: Request, res: Response) => {
         ...userData
       } = req.body;
 
+      // Check if the email already exists
+      const existingUser = await AppDataSource.manager.findOne(User, {
+        where: { email: userData.email },
+      });
+      if (existingUser) {
+        return sendError(res, 400, 'Email address already exists');
+      }
+
       const role = await AppDataSource.manager.findOne(Role, {
         where: { id: parseInt(role_id, 10) },
       });
@@ -77,9 +85,13 @@ const createUser = async (req: Request, res: Response) => {
         message: 'User created and profile picture uploaded successfully',
       });
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    sendError(res, 500, 'Failed to create user or upload profile picture');
+    return sendError(
+      res,
+      500,
+      'Failed to create user or upload profile picture',
+    );
   }
 };
 
