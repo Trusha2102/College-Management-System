@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Class } from './Class';
 import { Student } from './Student';
@@ -14,7 +15,7 @@ export class Section {
   id!: number;
 
   @ManyToOne(() => Class, (cls) => cls.sections)
-  @Column({ name: 'class_id', type: 'int' }) // Specify the column name and type explicitly
+  @JoinColumn({ name: 'class_id' }) // Specify the join column here
   class!: Class;
 
   @Column()
