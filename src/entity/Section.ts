@@ -1,4 +1,3 @@
-// src/entities/Section.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -15,10 +14,8 @@ export class Section {
   id!: number;
 
   @ManyToOne(() => Class, (cls) => cls.sections)
+  @Column({ name: 'class_id', type: 'int' }) // Specify the column name and type explicitly
   class!: Class;
-
-  @Column()
-  class_id!: number;
 
   @Column()
   section!: string;

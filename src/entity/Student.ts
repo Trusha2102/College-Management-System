@@ -15,6 +15,8 @@ import { BankAccount } from './BankAccount';
 import { Result } from './Result';
 import { FeesPayment } from './FeesPayment';
 import { FeesMaster } from './FeesMaster';
+import { Course } from './Course';
+import { Semester } from './Semester';
 
 @Entity()
 export class Student {
@@ -22,7 +24,10 @@ export class Student {
   id!: number;
 
   @Column({ unique: true })
-  admission_no!: number;
+  admission_no!: string;
+
+  @Column({ unique: true })
+  enrollment_no!: string;
 
   @ManyToOne(() => Session, (session) => session.students)
   student_session!: Session;
@@ -48,6 +53,18 @@ export class Student {
   @Column()
   section_id!: number;
 
+  @ManyToOne(() => Course, (course) => course.students)
+  course!: Course;
+
+  @Column()
+  course_id!: number;
+
+  @ManyToOne(() => Semester, (semester) => semester.students)
+  semester!: Semester;
+
+  @Column()
+  semester_id!: number;
+
   @Column()
   gender!: string;
 
@@ -72,7 +89,7 @@ export class Student {
   @Column()
   mobile!: string;
 
-  @Column()
+  @Column({ unique: true })
   email!: string;
 
   @Column()
@@ -95,18 +112,6 @@ export class Student {
 
   @Column()
   joining_after!: string;
-
-  @Column()
-  blood_group!: string;
-
-  @Column()
-  height!: string;
-
-  @Column()
-  weight!: string;
-
-  @Column()
-  medical_history!: string;
 
   @Column()
   aadhar_card!: string;

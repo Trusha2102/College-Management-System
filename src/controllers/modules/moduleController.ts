@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import AppDataSource from '../../data-source'; // Import your DataSource from the correct location
+import AppDataSource from '../../data-source';
 import { Module } from '../../entity/Module';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 
