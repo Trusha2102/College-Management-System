@@ -10,6 +10,7 @@ import { Session } from './Session';
 import { Semester } from './Semester';
 import { Result } from './Result';
 import { FeesType } from './FeesType';
+import { Student } from './Student';
 
 @Entity()
 export class Course {
@@ -33,4 +34,7 @@ export class Course {
 
   @OneToMany(() => FeesType, (feesType) => feesType.course)
   fees_type!: FeesType[];
+
+  @OneToMany(() => Student, (student) => student.course)
+  students!: Student[];
 }

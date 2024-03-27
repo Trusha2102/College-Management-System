@@ -54,6 +54,9 @@ export class Employee {
   @Column()
   work_shift!: string;
 
+  @Column({ default: true })
+  is_active!: boolean;
+
   @Column()
   work_location!: string;
 

@@ -1,21 +1,31 @@
 import { Response } from 'express';
 
-export const sendResponse = (res: Response, statusCode: number, message: string, data?: any) => {
+export const sendResponse = (
+  res: Response,
+  statusCode: number,
+  message: string,
+  data?: any,
+) => {
   return res.status(statusCode).json({
     success: true,
     message,
-    data
+    data,
   });
 };
 
 //Sample Usage
 //sendResponse(res, 200, 'Success', { key: 'value' });
 
-export const sendError = (res: Response, statusCode: number, message: string, error?: any) => {
+export const sendError = (
+  res: Response,
+  statusCode: number,
+  message: string,
+  error?: any,
+) => {
   return res.status(statusCode).json({
     success: false,
     message,
-    error
+    error: error instanceof Error ? error.message : error,
   });
 };
 

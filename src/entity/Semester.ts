@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Course } from './Course';
 import { Result } from './Result';
+import { Student } from './Student';
 
 @Entity()
 export class Semester {
@@ -24,4 +25,7 @@ export class Semester {
 
   @OneToMany(() => Result, (result) => result.semester)
   result!: Result[];
+
+  @OneToMany(() => Student, (student) => student.semester)
+  students!: Student[];
 }

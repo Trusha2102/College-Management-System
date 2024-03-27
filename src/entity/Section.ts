@@ -1,10 +1,10 @@
-// src/entities/Section.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Class } from './Class';
 import { Student } from './Student';
@@ -15,10 +15,8 @@ export class Section {
   id!: number;
 
   @ManyToOne(() => Class, (cls) => cls.sections)
+  @JoinColumn({ name: 'class_id' }) // Specify the join column here
   class!: Class;
-
-  @Column()
-  class_id!: number;
 
   @Column()
   section!: string;
