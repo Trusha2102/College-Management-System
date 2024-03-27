@@ -1,14 +1,17 @@
 // src/controllers/semester/semesterController.ts
 import { Request, Response } from 'express';
 import { Semester } from '../../entity/Semester';
+import { Course } from '../../entity/Course';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 
 export const createSemester = async (req: Request, res: Response) => {
   try {
     const { semester, courseId } = req.body;
-    const courseRepository = AppDataSource.getRepository(Semester);
-    const course = await courseRepository.findOne(courseId);
+    const courseRepository = AppDataSource.getRepository(Course);
+    const course = await courseRepository.findOne({
+      where: { id: parseInt(courseId, 10) },
+    });
     if (!course) {
       return sendError(res, 404, 'Course not found');
     }
@@ -46,8 +49,10 @@ export const updateSemesterById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { semester, courseId } = req.body;
 
-    const courseRepository = AppDataSource.getRepository(Semester);
-    const course = await courseRepository.findOne(courseId);
+    const courseRepository = AppDataSource.getRepository(Course);
+    const course = await courseRepository.findOne({
+      where: { id: parseInt(courseId, 10) },
+    });
     if (!course) {
       return sendError(res, 404, 'Course not found');
     }
