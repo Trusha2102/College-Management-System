@@ -28,6 +28,5 @@ export const sendError = (
     error: error instanceof Error ? error.message : error,
   });
 };
-
 //Sample Usage
 //sendError(res, 500, 'Internal Server Error', 'Something went wrong');
