@@ -3,9 +3,14 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { User } from '../../entity/User';
 import AppDataSource from '../../data-source';
+import { sendResponse, sendError } from '../../utils/commonResponse';
+import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const login = async (req: Request, res: Response) => {
-  console.log('THE LOGIN API WAS CALLED');
   try {
     const { email, password } = req.body;
     // Find the user by email
@@ -29,11 +34,91 @@ const login = async (req: Request, res: Response) => {
       process.env.JWT_SECRET || 'your_secret_key_here',
       { expiresIn: '30d' },
     );
-    res.status(200).json({ token });
+    sendResponse(res, 200, 'Login successful', { token, user });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to authenticate user' });
+    sendError(res, 500, 'Failed to authenticate user');
   }
 };
 
-export { login };
+const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, new_password } = req.body;
+
+    // Find the student by email
+    const user = await AppDataSource.getRepository(User).findOne({
+      where: { email },
+    });
+
+    // If user not found, return an error
+    if (!user) {
+      return sendError(res, 404, 'User not found');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    // Update the user's password in the database
+    user.password = hashedPassword;
+    await AppDataSource.getRepository(User).save(user);
+
+    // Return a success response
+    return sendResponse(res, 200, 'Password reset successful');
+  } catch (error: any) {
+    console.error(error);
+    return sendError(res, 500, 'Failed to reset password', error.message);
+  }
+};
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'trusha@creative-hustlers.com',
+    pass: process.env.APP_PASSWORD,
+  },
+});
+
+const forgotPasswordEmail = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  // Check if email is provided
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  const filePath = path.join(
+    __dirname,
+    '../../..',
+    'src',
+    'html',
+    'forgotPassword.html',
+  );
+
+  fs.readFile(filePath, 'utf8', async (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Failed to read email template' });
+    }
+
+    // Configure email options
+    const mailOptions = {
+      from: 'trusha@creative-hustlers.com',
+      to: email,
+      subject: 'Reset Your Password',
+      html: data,
+    };
+
+    try {
+      // Send email
+      await transporter.sendMail(mailOptions);
+      res
+        .status(200)
+        .json({ message: 'Reset password email sent successfully' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Failed to send reset password email' });
+    }
+  });
+};
+
+export { login, resetPassword, forgotPasswordEmail };

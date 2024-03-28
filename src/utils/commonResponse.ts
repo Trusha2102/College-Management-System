@@ -25,8 +25,9 @@ export const sendError = (
   return res.status(statusCode).json({
     success: false,
     message,
-    error: error instanceof Error ? error.message : error,
+    error: error instanceof Error ? error.message : String(error),
   });
 };
+
 //Sample Usage
 //sendError(res, 500, 'Internal Server Error', 'Something went wrong');

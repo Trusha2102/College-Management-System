@@ -2,28 +2,27 @@ import { Request, Response } from 'express';
 import { Designation } from '../../entity/Designation';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
+import runTransaction from '../../utils/runTransaction';
 
 // Create Designation with Transaction and QueryRunner
 export const createDesignation = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner();
-  await queryRunner.connect();
-
   try {
-    await queryRunner.startTransaction();
+    await runTransaction(queryRunner, async () => {
+      const designationRepository =
+        queryRunner.manager.getRepository(Designation);
+      const newDesignation = designationRepository.create(req.body);
+      await designationRepository.save(newDesignation);
 
-    const designationRepository =
-      queryRunner.manager.getRepository(Designation);
-    const newDesignation = designationRepository.create(req.body);
-    await designationRepository.save(newDesignation);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(res, 201, 'Designation created successfully', newDesignation);
+      sendResponse(
+        res,
+        201,
+        'Designation created successfully',
+        newDesignation,
+      );
+    });
   } catch (error: any) {
-    await queryRunner.rollbackTransaction();
     sendError(res, 500, 'Failed to create designation', error.message);
-  } finally {
-    await queryRunner.release();
   }
 };
 
@@ -58,62 +57,48 @@ export const getDesignationById = async (req: Request, res: Response) => {
 // Update Designation with Transaction and QueryRunner
 export const updateDesignation = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner();
-  await queryRunner.connect();
-
   try {
-    await queryRunner.startTransaction();
+    await runTransaction(queryRunner, async () => {
+      const { id } = req.params;
+      const designationRepository =
+        queryRunner.manager.getRepository(Designation);
+      const designation = await designationRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!designation) {
+        sendError(res, 404, 'Designation not found');
+        return; // Ensure to return here to exit the function early
+      }
+      designationRepository.merge(designation, req.body);
+      await designationRepository.save(designation);
 
-    const { id } = req.params;
-    const designationRepository =
-      queryRunner.manager.getRepository(Designation);
-    const designation = await designationRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      sendResponse(res, 200, 'Designation updated successfully', designation);
     });
-    if (!designation) {
-      await queryRunner.rollbackTransaction();
-      return sendError(res, 404, 'Designation not found');
-    }
-    designationRepository.merge(designation, req.body);
-    await designationRepository.save(designation);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(res, 200, 'Designation updated successfully', designation);
   } catch (error: any) {
-    await queryRunner.rollbackTransaction();
     sendError(res, 500, 'Failed to update designation', error.message);
-  } finally {
-    await queryRunner.release();
   }
 };
 
 // Delete Designation by ID with Transaction and QueryRunner
 export const deleteDesignationById = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner();
-  await queryRunner.connect();
-
   try {
-    await queryRunner.startTransaction();
+    await runTransaction(queryRunner, async () => {
+      const { id } = req.params;
+      const designationRepository =
+        queryRunner.manager.getRepository(Designation);
+      const designation = await designationRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!designation) {
+        sendError(res, 404, 'Designation not found');
+        return; // Ensure to return here to exit the function early
+      }
+      await designationRepository.remove(designation);
 
-    const { id } = req.params;
-    const designationRepository =
-      queryRunner.manager.getRepository(Designation);
-    const designation = await designationRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      sendResponse(res, 204, 'Designation deleted successfully');
     });
-    if (!designation) {
-      await queryRunner.rollbackTransaction();
-      return sendError(res, 404, 'Designation not found');
-    }
-    await designationRepository.remove(designation);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(res, 204, 'Designation deleted successfully');
   } catch (error: any) {
-    await queryRunner.rollbackTransaction();
     sendError(res, 500, 'Failed to delete designation', error.message);
-  } finally {
-    await queryRunner.release();
   }
 };

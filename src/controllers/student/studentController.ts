@@ -3,6 +3,7 @@ import AppDataSource from '../../data-source';
 import configureMulter from '../../utils/multerConfig';
 import { Student } from '../../entity/Student';
 import bcrypt from 'bcrypt';
+import { sendError, sendResponse } from '../../utils/commonResponse';
 
 const upload = configureMulter('./uploads/Student', 5 * 1024 * 1024); // 5MB limit
 
@@ -14,7 +15,7 @@ const createStudent = async (req: Request, res: Response) => {
     ])(req, res, async (err: any) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ message: 'Failed to upload files' });
+        return sendError(res, 500, 'Failed to upload files', err.message);
       }
       const { body, files } = req;
       // Process other_docs files
@@ -28,8 +29,22 @@ const createStudent = async (req: Request, res: Response) => {
       }));
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-      // Create the student with the provided data and file paths
+      // Check if the email already exists in the Student table
       const studentRepository = AppDataSource.getRepository(Student);
+      const existingStudent = await studentRepository.findOne({
+        where: { email: body.email },
+      });
+
+      if (existingStudent) {
+        return sendError(
+          res,
+          400,
+          'Please add unique email',
+          'Email already exists',
+        );
+      }
+
+      // Create the student with the provided data and file paths
       const student = studentRepository.create({
         ...body,
         profile_picture:
@@ -39,12 +54,13 @@ const createStudent = async (req: Request, res: Response) => {
         other_docs: otherDocs,
         password: hashedPassword,
       });
+
       await studentRepository.save(student);
-      res.status(201).json(student);
+      sendResponse(res, 201, 'Student created successfully', student);
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to create student' });
+    sendError(res, 500, 'Failed to create student', error.message);
   }
 };
 
@@ -101,77 +117,82 @@ const listStudents = async (req: Request, res: Response) => {
 };
 
 const getStudentById = async (req: Request, res: Response) => {
-  // try {
-  //   const { id } = req.params;
-  //   const student = await prisma.student.findUnique({
-  //     where: { id: parseInt(id) },
-  //     include: {
-  //       address: true,
-  //       parent_details: true,
-  //       bank_details: true,
-  //       result: true,
-  //       fees_payment: true,
-  //       fees_master: true
-  //     }
-  //   });
-  //   if (!student) {
-  //     return res.status(404).json({ message: 'Student not found' });
-  //   }
-  //   res.json(student);
-  // } catch (error) {
-  //   console.error(error);
-  //   res.status(500).json({ message: 'Failed to fetch student' });
-  // }
+  try {
+    const { id } = req.params;
+    const student = await AppDataSource.getRepository(Student).findOne({
+      where: { id: parseInt(id, 10) },
+    });
+    if (!student) {
+      return sendError(res, 404, 'Student not found');
+    }
+    sendResponse(res, 200, 'Student found', student);
+  } catch (error: any) {
+    console.error(error);
+    sendError(res, 500, 'Failed to fetch student', error.message);
+  }
 };
 
 const updateStudentById = async (req: Request, res: Response) => {
-  // try {
-  //   upload.fields([
-  //     { name: 'profile_picture', maxCount: 1 },
-  //     { name: 'other_docs', maxCount: 5 }
-  //   ])(req, res, async (err: any) => {
-  //     if (err) {
-  //       console.error(err);
-  //       return res.status(500).json({ message: 'Failed to upload files' });
-  //     }
-  //     const { id } = req.params;
-  //     const { body, files } = req;
-  //     // Process other_docs files
-  //     const otherDocsFiles =
-  //       (files as { [fieldname: string]: Express.Multer.File[] })['other_docs'] || [];
-  //     const otherDocs = otherDocsFiles.map((file: any) => ({
-  //       name: file.originalname,
-  //       path: file.path
-  //     }));
-  //     const updatedStudent = await prisma.student.update({
-  //       where: { id: parseInt(id) },
-  //       data: {
-  //         ...body,
-  //         profile_picture:
-  //           (files as { [fieldname: string]: Express.Multer.File[] })['profile_picture']?.[0]
-  //             ?.path || '',
-  //         other_docs: { createMany: { data: otherDocs } }
-  //       }
-  //     });
-  //     res.json(updatedStudent);
-  //   });
-  // } catch (error) {
-  //   console.error(error);
-  //   res.status(500).json({ message: 'Failed to update student' });
-  // }
+  try {
+    upload.fields([
+      { name: 'profile_picture', maxCount: 1 },
+      { name: 'other_docs', maxCount: 5 },
+    ])(req, res, async (err: any) => {
+      if (err) {
+        console.error(err);
+        return sendError(res, 500, 'Failed to upload files', err.message);
+      }
+      const { id } = req.params;
+      const { body, files } = req;
+      // Process other_docs files
+      const otherDocsFiles =
+        (files as { [fieldname: string]: Express.Multer.File[] })[
+          'other_docs'
+        ] || [];
+      const otherDocs = otherDocsFiles.map((file: any) => ({
+        name: file.originalname,
+        path: file.path,
+      }));
+      const studentRepository = AppDataSource.getRepository(Student);
+      const student = await studentRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!student) {
+        return sendError(res, 404, 'Student not found');
+      }
+      studentRepository.merge(student, {
+        ...body,
+        profile_picture:
+          (files as { [fieldname: string]: Express.Multer.File[] })[
+            'profile_picture'
+          ]?.[0]?.path || '',
+        other_docs: otherDocs,
+      });
+      const updatedStudent = await studentRepository.save(student);
+      sendResponse(res, 200, 'Student updated successfully', updatedStudent);
+    });
+  } catch (error: any) {
+    console.error(error);
+    sendError(res, 500, 'Failed to update student', error.message);
+  }
 };
 
 const deleteStudentById = async (req: Request, res: Response) => {
-  // try {
-  //   const { id } = req.params;
-  //   await prisma.student.delete({
-  //     where: { id: parseInt(id) }
-  //   });
-  //   res.json({ message: 'Student deleted successfully' });
-  // } catch (error) {
-  //   console.error(error);
-  //   res.status(500).json({ message: 'Failed to delete student' });
-  // }
+  try {
+    const { id } = req.params;
+    const studentRepository = AppDataSource.getRepository(Student);
+    const student = await studentRepository.findOne({
+      where: { id: parseInt(id, 10) },
+    });
+    if (!student) {
+      return sendError(res, 404, 'Student not found');
+    }
+    await studentRepository.delete(parseInt(id));
+    sendResponse(res, 200, 'Student deleted successfully');
+  } catch (error: any) {
+    console.error(error);
+    sendError(res, 500, 'Failed to delete student', error.message);
+  }
 };
 
 export {
