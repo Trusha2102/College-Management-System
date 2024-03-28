@@ -20,7 +20,7 @@ router.use('/roles', roleRoutes);
 router.use('/module', moduleRoutes);
 router.use('/permission', permissionRoutes);
 router.use('/user', userRoutes);
-router.use('/login', loginRoutes);
+router.use('/auth', loginRoutes);
 router.use('/student', studentRoutes);
 router.use('/session', sessionRoutes);
 router.use('/course', courseRoutes);

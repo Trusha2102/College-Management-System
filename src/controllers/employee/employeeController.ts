@@ -6,87 +6,83 @@ import { User } from '../../entity/User';
 import { Role } from '../../entity/Role';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
+import runTransaction from '../../utils/runTransaction';
 
 // Create Employee with Transaction and QueryRunner
 export const createEmployee = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner();
-  await queryRunner.connect();
-
   try {
-    await queryRunner.startTransaction();
+    await runTransaction(queryRunner, async () => {
+      const {
+        userId,
+        staffId,
+        designationId,
+        departmentId,
+        salary,
+        deduction,
+        contractType,
+        doj,
+        dol,
+        workShift,
+        workLocation,
+      } = req.body;
 
-    const {
-      userId,
-      staffId,
-      designationId,
-      departmentId,
-      salary,
-      deduction,
-      contractType,
-      doj,
-      dol,
-      workShift,
-      workLocation,
-    } = req.body;
+      const employeeRepository = queryRunner.manager.getRepository(Employee);
+      const userRepository = queryRunner.manager.getRepository(User);
+      const designationRepository =
+        queryRunner.manager.getRepository(Designation);
+      const departmentRepository =
+        queryRunner.manager.getRepository(Department);
 
-    const employeeRepository = queryRunner.manager.getRepository(Employee);
-    const userRepository = queryRunner.manager.getRepository(User);
-    const designationRepository =
-      queryRunner.manager.getRepository(Designation);
-    const departmentRepository = queryRunner.manager.getRepository(Department);
+      const user = await userRepository.findOne({
+        where: { id: parseInt(userId, 10) },
+      });
+      if (!user) {
+        sendError(res, 404, 'User not found');
+        return; // Return here to exit the callback
+      }
 
-    const user = await userRepository.findOne({
-      where: { id: parseInt(userId, 10) },
+      const designation = await designationRepository.findOne({
+        where: { id: parseInt(designationId, 10) },
+      });
+      if (!designation) {
+        sendError(res, 404, 'Designation not found');
+        return; // Return here to exit the callback
+      }
+
+      const department = await departmentRepository.findOne({
+        where: { id: parseInt(departmentId, 10) },
+      });
+      if (!department) {
+        sendError(res, 404, 'Department not found');
+        return; // Return here to exit the callback
+      }
+
+      const newEmployee = employeeRepository.create({
+        user,
+        staff_id: staffId,
+        designation,
+        designation_id: designationId,
+        department,
+        department_id: departmentId,
+        salary,
+        deduction,
+        contract_type: contractType,
+        DOJ: doj,
+        DOL: dol,
+        work_shift: workShift,
+        work_location: workLocation,
+      });
+
+      await employeeRepository.save(newEmployee);
+
+      sendResponse(res, 201, 'Employee created successfully', newEmployee);
     });
-    if (!user) {
-      await queryRunner.rollbackTransaction();
-      return sendError(res, 404, 'User not found');
-    }
-
-    const designation = await designationRepository.findOne({
-      where: { id: parseInt(designationId, 10) },
-    });
-    if (!designation) {
-      await queryRunner.rollbackTransaction();
-      return sendError(res, 404, 'Designation not found');
-    }
-
-    const department = await departmentRepository.findOne({
-      where: { id: parseInt(departmentId, 10) },
-    });
-    if (!department) {
-      await queryRunner.rollbackTransaction();
-      return sendError(res, 404, 'Department not found');
-    }
-
-    const newEmployee = employeeRepository.create({
-      user,
-      staff_id: staffId,
-      designation,
-      designation_id: designationId,
-      department,
-      department_id: departmentId,
-      salary,
-      deduction,
-      contract_type: contractType,
-      DOJ: doj,
-      DOL: dol,
-      work_shift: workShift,
-      work_location: workLocation,
-    });
-
-    await employeeRepository.save(newEmployee);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(res, 201, 'Employee created successfully', newEmployee);
   } catch (error: any) {
-    await queryRunner.rollbackTransaction();
     sendError(res, 500, 'Failed to create employee', error.message);
-  } finally {
-    await queryRunner.release();
   }
 };
+
 // List Employees
 export const listEmployees = async (req: Request, res: Response) => {
   try {
@@ -101,7 +97,7 @@ export const listEmployees = async (req: Request, res: Response) => {
     if (role) {
       const roleId = await AppDataSource.getRepository(Role)
         .createQueryBuilder('role')
-        .where('role.name = :role', { role })
+        .where('role.name ILIKE :role', { role: `%${role}%` })
         .select('role.id')
         .getRawOne();
 
@@ -115,14 +111,17 @@ export const listEmployees = async (req: Request, res: Response) => {
     }
 
     if (staff_id) {
-      query = query.andWhere('CAST(employee.staff_id AS TEXT) LIKE :staff_id', {
-        staff_id: `%${staff_id}%`,
-      });
+      query = query.andWhere(
+        'CAST(employee.staff_id AS TEXT) ILIKE :staff_id',
+        {
+          staff_id: `%${staff_id}%`,
+        },
+      );
     }
 
     if (name) {
       query = query.andWhere(
-        '(user.first_name LIKE :name OR user.last_name LIKE :name OR user.middle_name LIKE :name)',
+        '(user.first_name ILIKE :name OR user.last_name ILIKE :name OR user.father_name ILIKE :name)',
         {
           name: `%${name}%`,
         },
@@ -130,55 +129,39 @@ export const listEmployees = async (req: Request, res: Response) => {
     }
 
     if (department) {
-      const departmentIds = await AppDataSource.getRepository(Department)
+      const departmentId = await AppDataSource.getRepository(Department)
         .createQueryBuilder('department')
         .where('department.department ILIKE :department', {
           department: `%${department}%`,
         })
         .select('department.id')
-        .getRawMany();
-      console.log('🚀 ~ listEmployees ~ departmentIds:', departmentIds);
+        .getRawOne();
 
-      if (!departmentIds || departmentIds.length === 0) {
+      if (!departmentId) {
         return sendError(res, 400, 'Invalid department name');
       }
 
-      const departmentIdValues = departmentIds.map(
-        (dept) => dept.department_id,
-      );
-      console.log(
-        '🚀 ~ listEmployees ~ departmentIdValues:',
-        departmentIdValues,
-      );
-
-      query = query.andWhere('employee.department_id IN (:...departmentIds)', {
-        departmentIds: departmentIdValues,
+      query = query.andWhere('employee.department_id = :departmentId', {
+        departmentId: departmentId.department_id,
       });
     }
 
     if (designation) {
-      const designationIds = await AppDataSource.getRepository(Designation)
+      const designationId = await AppDataSource.getRepository(Designation)
         .createQueryBuilder('designation')
         .where('designation.designation ILIKE :designation', {
           designation: `%${designation}%`,
         })
         .select('designation.id')
-        .getRawMany();
+        .getRawOne();
 
-      if (!designationIds || designationIds.length === 0) {
+      if (!designationId) {
         return sendError(res, 400, 'Invalid designation name');
       }
 
-      const designationIdValues = designationIds.map(
-        (desig) => desig.designation_id,
-      );
-
-      query = query.andWhere(
-        'employee.designation_id IN (:...designationIds)',
-        {
-          designationIds: designationIdValues,
-        },
-      );
+      query = query.andWhere('employee.designation_id = :designationId', {
+        designationId: designationId.designation_id,
+      });
     }
 
     const employees = await query.getMany();
@@ -208,127 +191,116 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 // Update Employee with Transaction and QueryRunner
 export const updateEmployee = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner();
-  await queryRunner.connect();
 
-  try {
-    await queryRunner.startTransaction();
-
-    const { id } = req.params;
-    const employeeRepository = queryRunner.manager.getRepository(Employee);
-    const employee = await employeeRepository.findOne({
-      where: { id: parseInt(id, 10) },
-    });
-    if (!employee) {
-      await queryRunner.rollbackTransaction();
-      return sendError(res, 404, 'Employee not found');
-    }
-
-    const {
-      userId,
-      staffId,
-      designationId,
-      departmentId,
-      salary,
-      deduction,
-      contractType,
-      doj,
-      dol,
-      workShift,
-      workLocation,
-      is_active,
-    } = req.body;
-
-    const userRepository = queryRunner.manager.getRepository(User);
-    const designationRepository =
-      queryRunner.manager.getRepository(Designation);
-    const departmentRepository = queryRunner.manager.getRepository(Department);
-
-    if (userId) {
-      const user = await userRepository.findOne({
-        where: { id: parseInt(userId, 10) },
+  await runTransaction(queryRunner, async () => {
+    try {
+      const { id } = req.params;
+      const employeeRepository = queryRunner.manager.getRepository(Employee);
+      const employee = await employeeRepository.findOne({
+        where: { id: parseInt(id, 10) },
       });
-      if (!user) {
-        await queryRunner.rollbackTransaction();
-        return sendError(res, 404, 'User not found');
+      if (!employee) {
+        sendError(res, 404, 'Employee not found');
+        return; // Return here to exit the callback
       }
-      employee.user = user;
-    }
 
-    if (designationId) {
-      const designation = await designationRepository.findOne({
-        where: { id: parseInt(designationId, 10) },
-      });
-      if (!designation) {
-        await queryRunner.rollbackTransaction();
-        return sendError(res, 404, 'Designation not found');
+      const {
+        userId,
+        staffId,
+        designationId,
+        departmentId,
+        salary,
+        deduction,
+        contractType,
+        doj,
+        dol,
+        workShift,
+        workLocation,
+        is_active,
+      } = req.body;
+
+      const userRepository = queryRunner.manager.getRepository(User);
+      const designationRepository =
+        queryRunner.manager.getRepository(Designation);
+      const departmentRepository =
+        queryRunner.manager.getRepository(Department);
+
+      if (userId) {
+        const user = await userRepository.findOne({
+          where: { id: parseInt(userId, 10) },
+        });
+        if (!user) {
+          sendError(res, 404, 'User not found');
+          return; // Return here to exit the callback
+        }
+        employee.user = user;
       }
-      employee.designation = designation;
-      employee.designation_id = designationId;
-    }
 
-    if (departmentId) {
-      const department = await departmentRepository.findOne({
-        where: { id: parseInt(departmentId, 10) },
-      });
-      if (!department) {
-        await queryRunner.rollbackTransaction();
-        return sendError(res, 404, 'Department not found');
+      if (designationId) {
+        const designation = await designationRepository.findOne({
+          where: { id: parseInt(designationId, 10) },
+        });
+        if (!designation) {
+          sendError(res, 404, 'Designation not found');
+          return; // Return here to exit the callback
+        }
+        employee.designation = designation;
+        employee.designation_id = designationId;
       }
-      employee.department = department;
-      employee.department_id = departmentId;
+
+      if (departmentId) {
+        const department = await departmentRepository.findOne({
+          where: { id: parseInt(departmentId, 10) },
+        });
+        if (!department) {
+          sendError(res, 404, 'Department not found');
+          return; // Return here to exit the callback
+        }
+        employee.department = department;
+        employee.department_id = departmentId;
+      }
+
+      if (staffId) employee.staff_id = staffId;
+      if (salary) employee.salary = salary;
+      if (deduction) employee.deduction = deduction;
+      if (contractType) employee.contract_type = contractType;
+      if (doj) employee.DOJ = doj;
+      if (dol) employee.DOL = dol;
+      if (workShift) employee.work_shift = workShift;
+      if (workLocation) employee.work_location = workLocation;
+      if (is_active) employee.is_active = is_active;
+
+      await employeeRepository.save(employee);
+
+      sendResponse(res, 200, 'Employee updated successfully', employee);
+    } catch (error: any) {
+      sendError(res, 500, 'Failed to update employee', error.message);
     }
-
-    if (staffId) employee.staff_id = staffId;
-    if (salary) employee.salary = salary;
-    if (deduction) employee.deduction = deduction;
-    if (contractType) employee.contract_type = contractType;
-    if (doj) employee.DOJ = doj;
-    if (dol) employee.DOL = dol;
-    if (workShift) employee.work_shift = workShift;
-    if (workLocation) employee.work_location = workLocation;
-    if (is_active) employee.is_active = is_active;
-
-    await employeeRepository.save(employee);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(res, 200, 'Employee updated successfully', employee);
-  } catch (error: any) {
-    await queryRunner.rollbackTransaction();
-    sendError(res, 500, 'Failed to update employee', error.message);
-  } finally {
-    await queryRunner.release();
-  }
+  });
 };
 
 // Delete Employee with Transaction and QueryRunner
 export const deleteEmployeeById = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner();
-  await queryRunner.connect();
 
-  try {
-    await queryRunner.startTransaction();
+  await runTransaction(queryRunner, async () => {
+    try {
+      const { id } = req.params;
+      const employeeRepository = queryRunner.manager.getRepository(Employee);
+      const employee = await employeeRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!employee) {
+        sendError(res, 404, 'Employee not found');
+        return; // Return here to exit the callback
+      }
 
-    const { id } = req.params;
-    const employeeRepository = queryRunner.manager.getRepository(Employee);
-    const employee = await employeeRepository.findOne({
-      where: { id: parseInt(id, 10) },
-    });
-    if (!employee) {
-      await queryRunner.rollbackTransaction();
-      return sendError(res, 404, 'Employee not found');
+      employee.is_active = false; // Soft delete by setting is_active to false
+      await employeeRepository.save(employee);
+
+      sendResponse(res, 204, 'Employee deleted successfully');
+    } catch (error: any) {
+      sendError(res, 500, 'Failed to delete employee', error.message);
     }
-
-    employee.is_active = false; // Soft delete by setting is_active to false
-    await employeeRepository.save(employee);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(res, 204, 'Employee deleted successfully');
-  } catch (error: any) {
-    await queryRunner.rollbackTransaction();
-    sendError(res, 500, 'Failed to delete employee', error.message);
-  } finally {
-    await queryRunner.release();
-  }
+  });
 };
