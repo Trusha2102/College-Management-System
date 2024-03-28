@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import { User } from '../../entity/User';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
-import nodemailer from 'nodemailer';
+import transporter from '../../services/emailConfig';
 import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
@@ -31,7 +31,7 @@ const login = async (req: Request, res: Response) => {
       {
         user,
       },
-      process.env.JWT_SECRET || 'your_secret_key_here',
+      process.env.JWT_SECRET || '',
       { expiresIn: '30d' },
     );
     sendResponse(res, 200, 'Login successful', { token, user });
@@ -70,14 +70,6 @@ const resetPassword = async (req: Request, res: Response) => {
   }
 };
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'trusha@creative-hustlers.com',
-    pass: process.env.APP_PASSWORD,
-  },
-});
-
 const forgotPasswordEmail = async (req: Request, res: Response) => {
   const { email } = req.body;
 
@@ -100,12 +92,17 @@ const forgotPasswordEmail = async (req: Request, res: Response) => {
       return res.status(500).json({ message: 'Failed to read email template' });
     }
 
+    // Replace the placeholder with the actual reset password URL
+    const resetPasswordUrl =
+      process.env.RESET_PASSWORD_URL || 'Error Loading RESET_PASSWORD_URL';
+    const html = data.replace('{{resetPasswordUrl}}', resetPasswordUrl);
+
     // Configure email options
     const mailOptions = {
-      from: 'trusha@creative-hustlers.com',
+      from: process.env.SENDER_EMAIL,
       to: email,
       subject: 'Reset Your Password',
-      html: data,
+      html: html,
     };
 
     try {
