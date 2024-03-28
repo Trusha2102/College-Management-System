@@ -5,6 +5,7 @@ import { User } from '../../entity/User';
 import AppDataSource from '../../data-source';
 
 const login = async (req: Request, res: Response) => {
+  console.log('THE LOGIN API WAS CALLED');
   try {
     const { email, password } = req.body;
     // Find the user by email
@@ -20,11 +21,10 @@ const login = async (req: Request, res: Response) => {
     if (!passwordMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    // Create JWT token
+    // Create JWT token with user object as payload
     const token = jwt.sign(
       {
-        id: user.id,
-        role_id: user.role_id,
+        user,
       },
       process.env.JWT_SECRET || 'your_secret_key_here',
       { expiresIn: '30d' },

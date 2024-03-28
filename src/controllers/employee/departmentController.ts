@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Department } from '../../entity/Department';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
+import runTransaction from '../../utils/runTransaction';
 
 //Create Department
 export const createDepartment = async (req: Request, res: Response) => {
@@ -9,23 +10,19 @@ export const createDepartment = async (req: Request, res: Response) => {
   const queryRunner = AppDataSource.createQueryRunner();
 
   try {
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    await runTransaction(queryRunner, async () => {
+      const departmentRepository =
+        queryRunner.manager.getRepository(Department);
+      const newDepartment = departmentRepository.create({ department });
+      await departmentRepository.save(newDepartment);
 
-    const departmentRepository = queryRunner.manager.getRepository(Department);
-    const newDepartment = departmentRepository.create({ department });
-    await departmentRepository.save(newDepartment);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(res, 201, 'Department created successfully', newDepartment);
+      sendResponse(res, 201, 'Department created successfully', newDepartment);
+    });
   } catch (error: any) {
-    await queryRunner.rollbackTransaction();
     sendError(res, 500, 'Failed to create department', error.message);
-  } finally {
-    await queryRunner.release();
   }
 };
+
 // Get All Departments
 export const listDepartments = async (req: Request, res: Response) => {
   try {
@@ -54,71 +51,61 @@ export const getDepartmentById = async (req: Request, res: Response) => {
   }
 };
 
-// Update Department with Transaction
 export const updateDepartment = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { department } = req.body;
   const queryRunner = AppDataSource.createQueryRunner();
 
   try {
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    await runTransaction(queryRunner, async () => {
+      const departmentRepository =
+        queryRunner.manager.getRepository(Department);
+      const existingDepartment = await departmentRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
 
-    const departmentRepository = queryRunner.manager.getRepository(Department);
-    const existingDepartment = await departmentRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      if (!existingDepartment) {
+        sendError(res, 404, 'Department not found');
+        return; // Ensure to return here to exit the function early
+      }
+
+      departmentRepository.merge(existingDepartment, { department });
+      await departmentRepository.save(existingDepartment);
+
+      sendResponse(
+        res,
+        200,
+        'Department updated successfully',
+        existingDepartment,
+      );
     });
-
-    if (!existingDepartment) {
-      return sendError(res, 404, 'Department not found');
-    }
-
-    departmentRepository.merge(existingDepartment, { department });
-    await departmentRepository.save(existingDepartment);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(
-      res,
-      200,
-      'Department updated successfully',
-      existingDepartment,
-    );
   } catch (error: any) {
-    await queryRunner.rollbackTransaction();
     sendError(res, 500, 'Failed to update department', error.message);
-  } finally {
-    await queryRunner.release();
   }
 };
 
-// Delete Department by ID with Transaction
 export const deleteDepartmentById = async (req: Request, res: Response) => {
   const { id } = req.params;
   const queryRunner = AppDataSource.createQueryRunner();
 
   try {
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    await runTransaction(queryRunner, async () => {
+      const departmentRepository =
+        queryRunner.manager.getRepository(Department);
+      const department = await departmentRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
 
-    const departmentRepository = queryRunner.manager.getRepository(Department);
-    const department = await departmentRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      if (!department) {
+        sendError(res, 404, 'Department not found');
+        return; // Return to exit the function early
+      }
+
+      await departmentRepository.remove(department);
+
+      sendResponse(res, 204, 'Department deleted successfully');
     });
-
-    if (!department) {
-      return sendError(res, 404, 'Department not found');
-    }
-
-    await departmentRepository.remove(department);
-
-    await queryRunner.commitTransaction();
-
-    sendResponse(res, 204, 'Department deleted successfully');
   } catch (error: any) {
-    await queryRunner.rollbackTransaction();
     sendError(res, 500, 'Failed to delete department', error.message);
-  } finally {
-    await queryRunner.release();
   }
 };
