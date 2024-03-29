@@ -131,6 +131,7 @@ const getUserById = async (req: Request, res: Response) => {
     sendError(res, 500, 'Failed to fetch user');
   }
 };
+
 const updateUserById = async (req: Request, res: Response) => {
   try {
     upload.single('profile_picture')(req, res, async (err: any) => {
@@ -142,9 +143,7 @@ const updateUserById = async (req: Request, res: Response) => {
           return sendError(res, 500, 'Failed to upload profile picture');
         }
       }
-      if (!req.file) {
-        return sendError(res, 400, 'No file uploaded');
-      }
+
       const userId = parseInt(req.params.id);
       const {
         role_id,
@@ -187,9 +186,13 @@ const updateUserById = async (req: Request, res: Response) => {
       user.work_experience = userData.work_experience || user.work_experience;
       user.aadhar_card = userData.aadhar_card || user.aadhar_card;
       user.role = role;
+      user.role_id = role_id;
       user.mobile = userData.mobile || user.mobile;
       user.dob = new Date(userData.dob) || user.dob;
-      user.profile_picture = req.file.path;
+      // Only update profile_picture if a new file is uploaded
+      if (req.file) {
+        user.profile_picture = req.file.path;
+      }
       user.social_media_links =
         parsedSocialMediaLinks || user.social_media_links;
       user.address_id = parsedAddressId || user.address_id;

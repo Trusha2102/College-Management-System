@@ -53,6 +53,7 @@ const createStudent = async (req: Request, res: Response) => {
           ]?.[0]?.path || '',
         other_docs: otherDocs,
         password: hashedPassword,
+        is_active: true,
       });
 
       await studentRepository.save(student);
@@ -66,9 +67,18 @@ const createStudent = async (req: Request, res: Response) => {
 
 const listStudents = async (req: Request, res: Response) => {
   try {
-    // Extract query parameters
-    const { name, section_name, class_name, enrollment_no, roll_no } =
-      req.query;
+    // Extract query parameters and convert to numbers
+    let {
+      name,
+      section_name,
+      class_name,
+      enrollment_no,
+      roll_no,
+      page = 1,
+      limit = 10,
+    } = req.query;
+    page = parseInt(page as string, 10);
+    limit = parseInt(limit as string, 10);
 
     // Get the repository for the Student entity
     const studentRepository = AppDataSource.getRepository(Student);
@@ -107,12 +117,17 @@ const listStudents = async (req: Request, res: Response) => {
       query = query.andWhere('student.roll_no = :roll_no', { roll_no });
     }
 
+    // Apply pagination
+    const totalCount = await query.getCount();
+    const totalPages = Math.ceil(totalCount / limit);
+    query = query.skip((page - 1) * limit).take(limit);
+
     // Execute the query
     const students = await query.getMany();
-    res.status(200).json(students);
+    res.status(200).json({ students, page, limit, totalCount, totalPages });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to fetch students' });
+    sendError(res, 500, 'Failed to fetch students');
   }
 };
 

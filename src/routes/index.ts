@@ -13,6 +13,8 @@ import sectionRoutes from './student/sectionRoutes';
 import employeeRoutes from './employee/employeeRoutes';
 import departmentRoutes from './employee/departmentRoutes';
 import designationRoutes from './employee/designationRoutes';
+import noticeRoutes from './notice/noticeRoutes';
+import dashboardRoutes from './dashboard/dashboardRoutes';
 
 const router = express.Router();
 
@@ -30,5 +32,7 @@ router.use('/section', sectionRoutes);
 router.use('/employee', employeeRoutes);
 router.use('/department', departmentRoutes);
 router.use('/designation', designationRoutes);
+router.use('/notice', noticeRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 export default router;
