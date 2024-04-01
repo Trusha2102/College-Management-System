@@ -5,8 +5,8 @@ const router = express.Router();
 
 router.post('/add', incomeHeadController.createIncomeHead);
 router.get('/list', incomeHeadController.getAllIncomeHeads);
-router.get('/:id/view', incomeHeadController.getIncomeHeadById);
-router.put('/:id/update', incomeHeadController.updateIncomeHeadById);
-router.delete('/:id/delete', incomeHeadController.deleteIncomeHeadById);
+router.get('/view/:id', incomeHeadController.getIncomeHeadById);
+router.put('/update/:id', incomeHeadController.updateIncomeHeadById);
+router.delete('/delete/:id', incomeHeadController.deleteIncomeHeadById);
 
 export default router;
