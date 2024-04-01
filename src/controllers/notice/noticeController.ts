@@ -5,6 +5,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
 import { LessThanOrEqual } from 'typeorm';
+import runTransaction from '../../utils/runTransaction';
 
 const upload = configureMulter('./uploads/Notice', 2 * 1024 * 1024); //2MB Limit
 
@@ -57,92 +58,105 @@ const getNoticeById = async (req: Request, res: Response) => {
   }
 };
 
-//Create Notice
+// Create Notice
 const createNotice = async (req: Request, res: Response) => {
-  upload.single('attachment')(req, res, async (err: any) => {
-    if (err instanceof multer.MulterError) {
-      return sendError(res, 400, 'File upload error: ' + err.message);
-    } else if (err) {
-      return sendError(res, 500, 'Failed to upload attachment');
-    }
+  try {
+    const queryRunner = AppDataSource.createQueryRunner();
+    upload.single('attachment')(req, res, async (err: any) => {
+      if (err instanceof multer.MulterError) {
+        return sendError(res, 400, 'File upload error: ' + err.message);
+      } else if (err) {
+        return sendError(res, 500, 'Failed to upload attachment');
+      }
 
-    const { title, noticeDate, publishOn, messageTo, message } = req.body;
-    const attachment = req.file ? req.file.path : undefined;
+      await runTransaction(queryRunner, async () => {
+        const { title, noticeDate, publishOn, messageTo, message } = req.body;
+        const attachment = req.file ? req.file.path : undefined;
 
-    try {
-      const noticeRepository = AppDataSource.getRepository(Notice);
-      const newNotice = noticeRepository.create({
-        title,
-        noticeDate,
-        publishOn,
-        messageTo: messageTo ? messageTo.split(',') : [],
-        message,
-        attachment,
+        const noticeRepository = queryRunner.manager.getRepository(Notice);
+        const newNotice = noticeRepository.create({
+          title,
+          noticeDate,
+          publishOn,
+          messageTo: messageTo ? messageTo.split(',') : [],
+          message,
+          attachment,
+        });
+        await noticeRepository.save(newNotice);
+        sendResponse(res, 201, 'Notice created successfully', newNotice);
       });
-      await noticeRepository.save(newNotice);
-      return sendResponse(res, 201, 'Notice created successfully', newNotice);
-    } catch (error) {
-      console.error(error);
-      return sendError(res, 500, 'Failed to create notice');
-    }
-  });
+    });
+  } catch (error) {
+    console.error(error);
+    sendError(res, 500, 'Failed to create notice');
+  }
 };
 
 // Update notice by ID
 const updateNoticeById = async (req: Request, res: Response) => {
-  upload.single('attachment')(req, res, async (err: any) => {
-    if (err) {
-      console.error(err);
-      if (err instanceof multer.MulterError) {
-        return sendError(res, 400, 'File upload error: ' + err.message);
-      } else {
-        return sendError(res, 500, 'Failed to upload attachment');
-      }
-    }
-
+  try {
     const { id } = req.params;
-    const { title, noticeDate, publishOn, messageTo, message } = req.body;
-    const attachment = req.file ? req.file.path : null;
-
-    try {
-      const noticeRepository = AppDataSource.getRepository(Notice);
-      const notice = await noticeRepository.findOne({
-        where: { id: parseInt(id, 10) },
-      });
-      if (!notice) {
-        return sendError(res, 404, 'Notice not found');
+    const queryRunner = AppDataSource.createQueryRunner();
+    upload.single('attachment')(req, res, async (err: any) => {
+      if (err) {
+        console.error(err);
+        if (err instanceof multer.MulterError) {
+          return sendError(res, 400, 'File upload error: ' + err.message);
+        } else {
+          return sendError(res, 500, 'Failed to upload attachment');
+        }
       }
-      notice.title = title || notice.title;
-      notice.noticeDate = noticeDate || notice.noticeDate;
-      notice.publishOn = publishOn || notice.publishOn;
-      notice.messageTo = messageTo || notice.messageTo;
-      notice.message = message || notice.message;
-      notice.attachment = attachment || notice.attachment;
-      await noticeRepository.save(notice);
-      return sendResponse(res, 200, 'Notice updated successfully', notice);
-    } catch (error) {
-      console.error(error);
-      return sendError(res, 500, 'Failed to update notice');
-    }
-  });
+
+      await runTransaction(queryRunner, async () => {
+        const { title, noticeDate, publishOn, messageTo, message } = req.body;
+        const attachment = req.file ? req.file.path : null;
+
+        const noticeRepository = queryRunner.manager.getRepository(Notice);
+        const notice = await noticeRepository.findOne({
+          where: { id: parseInt(id, 10) },
+        });
+        if (!notice) {
+          sendError(res, 404, 'Notice not found');
+          return;
+        }
+
+        notice.title = title || notice.title;
+        notice.noticeDate = noticeDate || notice.noticeDate;
+        notice.publishOn = publishOn || notice.publishOn;
+        notice.messageTo = messageTo || notice.messageTo;
+        notice.message = message || notice.message;
+        notice.attachment = attachment || notice.attachment;
+
+        await noticeRepository.save(notice);
+        sendResponse(res, 200, 'Notice updated successfully', notice);
+      });
+    });
+  } catch (error) {
+    console.error(error);
+    sendError(res, 500, 'Failed to update notice');
+  }
 };
 
 // Delete notice by ID
 const deleteNoticeById = async (req: Request, res: Response) => {
-  const { id } = req.params;
   try {
-    const noticeRepository = AppDataSource.getRepository(Notice);
-    const notice = await noticeRepository.findOne({
-      where: { id: parseInt(id, 10) },
+    const { id } = req.params;
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const noticeRepository = queryRunner.manager.getRepository(Notice);
+      const notice = await noticeRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!notice) {
+        sendError(res, 404, 'Notice not found');
+        return;
+      }
+      await noticeRepository.remove(notice);
+      sendResponse(res, 200, 'Notice deleted successfully');
     });
-    if (!notice) {
-      return sendError(res, 404, 'Notice not found');
-    }
-    await noticeRepository.remove(notice);
-    return sendResponse(res, 200, 'Notice deleted successfully');
   } catch (error) {
     console.error(error);
-    return sendError(res, 500, 'Failed to delete notice');
+    sendError(res, 500, 'Failed to delete notice');
   }
 };
 

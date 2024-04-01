@@ -2,14 +2,18 @@ import { Request, Response } from 'express';
 import AppDataSource from '../../data-source';
 import { Course } from '../../entity/Course';
 import { sendResponse, sendError } from '../../utils/commonResponse';
+import runTransaction from '../../utils/runTransaction';
 
 // Create a new course
 export const createCourse = async (req: Request, res: Response) => {
   try {
-    const courseRepository = AppDataSource.getRepository(Course);
-    const newCourse = courseRepository.create(req.body);
-    await courseRepository.save(newCourse);
-    sendResponse(res, 201, 'Course created successfully', newCourse);
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const courseRepository = queryRunner.manager.getRepository(Course);
+      const newCourse = courseRepository.create(req.body);
+      await courseRepository.save(newCourse);
+      sendResponse(res, 201, 'Course created successfully', newCourse);
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to create course', error.message);
   }
@@ -47,16 +51,21 @@ export const getCourseById = async (req: Request, res: Response) => {
 export const updateCourseById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const courseRepository = AppDataSource.getRepository(Course);
-    const course = await courseRepository.findOne({
-      where: { id: parseInt(id, 10) },
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const courseRepository = queryRunner.manager.getRepository(Course);
+      const course = await courseRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!course) {
+        sendError(res, 404, 'Course not found');
+        return;
+      }
+      courseRepository.merge(course, req.body);
+      const updatedCourse = await courseRepository.save(course);
+      sendResponse(res, 200, 'Course updated successfully', updatedCourse);
     });
-    if (!course) {
-      return sendError(res, 404, 'Course not found');
-    }
-    courseRepository.merge(course, req.body);
-    const updatedCourse = await courseRepository.save(course);
-    sendResponse(res, 200, 'Course updated successfully', updatedCourse);
   } catch (error: any) {
     sendError(res, 500, 'Failed to update course', error.message);
   }
@@ -66,15 +75,19 @@ export const updateCourseById = async (req: Request, res: Response) => {
 export const deleteCourseById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const courseRepository = AppDataSource.getRepository(Course);
-    const course = await courseRepository.findOne({
-      where: { id: parseInt(id, 10) },
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const courseRepository = queryRunner.manager.getRepository(Course);
+      const course = await courseRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!course) {
+        sendError(res, 404, 'Course not found');
+        return;
+      }
+      await courseRepository.remove(course);
+      sendResponse(res, 204, 'Course deleted successfully');
     });
-    if (!course) {
-      return sendError(res, 404, 'Course not found');
-    }
-    await courseRepository.remove(course);
-    sendResponse(res, 204, 'Course deleted successfully');
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete course', error.message);
   }

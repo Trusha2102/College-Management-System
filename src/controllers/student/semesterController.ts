@@ -4,25 +4,31 @@ import { Semester } from '../../entity/Semester';
 import { Course } from '../../entity/Course';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
+import runTransaction from '../../utils/runTransaction';
 
 export const createSemester = async (req: Request, res: Response) => {
   try {
     const { semester, courseId } = req.body;
-    const courseRepository = AppDataSource.getRepository(Course);
-    const course = await courseRepository.findOne({
-      where: { id: parseInt(courseId, 10) },
-    });
-    if (!course) {
-      return sendError(res, 404, 'Course not found');
-    }
 
-    const semesterRepository = AppDataSource.getRepository(Semester);
-    const newSemester = semesterRepository.create({
-      semester,
-      course,
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const courseRepository = queryRunner.manager.getRepository(Course);
+      const course = await courseRepository.findOne({
+        where: { id: parseInt(courseId, 10) },
+      });
+      if (!course) {
+        sendError(res, 404, 'Course not found');
+        return;
+      }
+
+      const semesterRepository = queryRunner.manager.getRepository(Semester);
+      const newSemester = semesterRepository.create({
+        semester,
+        course,
+      });
+      await semesterRepository.save(newSemester);
+      sendResponse(res, 201, 'Semester created successfully', newSemester);
     });
-    await semesterRepository.save(newSemester);
-    sendResponse(res, 201, 'Semester created successfully', newSemester);
   } catch (error: any) {
     sendError(res, 500, 'Failed to create semester', error.message);
   }
@@ -49,27 +55,32 @@ export const updateSemesterById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { semester, courseId } = req.body;
 
-    const courseRepository = AppDataSource.getRepository(Course);
-    const course = await courseRepository.findOne({
-      where: { id: parseInt(courseId, 10) },
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const courseRepository = queryRunner.manager.getRepository(Course);
+      const course = await courseRepository.findOne({
+        where: { id: parseInt(courseId, 10) },
+      });
+      if (!course) {
+        sendError(res, 404, 'Course not found');
+        return;
+      }
+
+      const semesterRepository = queryRunner.manager.getRepository(Semester);
+      const semesterToUpdate = await semesterRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!semesterToUpdate) {
+        sendError(res, 404, 'Semester not found');
+        return;
+      }
+
+      semesterToUpdate.semester = semester;
+      semesterToUpdate.course = courseId;
+
+      await semesterRepository.save(semesterToUpdate);
+      sendResponse(res, 200, 'Semester updated successfully', semesterToUpdate);
     });
-    if (!course) {
-      return sendError(res, 404, 'Course not found');
-    }
-
-    const semesterRepository = AppDataSource.getRepository(Semester);
-    const semesterToUpdate = await semesterRepository.findOne({
-      where: { id: parseInt(id, 10) },
-    });
-    if (!semesterToUpdate) {
-      return sendError(res, 404, 'Semester not found');
-    }
-
-    semesterToUpdate.semester = semester;
-    semesterToUpdate.course = courseId;
-
-    await semesterRepository.save(semesterToUpdate);
-    sendResponse(res, 200, 'Semester updated successfully', semesterToUpdate);
   } catch (error: any) {
     sendError(res, 500, 'Failed to update semester', error.message);
   }
@@ -78,15 +89,20 @@ export const updateSemesterById = async (req: Request, res: Response) => {
 export const deleteSemesterById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const semesterRepository = AppDataSource.getRepository(Semester);
-    const semesterToDelete = await semesterRepository.findOne({
-      where: { id: parseInt(id, 10) },
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const semesterRepository = queryRunner.manager.getRepository(Semester);
+      const semesterToDelete = await semesterRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!semesterToDelete) {
+        sendError(res, 404, 'Semester not found');
+        return;
+      }
+      await semesterRepository.remove(semesterToDelete);
+      sendResponse(res, 204, 'Semester deleted successfully');
     });
-    if (!semesterToDelete) {
-      return sendError(res, 404, 'Semester not found');
-    }
-    await semesterRepository.remove(semesterToDelete);
-    sendResponse(res, 204, 'Semester deleted successfully');
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete semester', error.message);
   }
