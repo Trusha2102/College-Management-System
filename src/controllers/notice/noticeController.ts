@@ -46,7 +46,7 @@ const getNoticeById = async (req: Request, res: Response) => {
   try {
     const noticeRepository = AppDataSource.getRepository(Notice);
     const notice = await noticeRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!notice) {
       return sendError(res, 404, 'Notice not found');
@@ -70,16 +70,13 @@ const createNotice = async (req: Request, res: Response) => {
       }
 
       await runTransaction(queryRunner, async () => {
-        const { title, noticeDate, publishOn, messageTo, message } = req.body;
+        const { messageTo } = req.body;
         const attachment = req.file ? req.file.path : undefined;
 
         const noticeRepository = queryRunner.manager.getRepository(Notice);
         const newNotice = noticeRepository.create({
-          title,
-          noticeDate,
-          publishOn,
+          ...req.body,
           messageTo: messageTo ? messageTo.split(',') : [],
-          message,
           attachment,
         });
         await noticeRepository.save(newNotice);
@@ -113,19 +110,22 @@ const updateNoticeById = async (req: Request, res: Response) => {
 
         const noticeRepository = queryRunner.manager.getRepository(Notice);
         const notice = await noticeRepository.findOne({
-          where: { id: parseInt(id, 10) },
+          where: { id: +id },
         });
         if (!notice) {
           sendError(res, 404, 'Notice not found');
           return;
         }
-
-        notice.title = title || notice.title;
-        notice.noticeDate = noticeDate || notice.noticeDate;
-        notice.publishOn = publishOn || notice.publishOn;
-        notice.messageTo = messageTo || notice.messageTo;
-        notice.message = message || notice.message;
-        notice.attachment = attachment || notice.attachment;
+        // Update only the fields that are present in req.body
+        Object.assign(notice, {
+          // title,
+          // noticeDate,
+          // publishOn,
+          // messageTo,
+          // message,
+          // attachment,
+          ...req.body,
+        });
 
         await noticeRepository.save(notice);
         sendResponse(res, 200, 'Notice updated successfully', notice);
@@ -145,7 +145,7 @@ const deleteNoticeById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const noticeRepository = queryRunner.manager.getRepository(Notice);
       const notice = await noticeRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!notice) {
         sendError(res, 404, 'Notice not found');

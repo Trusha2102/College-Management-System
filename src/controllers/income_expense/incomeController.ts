@@ -17,11 +17,9 @@ export const createIncome = async (req: Request, res: Response) => {
       if (err) {
         console.error(err);
         if (err instanceof multer.MulterError) {
-          sendError(res, 400, 'File upload error: ' + err.message);
-          return;
+          return sendError(res, 400, 'File upload error: ' + err.message);
         } else {
-          sendError(res, 500, 'Failed to upload attached_doc');
-          return;
+          return sendError(res, 500, 'Failed to upload attached_doc');
         }
       }
 
@@ -43,12 +41,8 @@ export const createIncome = async (req: Request, res: Response) => {
 
         const newIncome = incomeRepository.create({
           income_head: existingIncomeHead,
-          name: req.body.name,
-          invoice_number: req.body.invoice_number,
-          date: req.body.date,
-          amount: req.body.amount,
+          ...req.body,
           attached_doc,
-          description: req.body.description,
         });
         await incomeRepository.save(newIncome);
         sendResponse(res, 201, 'Income created successfully', newIncome);
@@ -100,7 +94,7 @@ export const getIncomeById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const incomeRepository = AppDataSource.getRepository(Income);
     const income = await incomeRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!income) {
       return sendError(res, 404, 'Income not found');
@@ -116,8 +110,7 @@ export const updateIncomeById = async (req: Request, res: Response) => {
   try {
     multerConfig.single('attached_doc')(req, res, async (err: any) => {
       if (err) {
-        sendError(res, 500, 'Failed to upload attachment', err.message);
-        return;
+        return sendError(res, 500, 'Failed to upload attachment', err.message);
       }
       const { id } = req.params;
 
@@ -125,7 +118,7 @@ export const updateIncomeById = async (req: Request, res: Response) => {
       await runTransaction(queryRunner, async () => {
         const incomeRepository = queryRunner.manager.getRepository(Income);
         const income = await incomeRepository.findOne({
-          where: { id: parseInt(id, 10) },
+          where: { id: +id },
         });
         if (!income) {
           sendError(res, 404, 'Income not found');
@@ -142,14 +135,9 @@ export const updateIncomeById = async (req: Request, res: Response) => {
           return;
         }
 
+        // Update only the fields that are present in req.body
+        Object.assign(income, { ...req.body, attached_doc: req.file?.path });
         income.income_head = existingIncomeHead;
-        income.name = req.body.name || income.name;
-        income.invoice_number =
-          req.body.invoice_number || income.invoice_number;
-        income.date = req.body.date || income.date;
-        income.amount = req.body.amount || income.amount;
-        income.attached_doc = req.file ? req.file.path : income.attached_doc;
-        income.description = req.body.description || income.description;
 
         await incomeRepository.save(income);
         sendResponse(res, 200, 'Income updated successfully', income);
@@ -169,7 +157,7 @@ export const deleteIncomeById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const incomeRepository = queryRunner.manager.getRepository(Income);
       const income = await incomeRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!income) {
         sendError(res, 404, 'Income not found');

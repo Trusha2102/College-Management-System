@@ -58,7 +58,7 @@ export const getIncomeHeadById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const incomeHeadRepository = AppDataSource.getRepository(IncomeHead);
     const incomeHead = await incomeHeadRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!incomeHead) {
       return sendError(res, 404, 'Income head not found');
@@ -80,7 +80,7 @@ export const updateIncomeHeadById = async (req: Request, res: Response) => {
       const incomeHeadRepository =
         queryRunner.manager.getRepository(IncomeHead);
       const incomeHead = await incomeHeadRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!incomeHead) {
         sendError(res, 404, 'Income head not found');
@@ -106,7 +106,7 @@ export const deleteIncomeHeadById = async (req: Request, res: Response) => {
       const incomeHeadRepository =
         queryRunner.manager.getRepository(IncomeHead);
       const incomeHead = await incomeHeadRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!incomeHead) {
         sendError(res, 404, 'Income head not found');

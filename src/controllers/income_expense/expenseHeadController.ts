@@ -63,7 +63,7 @@ export const getExpenseHeadById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const expenseHeadRepository = AppDataSource.getRepository(ExpenseHead);
     const expenseHead = await expenseHeadRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!expenseHead) {
       return sendError(res, 404, 'Expense head not found');
@@ -85,7 +85,7 @@ export const updateExpenseHeadById = async (req: Request, res: Response) => {
       const expenseHeadRepository =
         queryRunner.manager.getRepository(ExpenseHead);
       const expenseHead = await expenseHeadRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!expenseHead) {
         sendError(res, 404, 'Expense head not found');
@@ -111,7 +111,7 @@ export const deleteExpenseHeadById = async (req: Request, res: Response) => {
       const expenseHeadRepository =
         queryRunner.manager.getRepository(ExpenseHead);
       const expenseHead = await expenseHeadRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!expenseHead) {
         sendError(res, 404, 'Expense head not found');
