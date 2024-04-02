@@ -42,7 +42,7 @@ const createUser = async (req: Request, res: Response) => {
       }
 
       const role = await AppDataSource.manager.findOne(Role, {
-        where: { id: parseInt(role_id, 10) },
+        where: { id: +role_id },
       });
       if (!role) {
         return sendError(res, 404, 'Role not found');
@@ -50,10 +50,9 @@ const createUser = async (req: Request, res: Response) => {
 
       const marital_status = userData.marital_status === 'true';
       const parsedSocialMediaLinks = social_media_links.split(',');
-      const parsedAddressId =
-        address_id === 'null' ? null : parseInt(address_id);
+      const parsedAddressId = address_id === 'null' ? null : +address_id;
       const parsedBankAccountId =
-        bank_details_id === 'null' ? null : parseInt(bank_details_id);
+        bank_details_id === 'null' ? null : +bank_details_id;
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -121,9 +120,9 @@ const getAllDeletedUsers = async (req: Request, res: Response) => {
 
 const getUserById = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.id, 10);
+    const userId = req.params.id;
     const user = await AppDataSource.manager.findOneOrFail(User, {
-      where: { id: userId, is_active: true },
+      where: { id: +userId, is_active: true },
     });
     sendResponse(res, 200, 'User', user);
   } catch (error) {
@@ -144,7 +143,7 @@ const updateUserById = async (req: Request, res: Response) => {
         }
       }
 
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const {
         role_id,
         social_media_links,
@@ -154,7 +153,7 @@ const updateUserById = async (req: Request, res: Response) => {
       } = req.body;
 
       const role = await AppDataSource.manager.findOne(Role, {
-        where: { id: parseInt(role_id) },
+        where: { id: +role_id },
       });
       if (!role) {
         return sendError(res, 404, 'Role not found');
@@ -162,13 +161,12 @@ const updateUserById = async (req: Request, res: Response) => {
 
       const marital_status = userData.marital_status === 'true';
       const parsedSocialMediaLinks = social_media_links.split(',');
-      const parsedAddressId =
-        address_id === 'null' ? null : parseInt(address_id);
+      const parsedAddressId = address_id === 'null' ? null : +address_id;
       const parsedBankAccountId =
-        bank_details_id === 'null' ? null : parseInt(bank_details_id);
+        bank_details_id === 'null' ? null : +bank_details_id;
 
       const user = await AppDataSource.manager.findOne(User, {
-        where: { id: userId },
+        where: { id: +userId },
       });
       if (!user) {
         return sendError(res, 404, 'User not found');
@@ -213,9 +211,9 @@ const updateUserById = async (req: Request, res: Response) => {
 
 const deleteUserById = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.id, 10);
+    const userId = req.params.id;
     const user = await AppDataSource.manager.findOne(User, {
-      where: { id: userId },
+      where: { id: +userId },
     });
     if (!user) {
       return sendError(res, 404, 'User not found');

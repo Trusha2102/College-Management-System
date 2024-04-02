@@ -40,7 +40,7 @@ export const getClassById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const classRepository = AppDataSource.getRepository(Class);
     const classItem = await classRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!classItem) {
       return sendError(res, 404, 'Class not found');
@@ -61,7 +61,7 @@ export const updateClassById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const classRepository = queryRunner.manager.getRepository(Class);
       const classItem = await classRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!classItem) {
         sendError(res, 404, 'Class not found');
@@ -86,7 +86,7 @@ export const deleteClassById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const classRepository = queryRunner.manager.getRepository(Class);
       const classItem = await classRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!classItem) {
         sendError(res, 404, 'Class not found');

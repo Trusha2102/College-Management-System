@@ -34,7 +34,7 @@ const getModuleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const module = await AppDataSource.manager.findOne(Module, {
-      where: { id: parseInt(id) },
+      where: { id: +id },
     });
     sendResponse(res, 200, 'Module', module);
   } catch (error) {
@@ -52,7 +52,7 @@ const updateModuleById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       await queryRunner.manager.update(Module, id, { name });
       const updatedModule = await queryRunner.manager.findOne(Module, {
-        where: { id: parseInt(id) },
+        where: { id: +id },
       });
       sendResponse(res, 200, 'Module', updatedModule);
     });

@@ -14,7 +14,7 @@ export const createSection = async (req: Request, res: Response) => {
       const classRepository = queryRunner.manager.getRepository(Class);
       const parsedClassId = typeof classId === 'object' ? classId.id : classId;
       const cls = await classRepository.findOne({
-        where: { id: parseInt(parsedClassId, 10) },
+        where: { id: +parsedClassId },
       });
       if (!cls) {
         sendError(res, 404, 'Course not found');
@@ -49,7 +49,7 @@ export const getSectionById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const sectionRepository = AppDataSource.getRepository(Section);
     const section = await sectionRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!section) {
       return sendError(res, 404, 'Section not found');
@@ -71,7 +71,7 @@ export const updateSectionById = async (req: Request, res: Response) => {
       const classRepository = queryRunner.manager.getRepository(Class);
       const parsedClassId = typeof classId === 'object' ? classId.id : classId;
       const cls = await classRepository.findOne({
-        where: { id: parseInt(parsedClassId, 10) },
+        where: { id: +parsedClassId },
       });
       if (!cls) {
         sendError(res, 404, 'Course not found');
@@ -79,7 +79,7 @@ export const updateSectionById = async (req: Request, res: Response) => {
       }
 
       const updatedSection = await sectionRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!updatedSection) {
         sendError(res, 404, 'Section not found');
@@ -104,7 +104,7 @@ export const deleteSectionById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const sectionRepository = queryRunner.manager.getRepository(Section);
       const section = await sectionRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!section) {
         sendError(res, 404, 'Section not found');

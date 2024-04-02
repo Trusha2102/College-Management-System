@@ -43,7 +43,7 @@ export const getDesignationById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const designationRepository = AppDataSource.getRepository(Designation);
     const designation = await designationRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!designation) {
       return sendError(res, 404, 'Designation not found');
@@ -63,7 +63,7 @@ export const updateDesignation = async (req: Request, res: Response) => {
       const designationRepository =
         queryRunner.manager.getRepository(Designation);
       const designation = await designationRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!designation) {
         sendError(res, 404, 'Designation not found');
@@ -88,7 +88,7 @@ export const deleteDesignationById = async (req: Request, res: Response) => {
       const designationRepository =
         queryRunner.manager.getRepository(Designation);
       const designation = await designationRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!designation) {
         sendError(res, 404, 'Designation not found');

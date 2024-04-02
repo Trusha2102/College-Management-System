@@ -10,8 +10,8 @@ import { User } from '../../entity/User';
 export const createAddress = async (req: Request, res: Response) => {
   try {
     let { student_id, user_id } = req.body;
-    student_id = student_id !== '' ? parseInt(student_id, 10) : null;
-    user_id = user_id !== '' ? parseInt(user_id, 10) : null;
+    student_id = student_id ? +student_id : null;
+    user_id = user_id ? +user_id : null;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
@@ -31,9 +31,7 @@ export const createAddress = async (req: Request, res: Response) => {
 
       let existingUser = null;
       if (user_id !== null) {
-        existingUser = await userRepository.findOne({
-          where: { id: user_id },
-        });
+        existingUser = await userRepository.findOne({ where: { id: user_id } });
         if (!existingUser) {
           sendError(res, 404, 'User not found');
           return;
@@ -52,7 +50,27 @@ export const createAddress = async (req: Request, res: Response) => {
 
       await addressRepository.save(newAddress);
 
-      sendResponse(res, 201, 'Address created successfully', newAddress);
+      let existingAddress;
+      if (existingStudent) {
+        existingAddress = await addressRepository.findOne({
+          where: {
+            student_id: student_id,
+            address_type: req.body.address_type,
+          },
+        });
+        existingStudent.address_id = existingAddress?.id || 0;
+        await studentRepository.save(existingStudent);
+      }
+
+      if (existingUser) {
+        existingAddress = await addressRepository.findOne({
+          where: { user_id: user_id, address_type: req.body.address_type },
+        });
+        existingUser.address_id = existingAddress?.id || 0;
+        await userRepository.save(existingUser);
+      }
+
+      sendResponse(res, 201, 'Address created successfully', existingAddress);
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to create address', error.message);
@@ -64,45 +82,50 @@ export const updateAddressById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const addressRepository = AppDataSource.getRepository(Address);
-    const address = await addressRepository.findOne({
-      where: { id: parseInt(id, 10) },
-    });
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const addressRepository = queryRunner.manager.getRepository(Address);
+      const address = await addressRepository.findOne({
+        where: { id: +id },
+      });
 
-    if (!address) {
-      return sendError(res, 404, 'Address not found');
-    }
-
-    const studentRepository = AppDataSource.getRepository(Student);
-    const userRepository = AppDataSource.getRepository(User);
-
-    let existingStudent: Student | null = null;
-    let existingUser: User | null = null;
-
-    if (req.body.student_id) {
-      existingStudent = await studentRepository.findOne(req.body.student_id);
-      if (!existingStudent) {
-        return sendError(res, 404, 'Student not found');
+      if (!address) {
+        sendError(res, 404, 'Address not found');
+        return;
       }
-    }
 
-    if (req.body.user_id) {
-      existingUser = await userRepository.findOne(req.body.user_id);
-      if (!existingUser) {
-        return sendError(res, 404, 'User not found');
+      const studentRepository = queryRunner.manager.getRepository(Student);
+      const userRepository = queryRunner.manager.getRepository(User);
+
+      let existingStudent: Student | null = null;
+      let existingUser: User | null = null;
+
+      if (req.body.student_id) {
+        existingStudent = await studentRepository.findOne(req.body.student_id);
+        if (!existingStudent) {
+          sendError(res, 404, 'Student not found');
+          return;
+        }
       }
-    }
 
-    // Update only the fields that are present in req.body
-    Object.assign(address, {
-      ...req.body,
-      student: existingStudent || address.student,
-      user: existingUser || address.user,
+      if (req.body.user_id) {
+        existingUser = await userRepository.findOne(req.body.user_id);
+        if (!existingUser) {
+          sendError(res, 404, 'User not found');
+          return;
+        }
+      }
+      // Update only the fields that are present in req.body
+      Object.assign(address, {
+        ...req.body,
+        student: existingStudent || address.student,
+        user: existingUser || address.user,
+      });
+
+      await addressRepository.save(address);
+
+      sendResponse(res, 200, 'Address updated successfully', address);
     });
-
-    await addressRepository.save(address);
-
-    sendResponse(res, 200, 'Address updated successfully', address);
   } catch (error: any) {
     sendError(res, 500, 'Failed to update address', error.message);
   }
@@ -116,7 +139,7 @@ export const deleteAddressById = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const addressRepository = queryRunner.manager.getRepository(Address);
-      await addressRepository.delete(parseInt(id, 10));
+      await addressRepository.delete(+id);
       sendResponse(res, 200, 'Address deleted successfully', null);
     });
   } catch (error: any) {
@@ -131,7 +154,7 @@ export const getAddressById = async (req: Request, res: Response) => {
 
     const addressRepository = AppDataSource.getRepository(Address);
     const address = await addressRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
 
     if (!address) {

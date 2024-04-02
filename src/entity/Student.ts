@@ -134,6 +134,9 @@ export class Student {
   @OneToOne(() => Address, (address) => address.student, { nullable: true })
   address!: Address;
 
+  @Column({ nullable: true })
+  address_id!: number;
+
   @OneToOne(() => ParentDetails, (parentDetails) => parentDetails.student, {
     nullable: true,
   })

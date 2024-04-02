@@ -14,7 +14,7 @@ export const createSemester = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const courseRepository = queryRunner.manager.getRepository(Course);
       const course = await courseRepository.findOne({
-        where: { id: parseInt(courseId, 10) },
+        where: { id: +courseId },
       });
       if (!course) {
         sendError(res, 404, 'Course not found');
@@ -39,7 +39,7 @@ export const getSemesterById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const semesterRepository = AppDataSource.getRepository(Semester);
     const semester = await semesterRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!semester) {
       return sendError(res, 404, 'Semester not found');
@@ -59,7 +59,7 @@ export const updateSemesterById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const courseRepository = queryRunner.manager.getRepository(Course);
       const course = await courseRepository.findOne({
-        where: { id: parseInt(courseId, 10) },
+        where: { id: +courseId },
       });
       if (!course) {
         sendError(res, 404, 'Course not found');
@@ -68,7 +68,7 @@ export const updateSemesterById = async (req: Request, res: Response) => {
 
       const semesterRepository = queryRunner.manager.getRepository(Semester);
       const semesterToUpdate = await semesterRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!semesterToUpdate) {
         sendError(res, 404, 'Semester not found');
@@ -94,7 +94,7 @@ export const deleteSemesterById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const semesterRepository = queryRunner.manager.getRepository(Semester);
       const semesterToDelete = await semesterRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!semesterToDelete) {
         sendError(res, 404, 'Semester not found');
@@ -113,7 +113,7 @@ export const listSemesters = async (req: Request, res: Response) => {
     const { courseId } = req.params;
     const semesterRepository = AppDataSource.getRepository(Semester);
     const semesters = await semesterRepository.find({
-      where: { course: { id: parseInt(courseId, 10) } },
+      where: { course: { id: +courseId } },
     });
     sendResponse(res, 200, 'Semesters found', semesters);
   } catch (error: any) {

@@ -13,7 +13,7 @@ const createPermission = async (req: Request, res: Response) => {
     // Check if roleId exists in Role table
     const roleRepository = AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
-      where: { id: parseInt(roleId, 10) },
+      where: { id: +roleId },
     });
     if (!role) {
       return sendError(res, 400, 'Role not found');
@@ -22,7 +22,7 @@ const createPermission = async (req: Request, res: Response) => {
     // Check if moduleId exists in Module table
     const moduleRepository = AppDataSource.getRepository(Module);
     const module = await moduleRepository.findOne({
-      where: { id: parseInt(moduleId, 10) },
+      where: { id: +moduleId },
     });
     if (!module) {
       return sendError(res, 400, 'Module not found');
@@ -62,7 +62,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
     // Check if roleId exists in Role table
     const roleRepository = AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
-      where: { id: parseInt(roleId, 10) },
+      where: { id: +roleId },
     });
     if (!role) {
       return sendError(res, 400, 'Role not found');
@@ -71,7 +71,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
     // Check if moduleId exists in Module table
     const moduleRepository = AppDataSource.getRepository(Module);
     const module = await moduleRepository.findOne({
-      where: { id: parseInt(moduleId, 10) },
+      where: { id: +moduleId },
     });
     if (!module) {
       return sendError(res, 400, 'Module not found');
@@ -79,13 +79,13 @@ const updatePermissionById = async (req: Request, res: Response) => {
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      await queryRunner.manager.update(Permission, parseInt(id, 10), {
+      await queryRunner.manager.update(Permission, +id, {
         roleId,
         moduleId,
         operation,
       });
       const updatedPermission = await queryRunner.manager.findOne(Permission, {
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       sendResponse(
         res,
@@ -110,14 +110,14 @@ const deletePermissionById = async (req: Request, res: Response) => {
       const permissionRepository =
         queryRunner.manager.getRepository(Permission);
       const permission = await permissionRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!permission) {
         sendError(res, 404, 'Permission not found');
         return;
       }
 
-      await queryRunner.manager.delete(Permission, parseInt(id, 10));
+      await queryRunner.manager.delete(Permission, +id);
       sendResponse(res, 200, 'Permission deleted successfully');
     });
   } catch (error) {
