@@ -1,4 +1,3 @@
-// src/entities/Result.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Student } from './Student';
 import { Course } from './Course';
