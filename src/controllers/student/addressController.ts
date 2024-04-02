@@ -50,27 +50,7 @@ export const createAddress = async (req: Request, res: Response) => {
 
       await addressRepository.save(newAddress);
 
-      let existingAddress;
-      if (existingStudent) {
-        existingAddress = await addressRepository.findOne({
-          where: {
-            student_id: student_id,
-            address_type: req.body.address_type,
-          },
-        });
-        existingStudent.address_id = existingAddress?.id || 0;
-        await studentRepository.save(existingStudent);
-      }
-
-      if (existingUser) {
-        existingAddress = await addressRepository.findOne({
-          where: { user_id: user_id, address_type: req.body.address_type },
-        });
-        existingUser.address_id = existingAddress?.id || 0;
-        await userRepository.save(existingUser);
-      }
-
-      sendResponse(res, 201, 'Address created successfully', existingAddress);
+      sendResponse(res, 201, 'Address created successfully', newAddress);
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to create address', error.message);
