@@ -6,5 +6,6 @@ import * as userLogin from '../../controllers/auth/userLogin';
 router.post('/login', userLogin.login);
 router.post('/reset-password', userLogin.resetPassword);
 router.post('/forgot-password', userLogin.forgotPasswordEmail);
+router.post('/change-password', userLogin.changePassword);
 
 export default router;

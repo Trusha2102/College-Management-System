@@ -86,7 +86,12 @@ export const createEmployee = async (req: Request, res: Response) => {
 // List Employees
 export const listEmployees = async (req: Request, res: Response) => {
   try {
-    const { role, staff_id, name, department, designation } = req.query;
+    const { role, staff_id, name, department, designation, page, limit } =
+      req.query;
+
+    const pageNumber: number = parseInt(page as string, 10) || 1;
+    const itemsPerPage: number = parseInt(limit as string, 10) || 10;
+    const skip = (pageNumber - 1) * itemsPerPage;
 
     let query = AppDataSource.getRepository(Employee)
       .createQueryBuilder('employee')
@@ -164,8 +169,19 @@ export const listEmployees = async (req: Request, res: Response) => {
       });
     }
 
+    const totalEmployees = await query.getCount();
+    const totalPages = Math.ceil(totalEmployees / itemsPerPage);
+
+    query = query.skip(skip).take(itemsPerPage);
+
     const employees = await query.getMany();
-    sendResponse(res, 200, 'Employees found', employees);
+    sendResponse(res, 200, 'Employees found', {
+      employees,
+      totalEmployees,
+      totalPages,
+      page: pageNumber,
+      limit: itemsPerPage,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch employees', error.message);
   }

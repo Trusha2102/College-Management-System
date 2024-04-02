@@ -22,12 +22,12 @@ export class Address {
   @ManyToOne(() => Student, (student) => student.address, { nullable: true })
   student!: Student;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true })
   student_id!: number;
 
   @ManyToOne(() => User, (user) => user.address, { nullable: true })
   user!: User;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true })
   user_id!: number;
 }

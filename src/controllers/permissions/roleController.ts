@@ -2,17 +2,21 @@ import { Request, Response } from 'express';
 import { Role } from '../../entity/Role';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import AppDataSource from '../../data-source';
+import runTransaction from '../../utils/runTransaction';
 
 const createRole = async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
 
-    const role = AppDataSource.manager.create(Role, {
-      name: name,
-    });
-    await AppDataSource.manager.save(role);
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const role = queryRunner.manager.create(Role, {
+        name: name,
+      });
+      await queryRunner.manager.save(role);
 
-    sendResponse(res, 200, 'Role', role);
+      sendResponse(res, 200, 'Role', role);
+    });
   } catch (error) {
     console.error(error);
     sendError(res, 500, 'Failed to create role', null);
@@ -46,11 +50,15 @@ const updateRoleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
-    await AppDataSource.manager.update(Role, id, { name });
-    const updatedRole = await AppDataSource.manager.findOne(Role, {
-      where: { id: parseInt(id, 10) },
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      await queryRunner.manager.update(Role, id, { name });
+      const updatedRole = await queryRunner.manager.findOne(Role, {
+        where: { id: parseInt(id, 10) },
+      });
+      sendResponse(res, 200, 'Role', updatedRole);
     });
-    sendResponse(res, 200, 'Role', updatedRole);
   } catch (error) {
     console.error(error);
     sendError(res, 500, 'Failed to update role', null);
@@ -60,9 +68,12 @@ const updateRoleById = async (req: Request, res: Response) => {
 const deleteRoleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await AppDataSource.manager.delete(Role, parseInt(id, 10));
-    res.status(200).end();
-    sendResponse(res, 200, 'Role Deleted Successfully!', null);
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      await queryRunner.manager.delete(Role, parseInt(id, 10));
+      sendResponse(res, 200, 'Role Deleted Successfully!', null);
+    });
   } catch (error) {
     console.error(error);
     sendError(res, 500, 'Failed to delete the role', null);

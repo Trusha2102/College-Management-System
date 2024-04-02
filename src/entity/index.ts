@@ -23,6 +23,10 @@ import { Department } from './Department';
 import { Attendance } from './Attendance';
 import { Payroll } from './Payroll';
 import { StaffLoan } from './StaffLoan';
+import { Expense } from './Expense';
+import { ExpenseHead } from './ExpenseHead';
+import { Income } from './Income';
+import { IncomeHead } from './IncomeHead';
 
 const Entities = [
   User,
@@ -50,6 +54,10 @@ const Entities = [
   Attendance,
   Payroll,
   StaffLoan,
+  Expense,
+  ExpenseHead,
+  Income,
+  IncomeHead,
 ];
 
 export default Entities;

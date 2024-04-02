@@ -75,21 +75,15 @@ const forgotPasswordEmail = async (req: Request, res: Response) => {
 
   // Check if email is provided
   if (!email) {
-    return res.status(400).json({ message: 'Email is required' });
+    return sendError(res, 400, 'Email is required');
   }
 
-  const filePath = path.join(
-    __dirname,
-    '../../..',
-    'src',
-    'html',
-    'forgotPassword.html',
-  );
+  const filePath = path.join(__dirname, '../../src/html/forgotPassword.html');
 
   fs.readFile(filePath, 'utf8', async (err, data) => {
     if (err) {
       console.error(err);
-      return res.status(500).json({ message: 'Failed to read email template' });
+      return sendError(res, 500, 'Failed to read email template');
     }
 
     // Replace the placeholder with the actual reset password URL
@@ -108,14 +102,48 @@ const forgotPasswordEmail = async (req: Request, res: Response) => {
     try {
       // Send email
       await transporter.sendMail(mailOptions);
-      res
-        .status(200)
-        .json({ message: 'Reset password email sent successfully' });
+      return sendResponse(res, 200, 'Reset password email sent successfully');
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: 'Failed to send reset password email' });
+      return sendError(res, 500, 'Failed to send reset password email');
     }
   });
 };
 
-export { login, resetPassword, forgotPasswordEmail };
+const changePassword = async (req: Request, res: Response) => {
+  try {
+    const { current_password, new_password, email } = req.body;
+
+    // Check if the request body contains the required fields
+    if (!current_password || !new_password) {
+      return sendError(res, 400, 'Current and new password are required');
+    }
+
+    // Find the user by some identifier (e.g., email or user ID)
+    const user = await AppDataSource.getRepository(User).findOne({
+      where: { email: email },
+    });
+    if (!user) {
+      return sendError(res, 404, 'User not found');
+    }
+
+    // Compare the current password with the hashed password
+    const isMatch = await bcrypt.compare(current_password, user.password);
+    if (!isMatch) {
+      return sendError(res, 401, 'Invalid current password');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    // Update the user's password in the database
+    user.password = hashedPassword;
+    await AppDataSource.getRepository(User).save(user);
+
+    return sendResponse(res, 200, 'Password changed successfully');
+  } catch (error: any) {
+    sendError(res, 500, 'Internal Server Error', error.message);
+  }
+};
+
+export { login, resetPassword, forgotPasswordEmail, changePassword };

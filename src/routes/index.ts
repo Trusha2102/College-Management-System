@@ -13,6 +13,13 @@ import sectionRoutes from './student/sectionRoutes';
 import employeeRoutes from './employee/employeeRoutes';
 import departmentRoutes from './employee/departmentRoutes';
 import designationRoutes from './employee/designationRoutes';
+import noticeRoutes from './notice/noticeRoutes';
+import dashboardRoutes from './dashboard/dashboardRoutes';
+import incomeHeadRoutes from './income_expense/incomeHeadRoutes';
+import incomeRoutes from './income_expense/incomeRoutes';
+import expenseHeadRoutes from './income_expense/expenseHeadRoutes';
+import expenseRoutes from './income_expense/expenseRoutes';
+import addressRoutes from './student/addressRoutes';
 
 const router = express.Router();
 
@@ -30,5 +37,12 @@ router.use('/section', sectionRoutes);
 router.use('/employee', employeeRoutes);
 router.use('/department', departmentRoutes);
 router.use('/designation', designationRoutes);
+router.use('/notice', noticeRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/income-head', incomeHeadRoutes);
+router.use('/income', incomeRoutes);
+router.use('/expense-head', expenseHeadRoutes);
+router.use('/expense', expenseRoutes);
+router.use('/address', addressRoutes);
 
 export default router;

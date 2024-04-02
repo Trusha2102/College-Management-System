@@ -1,9 +1,11 @@
-import { Request, Response } from 'express';
+import { Request, Response, query } from 'express';
 import AppDataSource from '../../data-source';
 import configureMulter from '../../utils/multerConfig';
 import { Student } from '../../entity/Student';
 import bcrypt from 'bcrypt';
 import { sendError, sendResponse } from '../../utils/commonResponse';
+import runTransaction from '../../utils/runTransaction';
+import { Not } from 'typeorm';
 
 const upload = configureMulter('./uploads/Student', 5 * 1024 * 1024); // 5MB limit
 
@@ -29,33 +31,70 @@ const createStudent = async (req: Request, res: Response) => {
       }));
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-      // Check if the email already exists in the Student table
-      const studentRepository = AppDataSource.getRepository(Student);
-      const existingStudent = await studentRepository.findOne({
-        where: { email: body.email },
+      let student;
+      const queryRunner = AppDataSource.createQueryRunner();
+      await runTransaction(queryRunner, async () => {
+        // Check if the email already exists in the Student table
+        const studentRepository = queryRunner.manager.getRepository(Student);
+        const existingStudent = await studentRepository.findOne({
+          where: { email: body.email },
+        });
+
+        if (existingStudent) {
+          sendError(
+            res,
+            400,
+            'Please add unique email',
+            'Email already exists',
+          );
+          return; // Exit the callback without throwing an error
+        }
+
+        // Check if the enrollment_no already exists in the Student table
+        const existingStudentEnrollmentNo = await studentRepository.findOne({
+          where: { enrollment_no: body.enrollment_no },
+        });
+
+        if (existingStudentEnrollmentNo) {
+          sendError(
+            res,
+            400,
+            'Please add unique enrollment_no',
+            'Enrollment number already exists',
+          );
+          return; // Exit the callback without throwing an error
+        }
+
+        // Check if the admission_no already exists in the Student table
+        const existingStudentAdmissionNo = await studentRepository.findOne({
+          where: { admission_no: body.admission_no },
+        });
+
+        if (existingStudentAdmissionNo) {
+          sendError(
+            res,
+            400,
+            'Please add unique admission_no',
+            'Admission number already exists',
+          );
+          return; // Exit the callback without throwing an error
+        }
+
+        // Create the student with the provided data and file paths
+        student = studentRepository.create({
+          ...body,
+          profile_picture:
+            (files as { [fieldname: string]: Express.Multer.File[] })[
+              'profile_picture'
+            ]?.[0]?.path || '',
+          other_docs: otherDocs,
+          password: hashedPassword,
+          is_active: true,
+        });
+
+        await studentRepository.save(student);
       });
-
-      if (existingStudent) {
-        return sendError(
-          res,
-          400,
-          'Please add unique email',
-          'Email already exists',
-        );
-      }
-
-      // Create the student with the provided data and file paths
-      const student = studentRepository.create({
-        ...body,
-        profile_picture:
-          (files as { [fieldname: string]: Express.Multer.File[] })[
-            'profile_picture'
-          ]?.[0]?.path || '',
-        other_docs: otherDocs,
-        password: hashedPassword,
-      });
-
-      await studentRepository.save(student);
+      // Sending success response outside the transaction callback
       sendResponse(res, 201, 'Student created successfully', student);
     });
   } catch (error: any) {
@@ -66,9 +105,18 @@ const createStudent = async (req: Request, res: Response) => {
 
 const listStudents = async (req: Request, res: Response) => {
   try {
-    // Extract query parameters
-    const { name, section_name, class_name, enrollment_no, roll_no } =
-      req.query;
+    // Extract query parameters and convert to numbers
+    let {
+      name,
+      section_name,
+      class_name,
+      enrollment_no,
+      roll_no,
+      page = 1,
+      limit = 10,
+    } = req.query;
+    page = parseInt(page as string, 10);
+    limit = parseInt(limit as string, 10);
 
     // Get the repository for the Student entity
     const studentRepository = AppDataSource.getRepository(Student);
@@ -107,12 +155,17 @@ const listStudents = async (req: Request, res: Response) => {
       query = query.andWhere('student.roll_no = :roll_no', { roll_no });
     }
 
+    // Apply pagination
+    const totalCount = await query.getCount();
+    const totalPages = Math.ceil(totalCount / limit);
+    query = query.skip((page - 1) * limit).take(limit);
+
     // Execute the query
     const students = await query.getMany();
-    res.status(200).json(students);
+    res.status(200).json({ students, page, limit, totalCount, totalPages });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to fetch students' });
+    sendError(res, 500, 'Failed to fetch students');
   }
 };
 
@@ -153,23 +206,65 @@ const updateStudentById = async (req: Request, res: Response) => {
         name: file.originalname,
         path: file.path,
       }));
-      const studentRepository = AppDataSource.getRepository(Student);
-      const student = await studentRepository.findOne({
-        where: { id: parseInt(id, 10) },
+
+      const queryRunner = AppDataSource.createQueryRunner();
+
+      let updatedStudent;
+      await runTransaction(queryRunner, async () => {
+        const studentRepository = queryRunner.manager.getRepository(Student);
+        const student = await studentRepository.findOne({
+          where: { id: parseInt(id, 10) },
+        });
+        if (!student) {
+          sendError(res, 404, 'Student not found');
+          return;
+        }
+
+        // Check for duplicate email, enrollment number, and admission number
+        const duplicateEmail = await studentRepository.findOne({
+          where: { email: body.email, id: Not(student.id) },
+        });
+        if (duplicateEmail) {
+          sendError(res, 400, 'Email already exists');
+          return;
+        }
+
+        const duplicateEnrollmentNo = await studentRepository.findOne({
+          where: { enrollment_no: body.enrollment_no, id: Not(student.id) },
+        });
+        if (duplicateEnrollmentNo) {
+          sendError(res, 400, 'Enrollment number already exists');
+          return;
+        }
+
+        const duplicateAdmissionNo = await studentRepository.findOne({
+          where: { admission_no: body.admission_no, id: Not(student.id) },
+        });
+        if (duplicateAdmissionNo) {
+          sendError(res, 400, 'Admission number already exists');
+          return;
+        }
+
+        // Merge the updated data with existing data
+        studentRepository.merge(student, {
+          ...body,
+          profile_picture:
+            (files as { [fieldname: string]: Express.Multer.File[] })[
+              'profile_picture'
+            ]?.[0]?.path || student.profile_picture,
+          other_docs:
+            (files as { [fieldname: string]: Express.Multer.File[] })[
+              'other_docs'
+            ]?.map((file) => ({
+              name: file.originalname,
+              path: file.path,
+            })) || student.other_docs,
+        });
+        updatedStudent = await studentRepository.save(student);
       });
-      if (!student) {
-        return sendError(res, 404, 'Student not found');
+      if (updatedStudent) {
+        sendResponse(res, 200, 'Student updated successfully', updatedStudent);
       }
-      studentRepository.merge(student, {
-        ...body,
-        profile_picture:
-          (files as { [fieldname: string]: Express.Multer.File[] })[
-            'profile_picture'
-          ]?.[0]?.path || '',
-        other_docs: otherDocs,
-      });
-      const updatedStudent = await studentRepository.save(student);
-      sendResponse(res, 200, 'Student updated successfully', updatedStudent);
     });
   } catch (error: any) {
     console.error(error);
@@ -181,14 +276,19 @@ const deleteStudentById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const studentRepository = AppDataSource.getRepository(Student);
-    const student = await studentRepository.findOne({
-      where: { id: parseInt(id, 10) },
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const student = await studentRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!student) {
+        sendError(res, 404, 'Student not found');
+        return;
+      }
+      await studentRepository.delete(parseInt(id));
+      sendResponse(res, 200, 'Student deleted successfully');
     });
-    if (!student) {
-      return sendError(res, 404, 'Student not found');
-    }
-    await studentRepository.delete(parseInt(id));
-    sendResponse(res, 200, 'Student deleted successfully');
   } catch (error: any) {
     console.error(error);
     sendError(res, 500, 'Failed to delete student', error.message);

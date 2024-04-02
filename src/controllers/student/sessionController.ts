@@ -1,17 +1,21 @@
 import { Request, Response } from 'express';
 import AppDataSource from '../../data-source';
 import { Session } from '../../entity/Session';
+import runTransaction from '../../utils/runTransaction';
+import { sendResponse, sendError } from '../../utils/commonResponse';
 
 // Create a new session
 export const createSession = async (req: Request, res: Response) => {
   try {
-    const sessionRepository = AppDataSource.getRepository(Session);
-    const newSession = sessionRepository.create(req.body);
-    await sessionRepository.save(newSession);
-    res.status(201).json(newSession);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to create session' });
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const sessionRepository = queryRunner.manager.getRepository(Session);
+      const newSession = sessionRepository.create(req.body);
+      await sessionRepository.save(newSession);
+      sendResponse(res, 201, 'Session created successfully', newSession);
+    });
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to create session', error.message);
   }
 };
 
@@ -20,10 +24,9 @@ export const getAllSessions = async (req: Request, res: Response) => {
   try {
     const sessionRepository = AppDataSource.getRepository(Session);
     const sessions = await sessionRepository.find();
-    res.status(200).json(sessions);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to fetch sessions' });
+    sendResponse(res, 200, 'Sessions fetched successfully', sessions);
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to fetch sessions', error.message);
   }
 };
 
@@ -36,12 +39,12 @@ export const getSessionById = async (req: Request, res: Response) => {
       where: { id: parseInt(id, 10) },
     });
     if (!session) {
-      return res.status(404).json({ message: 'Session not found' });
+      sendError(res, 404, 'Session not found', 'Session not found');
+      return;
     }
-    res.status(200).json(session);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to fetch session' });
+    sendResponse(res, 200, 'Session fetched successfully', session);
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to fetch session', error.message);
   }
 };
 
@@ -49,19 +52,23 @@ export const getSessionById = async (req: Request, res: Response) => {
 export const updateSessionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const sessionRepository = AppDataSource.getRepository(Session);
-    const session = await sessionRepository.findOne({
-      where: { id: parseInt(id, 10) },
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const sessionRepository = queryRunner.manager.getRepository(Session);
+      const session = await sessionRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!session) {
+        sendError(res, 404, 'Session not found', 'Session not found');
+        return;
+      }
+      sessionRepository.merge(session, req.body);
+      const updatedSession = await sessionRepository.save(session);
+      sendResponse(res, 200, 'Session updated successfully', updatedSession);
     });
-    if (!session) {
-      return res.status(404).json({ message: 'Session not found' });
-    }
-    sessionRepository.merge(session, req.body);
-    const updatedSession = await sessionRepository.save(session);
-    res.status(200).json(updatedSession);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to update session' });
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to update session', error.message);
   }
 };
 
@@ -69,20 +76,24 @@ export const updateSessionById = async (req: Request, res: Response) => {
 export const deleteSessionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const sessionRepository = AppDataSource.getRepository(Session);
-    const session = await sessionRepository.findOne({
-      where: { id: parseInt(id, 10) },
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const sessionRepository = queryRunner.manager.getRepository(Session);
+      const session = await sessionRepository.findOne({
+        where: { id: parseInt(id, 10) },
+      });
+      if (!session) {
+        sendError(res, 404, 'Session not found', 'Session not found');
+        return;
+      }
+
+      session.is_active = false;
+      await sessionRepository.save(session);
+
+      sendResponse(res, 204, 'Session deleted successfully', null);
     });
-    if (!session) {
-      return res.status(404).json({ message: 'Session not found' });
-    }
-
-    session.is_active = false;
-    await sessionRepository.save(session);
-
-    res.status(204).end();
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to delete session' });
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to delete session', error.message);
   }
 };

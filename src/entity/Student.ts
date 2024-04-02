@@ -29,6 +29,9 @@ export class Student {
   @Column({ unique: true })
   enrollment_no!: string;
 
+  @Column({ default: true })
+  is_active!: boolean;
+
   @ManyToOne(() => Session, (session) => session.students)
   student_session!: Session;
 
