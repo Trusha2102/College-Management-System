@@ -31,4 +31,7 @@ export class ParentDetails {
 
   @Column({ nullable: true })
   student_id!: number;
+
+  @Column({ nullable: true })
+  photo!: string;
 }
