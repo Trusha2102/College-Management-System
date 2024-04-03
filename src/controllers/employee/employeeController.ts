@@ -86,8 +86,17 @@ export const createEmployee = async (req: Request, res: Response) => {
 // List Employees
 export const listEmployees = async (req: Request, res: Response) => {
   try {
-    const { role, staff_id, name, department, designation, page, limit } =
-      req.query;
+    const {
+      role,
+      staff_id,
+      name,
+      department,
+      designation,
+      page,
+      limit,
+      month,
+      year,
+    } = req.query;
 
     const pageNumber: number = parseInt(page as string, 10) || 1;
     const itemsPerPage: number = parseInt(limit as string, 10) || 10;
@@ -97,7 +106,8 @@ export const listEmployees = async (req: Request, res: Response) => {
       .createQueryBuilder('employee')
       .leftJoinAndSelect('employee.user', 'user')
       .leftJoinAndSelect('employee.department', 'department')
-      .leftJoinAndSelect('employee.designation', 'designation');
+      .leftJoinAndSelect('employee.designation', 'designation')
+      .leftJoinAndSelect('employee.payroll', 'payroll');
 
     if (role) {
       const roleId = await AppDataSource.getRepository(Role)
@@ -167,6 +177,14 @@ export const listEmployees = async (req: Request, res: Response) => {
       query = query.andWhere('employee.designation_id = :designationId', {
         designationId: designationId.designation_id,
       });
+    }
+
+    if (month) {
+      query = query.andWhere('payroll.month ILIKE :month', { month });
+    }
+
+    if (year) {
+      query = query.andWhere('payroll.year ILIKE :year', { year });
     }
 
     const totalEmployees = await query.getCount();

@@ -1,0 +1,11 @@
+import express from 'express';
+import * as payrollController from '../../controllers/employee/payrollController';
+
+const router = express.Router();
+
+router.post('/add', payrollController.createPayroll);
+router.get('/view/:id', payrollController.getPayrollById);
+router.put('/update/:id', payrollController.updatePayrollById);
+router.delete('/delete/:id', payrollController.deletePayrollById);
+
+export default router;

@@ -22,6 +22,7 @@ import expenseRoutes from './income_expense/expenseRoutes';
 import addressRoutes from './student/addressRoutes';
 import parentDetailsRoutes from './student/parentsDetailsRoutes';
 import resultRoutes from './student/resultRoutes';
+import payrollRoutes from './employee/payrollRoutes';
 
 const router = express.Router();
 
@@ -48,5 +49,6 @@ router.use('/expense', expenseRoutes);
 router.use('/address', addressRoutes);
 router.use('/parents-details', parentDetailsRoutes);
 router.use('/result', resultRoutes);
+router.use('/payroll', payrollRoutes);
 
 export default router;

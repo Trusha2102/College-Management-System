@@ -1,4 +1,3 @@
-// Payroll.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Employee } from './Employee';
 
@@ -33,4 +32,13 @@ export class Payroll {
 
   @Column()
   loan_deduction_amount!: number;
+
+  @Column()
+  payment_mode!: string;
+
+  @Column({ nullable: true })
+  payment_date!: Date;
+
+  @Column()
+  note!: string;
 }
