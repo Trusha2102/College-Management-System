@@ -1,4 +1,3 @@
-// src/entities/FeesPayment.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Student } from './Student';
 import { FeesMaster } from './FeesMaster';

@@ -6,6 +6,10 @@ import bcrypt from 'bcrypt';
 import { sendError, sendResponse } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { Equal, Not } from 'typeorm';
+import { Session } from '../../entity/Session';
+import { Semester } from '../../entity/Semester';
+import { Course } from '../../entity/Course';
+import { StudentHistory } from '../../entity/StudentHistory';
 
 const upload = configureMulter('./uploads/Student', 5 * 1024 * 1024); // 5MB limit
 
@@ -34,11 +38,44 @@ const createStudent = async (req: Request, res: Response) => {
       let student;
       const queryRunner = AppDataSource.createQueryRunner();
       await runTransaction(queryRunner, async () => {
-        // Check if the email already exists in the Student table
         const studentRepository = queryRunner.manager.getRepository(Student);
+        const studentHistoryRepository =
+          queryRunner.manager.getRepository(StudentHistory);
+        const courseRepository = queryRunner.manager.getRepository(Course);
+        const semesterRepository = queryRunner.manager.getRepository(Semester);
+        const sessionRepository = queryRunner.manager.getRepository(Session);
+
         const existingStudent = await studentRepository.findOne({
           where: { email: body.email },
         });
+
+        // Get the course and semester
+        const course = await courseRepository.findOne({
+          where: { id: req.body.course_id },
+        });
+
+        if (!course) {
+          sendError(res, 400, 'Invalid course ID', 'Course not found');
+          return;
+        }
+
+        const semester = await semesterRepository.findOne({
+          where: { id: req.body.semester_id },
+        });
+
+        if (!semester) {
+          sendError(res, 400, 'Invalid semester ID', 'Semester not found');
+          return;
+        }
+
+        const session = await sessionRepository.findOne({
+          where: { id: req.body.session_id },
+        });
+
+        if (!session) {
+          sendError(res, 400, 'Invalid session ID', 'Session not found');
+          return;
+        }
 
         if (existingStudent) {
           sendError(
@@ -47,7 +84,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique email',
             'Email already exists',
           );
-          return; // Exit the callback without throwing an error
+          return;
         }
 
         // Check if the enrollment_no already exists in the Student table
@@ -62,7 +99,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique enrollment_no',
             'Enrollment number already exists',
           );
-          return; // Exit the callback without throwing an error
+          return;
         }
 
         // Check if the admission_no already exists in the Student table
@@ -77,7 +114,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique admission_no',
             'Admission number already exists',
           );
-          return; // Exit the callback without throwing an error
+          return;
         }
 
         // Create the student with the provided data and file paths
@@ -93,8 +130,26 @@ const createStudent = async (req: Request, res: Response) => {
         });
 
         await studentRepository.save(student);
+
+        const newStudent = await studentRepository.findOne({
+          where: {
+            admission_no: req.body.admission_no,
+          },
+        });
+
+        const newStudentId = newStudent?.id;
+
+        if (newStudentId) {
+          const studentHistory = studentHistoryRepository.create({
+            student: newStudent,
+            course: course,
+            semester: semester,
+            session: session,
+          });
+          await studentHistoryRepository.save(studentHistory);
+        }
       });
-      // Sending success response outside the transaction callback
+
       sendResponse(res, 201, 'Student created successfully', student);
     });
   } catch (error: any) {
@@ -104,12 +159,15 @@ const createStudent = async (req: Request, res: Response) => {
 };
 
 const listStudents = async (req: Request, res: Response) => {
+  console.log('LIST API WAS CALLED');
   try {
     // Extract query parameters and convert to numbers
     let {
       name,
       section_name,
       class_name,
+      course_id,
+      semester_id,
       enrollment_no,
       roll_no,
       page = 1,
@@ -151,6 +209,19 @@ const listStudents = async (req: Request, res: Response) => {
         enrollment_no,
       });
     }
+
+    if (course_id) {
+      query = query.andWhere('student.course_id = :course_id', {
+        course_id,
+      });
+    }
+
+    if (semester_id) {
+      query = query.andWhere('student.semester_id = :semester_id', {
+        semester_id,
+      });
+    }
+
     if (roll_no) {
       query = query.andWhere('student.roll_no = :roll_no', { roll_no });
     }

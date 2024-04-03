@@ -27,6 +27,7 @@ import { Expense } from './Expense';
 import { ExpenseHead } from './ExpenseHead';
 import { Income } from './Income';
 import { IncomeHead } from './IncomeHead';
+import { StudentHistory } from './StudentHistory';
 
 const Entities = [
   User,
@@ -58,7 +59,7 @@ const Entities = [
   ExpenseHead,
   Income,
   IncomeHead,
+  StudentHistory,
 ];
 
 export default Entities;
-// Export all other entities here

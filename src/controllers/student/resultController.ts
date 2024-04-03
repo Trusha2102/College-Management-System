@@ -6,11 +6,13 @@ import { Result } from '../../entity/Result';
 import { Student } from '../../entity/Student';
 import { Course } from '../../entity/Course';
 import { Semester } from '../../entity/Semester';
+import { StudentHistory } from '../../entity/StudentHistory';
 
 // Create a new result
 export const createResult = async (req: Request, res: Response) => {
   try {
-    const { studentId, courseId, semesterId, result } = req.body;
+    const { studentId, courseId, semesterId, result, next_course_status } =
+      req.body;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
@@ -18,6 +20,8 @@ export const createResult = async (req: Request, res: Response) => {
       const courseRepository = queryRunner.manager.getRepository(Course);
       const semesterRepository = queryRunner.manager.getRepository(Semester);
       const resultRepository = queryRunner.manager.getRepository(Result);
+      const studentHistoryRepository =
+        queryRunner.manager.getRepository(StudentHistory);
 
       const student = await studentRepository.findOne({
         where: { id: +studentId },
@@ -50,6 +54,19 @@ export const createResult = async (req: Request, res: Response) => {
         result,
       });
       await resultRepository.save(newResult);
+
+      await studentHistoryRepository
+        .createQueryBuilder()
+        .update(StudentHistory)
+        .set({
+          result: newResult,
+          next_course_status: next_course_status,
+        })
+        .where('studentId = :studentId', { studentId: studentId })
+        .andWhere('courseId = :courseId', { courseId: courseId })
+        .andWhere('semesterId = :semesterId', { semesterId: semesterId })
+        .execute();
+
       sendResponse(res, 201, 'Result created successfully', newResult);
     });
   } catch (error: any) {
@@ -61,7 +78,8 @@ export const createResult = async (req: Request, res: Response) => {
 export const updateResultById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { studentId, courseId, semesterId, result } = req.body;
+    const { studentId, courseId, semesterId, result, next_course_status } =
+      req.body;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
@@ -69,6 +87,8 @@ export const updateResultById = async (req: Request, res: Response) => {
       const courseRepository = queryRunner.manager.getRepository(Course);
       const semesterRepository = queryRunner.manager.getRepository(Semester);
       const resultRepository = queryRunner.manager.getRepository(Result);
+      const studentHistoryRepository =
+        queryRunner.manager.getRepository(StudentHistory);
 
       const resultToUpdate = await resultRepository.findOne({
         where: { id: +id },
@@ -108,6 +128,17 @@ export const updateResultById = async (req: Request, res: Response) => {
       resultToUpdate.result = result;
 
       await resultRepository.save(resultToUpdate);
+
+      await studentHistoryRepository
+        .createQueryBuilder()
+        .update(StudentHistory)
+        .set({
+          next_course_status: next_course_status,
+        })
+        .where('studentId = :studentId', { studentId: studentId })
+        .andWhere('courseId = :courseId', { courseId: courseId })
+        .andWhere('semesterId = :semesterId', { semesterId: semesterId })
+        .execute();
 
       sendResponse(res, 200, 'Result updated successfully', resultToUpdate);
     });

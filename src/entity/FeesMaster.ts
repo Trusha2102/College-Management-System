@@ -1,4 +1,3 @@
-// src/entities/FeesMaster.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
