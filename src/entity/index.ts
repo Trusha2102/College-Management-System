@@ -13,7 +13,6 @@ import { Result } from './Result';
 import { FeesType } from './FeesType';
 import { FeesMaster } from './FeesMaster';
 import { FeesPayment } from './FeesPayment';
-import { Class } from './Class';
 import { Section } from './Section';
 import { ParentDetails } from './ParentDetails';
 import { BankAccount } from './BankAccount';
@@ -45,7 +44,6 @@ const Entities = [
   FeesType,
   FeesMaster,
   FeesPayment,
-  Class,
   Section,
   ParentDetails,
   BankAccount,

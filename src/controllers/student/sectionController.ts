@@ -1,29 +1,17 @@
 import { Request, Response } from 'express';
 import { Section } from '../../entity/Section';
-import { Class } from '../../entity/Class';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 
 export const createSection = async (req: Request, res: Response) => {
   try {
-    const { classId, section } = req.body;
+    const { section } = req.body;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      const classRepository = queryRunner.manager.getRepository(Class);
-      const parsedClassId = typeof classId === 'object' ? classId.id : classId;
-      const cls = await classRepository.findOne({
-        where: { id: +parsedClassId },
-      });
-      if (!cls) {
-        sendError(res, 404, 'Course not found');
-        return;
-      }
-
       const sectionRepository = queryRunner.manager.getRepository(Section);
       const newSection = sectionRepository.create({
-        class: cls,
         section,
       });
       await sectionRepository.save(newSection);
@@ -63,20 +51,11 @@ export const getSectionById = async (req: Request, res: Response) => {
 export const updateSectionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { classId, section } = req.body;
+    const { section } = req.body;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const sectionRepository = queryRunner.manager.getRepository(Section);
-      const classRepository = queryRunner.manager.getRepository(Class);
-      const parsedClassId = typeof classId === 'object' ? classId.id : classId;
-      const cls = await classRepository.findOne({
-        where: { id: +parsedClassId },
-      });
-      if (!cls) {
-        sendError(res, 404, 'Course not found');
-        return;
-      }
 
       const updatedSection = await sectionRepository.findOne({
         where: { id: +id },
@@ -86,7 +65,6 @@ export const updateSectionById = async (req: Request, res: Response) => {
         return;
       }
 
-      updatedSection.class = cls;
       updatedSection.section = section;
       await sectionRepository.save(updatedSection);
       sendResponse(res, 200, 'Section updated successfully', updatedSection);
