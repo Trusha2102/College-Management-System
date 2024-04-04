@@ -8,7 +8,6 @@ import studentRoutes from './student/studentRoutes';
 import sessionRoutes from './student/sessionRoutes';
 import courseRoutes from './student/courseRoutes';
 import semesterRoutes from './student/semesterRoutes';
-import classRoutes from './student/classRoutes';
 import sectionRoutes from './student/sectionRoutes';
 import employeeRoutes from './employee/employeeRoutes';
 import departmentRoutes from './employee/departmentRoutes';
@@ -20,6 +19,9 @@ import incomeRoutes from './income_expense/incomeRoutes';
 import expenseHeadRoutes from './income_expense/expenseHeadRoutes';
 import expenseRoutes from './income_expense/expenseRoutes';
 import addressRoutes from './student/addressRoutes';
+import parentDetailsRoutes from './student/parentsDetailsRoutes';
+import resultRoutes from './student/resultRoutes';
+import payrollRoutes from './employee/payrollRoutes';
 
 const router = express.Router();
 
@@ -32,7 +34,6 @@ router.use('/student', studentRoutes);
 router.use('/session', sessionRoutes);
 router.use('/course', courseRoutes);
 router.use('/semester', semesterRoutes);
-router.use('/class', classRoutes);
 router.use('/section', sectionRoutes);
 router.use('/employee', employeeRoutes);
 router.use('/department', departmentRoutes);
@@ -44,5 +45,8 @@ router.use('/income', incomeRoutes);
 router.use('/expense-head', expenseHeadRoutes);
 router.use('/expense', expenseRoutes);
 router.use('/address', addressRoutes);
+router.use('/parents-details', parentDetailsRoutes);
+router.use('/result', resultRoutes);
+router.use('/payroll', payrollRoutes);
 
 export default router;

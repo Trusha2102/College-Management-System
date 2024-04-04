@@ -7,7 +7,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Session } from './Session';
-import { Class } from './Class';
 import { Section } from './Section';
 import { Address } from './Address';
 import { ParentDetails } from './ParentDetails';
@@ -43,12 +42,6 @@ export class Student {
 
   @Column()
   category!: string;
-
-  @ManyToOne(() => Class, (cls) => cls.students)
-  class!: Class;
-
-  @Column()
-  class_id!: number;
 
   @ManyToOne(() => Section, (section) => section.students)
   section!: Section;

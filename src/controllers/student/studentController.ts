@@ -5,7 +5,11 @@ import { Student } from '../../entity/Student';
 import bcrypt from 'bcrypt';
 import { sendError, sendResponse } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
-import { Not } from 'typeorm';
+import { Equal, Not } from 'typeorm';
+import { Session } from '../../entity/Session';
+import { Semester } from '../../entity/Semester';
+import { Course } from '../../entity/Course';
+import { StudentHistory } from '../../entity/StudentHistory';
 
 const upload = configureMulter('./uploads/Student', 5 * 1024 * 1024); // 5MB limit
 
@@ -34,11 +38,44 @@ const createStudent = async (req: Request, res: Response) => {
       let student;
       const queryRunner = AppDataSource.createQueryRunner();
       await runTransaction(queryRunner, async () => {
-        // Check if the email already exists in the Student table
         const studentRepository = queryRunner.manager.getRepository(Student);
+        const studentHistoryRepository =
+          queryRunner.manager.getRepository(StudentHistory);
+        const courseRepository = queryRunner.manager.getRepository(Course);
+        const semesterRepository = queryRunner.manager.getRepository(Semester);
+        const sessionRepository = queryRunner.manager.getRepository(Session);
+
         const existingStudent = await studentRepository.findOne({
           where: { email: body.email },
         });
+
+        // Get the course and semester
+        const course = await courseRepository.findOne({
+          where: { id: req.body.course_id },
+        });
+
+        if (!course) {
+          sendError(res, 400, 'Invalid course ID', 'Course not found');
+          return;
+        }
+
+        const semester = await semesterRepository.findOne({
+          where: { id: req.body.semester_id },
+        });
+
+        if (!semester) {
+          sendError(res, 400, 'Invalid semester ID', 'Semester not found');
+          return;
+        }
+
+        const session = await sessionRepository.findOne({
+          where: { id: req.body.session_id },
+        });
+
+        if (!session) {
+          sendError(res, 400, 'Invalid session ID', 'Session not found');
+          return;
+        }
 
         if (existingStudent) {
           sendError(
@@ -47,7 +84,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique email',
             'Email already exists',
           );
-          return; // Exit the callback without throwing an error
+          return;
         }
 
         // Check if the enrollment_no already exists in the Student table
@@ -62,7 +99,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique enrollment_no',
             'Enrollment number already exists',
           );
-          return; // Exit the callback without throwing an error
+          return;
         }
 
         // Check if the admission_no already exists in the Student table
@@ -77,7 +114,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique admission_no',
             'Admission number already exists',
           );
-          return; // Exit the callback without throwing an error
+          return;
         }
 
         // Create the student with the provided data and file paths
@@ -93,8 +130,26 @@ const createStudent = async (req: Request, res: Response) => {
         });
 
         await studentRepository.save(student);
+
+        const newStudent = await studentRepository.findOne({
+          where: {
+            admission_no: req.body.admission_no,
+          },
+        });
+
+        const newStudentId = newStudent?.id;
+
+        if (newStudentId) {
+          const studentHistory = studentHistoryRepository.create({
+            student: newStudent,
+            course: course,
+            semester: semester,
+            session: session,
+          });
+          await studentHistoryRepository.save(studentHistory);
+        }
       });
-      // Sending success response outside the transaction callback
+
       sendResponse(res, 201, 'Student created successfully', student);
     });
   } catch (error: any) {
@@ -104,12 +159,15 @@ const createStudent = async (req: Request, res: Response) => {
 };
 
 const listStudents = async (req: Request, res: Response) => {
+  console.log('LIST API WAS CALLED');
   try {
     // Extract query parameters and convert to numbers
     let {
       name,
       section_name,
       class_name,
+      course_id,
+      semester_id,
       enrollment_no,
       roll_no,
       page = 1,
@@ -151,6 +209,19 @@ const listStudents = async (req: Request, res: Response) => {
         enrollment_no,
       });
     }
+
+    if (course_id) {
+      query = query.andWhere('student.course_id = :course_id', {
+        course_id,
+      });
+    }
+
+    if (semester_id) {
+      query = query.andWhere('student.semester_id = :semester_id', {
+        semester_id,
+      });
+    }
+
     if (roll_no) {
       query = query.andWhere('student.roll_no = :roll_no', { roll_no });
     }
@@ -173,7 +244,7 @@ const getStudentById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const student = await AppDataSource.getRepository(Student).findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!student) {
       return sendError(res, 404, 'Student not found');
@@ -197,6 +268,7 @@ const updateStudentById = async (req: Request, res: Response) => {
       }
       const { id } = req.params;
       const { body, files } = req;
+
       // Process other_docs files
       const otherDocsFiles =
         (files as { [fieldname: string]: Express.Multer.File[] })[
@@ -213,7 +285,7 @@ const updateStudentById = async (req: Request, res: Response) => {
       await runTransaction(queryRunner, async () => {
         const studentRepository = queryRunner.manager.getRepository(Student);
         const student = await studentRepository.findOne({
-          where: { id: parseInt(id, 10) },
+          where: { id: +id },
         });
         if (!student) {
           sendError(res, 404, 'Student not found');
@@ -221,33 +293,45 @@ const updateStudentById = async (req: Request, res: Response) => {
         }
 
         // Check for duplicate email, enrollment number, and admission number
-        const duplicateEmail = await studentRepository.findOne({
-          where: { email: body.email, id: Not(student.id) },
-        });
-        if (duplicateEmail) {
-          sendError(res, 400, 'Email already exists');
-          return;
+        if (req.body.email) {
+          const duplicateEmail = await studentRepository.findOne({
+            where: { email: body.email, id: Not(Equal(student.id)) },
+          });
+          if (duplicateEmail) {
+            sendError(res, 400, 'Email already exists');
+            return;
+          }
         }
 
-        const duplicateEnrollmentNo = await studentRepository.findOne({
-          where: { enrollment_no: body.enrollment_no, id: Not(student.id) },
-        });
-        if (duplicateEnrollmentNo) {
-          sendError(res, 400, 'Enrollment number already exists');
-          return;
+        if (req.body.enrollment_no) {
+          const duplicateEnrollmentNo = await studentRepository.findOne({
+            where: {
+              enrollment_no: body.enrollment_no,
+              id: Not(Equal(student.id)),
+            },
+          });
+          if (duplicateEnrollmentNo) {
+            sendError(res, 400, 'Enrollment number already exists');
+            return;
+          }
         }
 
-        const duplicateAdmissionNo = await studentRepository.findOne({
-          where: { admission_no: body.admission_no, id: Not(student.id) },
-        });
-        if (duplicateAdmissionNo) {
-          sendError(res, 400, 'Admission number already exists');
-          return;
+        if (req.body.admission_no) {
+          const duplicateAdmissionNo = await studentRepository.findOne({
+            where: {
+              admission_no: body.admission_no,
+              id: Not(Equal(student.id)),
+            },
+          });
+          if (duplicateAdmissionNo) {
+            sendError(res, 400, 'Admission number already exists');
+            return;
+          }
         }
 
         // Merge the updated data with existing data
-        studentRepository.merge(student, {
-          ...body,
+        const updatedData: any = {
+          ...req.body,
           profile_picture:
             (files as { [fieldname: string]: Express.Multer.File[] })[
               'profile_picture'
@@ -259,7 +343,11 @@ const updateStudentById = async (req: Request, res: Response) => {
               name: file.originalname,
               path: file.path,
             })) || student.other_docs,
-        });
+        };
+
+        // Merge the updated data with existing data
+        studentRepository.merge(student, updatedData);
+
         updatedStudent = await studentRepository.save(student);
       });
       if (updatedStudent) {
@@ -280,13 +368,13 @@ const deleteStudentById = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const student = await studentRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!student) {
         sendError(res, 404, 'Student not found');
         return;
       }
-      await studentRepository.delete(parseInt(id));
+      await studentRepository.delete(+id);
       sendResponse(res, 200, 'Student deleted successfully');
     });
   } catch (error: any) {

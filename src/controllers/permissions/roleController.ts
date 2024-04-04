@@ -37,7 +37,7 @@ const getRoleById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const role = await AppDataSource.manager.findOne(Role, {
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     sendResponse(res, 200, 'Role', role);
   } catch (error) {
@@ -55,7 +55,7 @@ const updateRoleById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       await queryRunner.manager.update(Role, id, { name });
       const updatedRole = await queryRunner.manager.findOne(Role, {
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       sendResponse(res, 200, 'Role', updatedRole);
     });
@@ -71,7 +71,7 @@ const deleteRoleById = async (req: Request, res: Response) => {
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      await queryRunner.manager.delete(Role, parseInt(id, 10));
+      await queryRunner.manager.delete(Role, +id);
       sendResponse(res, 200, 'Role Deleted Successfully!', null);
     });
   } catch (error) {

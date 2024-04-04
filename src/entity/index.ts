@@ -13,7 +13,6 @@ import { Result } from './Result';
 import { FeesType } from './FeesType';
 import { FeesMaster } from './FeesMaster';
 import { FeesPayment } from './FeesPayment';
-import { Class } from './Class';
 import { Section } from './Section';
 import { ParentDetails } from './ParentDetails';
 import { BankAccount } from './BankAccount';
@@ -27,6 +26,7 @@ import { Expense } from './Expense';
 import { ExpenseHead } from './ExpenseHead';
 import { Income } from './Income';
 import { IncomeHead } from './IncomeHead';
+import { StudentHistory } from './StudentHistory';
 
 const Entities = [
   User,
@@ -44,7 +44,6 @@ const Entities = [
   FeesType,
   FeesMaster,
   FeesPayment,
-  Class,
   Section,
   ParentDetails,
   BankAccount,
@@ -58,7 +57,7 @@ const Entities = [
   ExpenseHead,
   Income,
   IncomeHead,
+  StudentHistory,
 ];
 
 export default Entities;
-// Export all other entities here

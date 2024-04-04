@@ -1,4 +1,3 @@
-// src/entities/ParentDetails.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Student } from './Student';
 
@@ -29,4 +28,10 @@ export class ParentDetails {
     onDelete: 'CASCADE',
   })
   student!: Student;
+
+  @Column({ nullable: true })
+  student_id!: number;
+
+  @Column({ nullable: true })
+  photo!: string;
 }

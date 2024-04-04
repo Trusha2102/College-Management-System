@@ -40,7 +40,7 @@ export const getDepartmentById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const departmentRepository = AppDataSource.getRepository(Department);
     const department = await departmentRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!department) {
       return sendError(res, 404, 'Department not found');
@@ -61,7 +61,7 @@ export const updateDepartment = async (req: Request, res: Response) => {
       const departmentRepository =
         queryRunner.manager.getRepository(Department);
       const existingDepartment = await departmentRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
 
       if (!existingDepartment) {
@@ -93,7 +93,7 @@ export const deleteDepartmentById = async (req: Request, res: Response) => {
       const departmentRepository =
         queryRunner.manager.getRepository(Department);
       const department = await departmentRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
 
       if (!department) {

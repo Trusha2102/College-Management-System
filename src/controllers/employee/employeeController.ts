@@ -35,7 +35,7 @@ export const createEmployee = async (req: Request, res: Response) => {
         queryRunner.manager.getRepository(Department);
 
       const user = await userRepository.findOne({
-        where: { id: parseInt(userId, 10) },
+        where: { id: +userId },
       });
       if (!user) {
         sendError(res, 404, 'User not found');
@@ -43,7 +43,7 @@ export const createEmployee = async (req: Request, res: Response) => {
       }
 
       const designation = await designationRepository.findOne({
-        where: { id: parseInt(designationId, 10) },
+        where: { id: +designationId },
       });
       if (!designation) {
         sendError(res, 404, 'Designation not found');
@@ -51,7 +51,7 @@ export const createEmployee = async (req: Request, res: Response) => {
       }
 
       const department = await departmentRepository.findOne({
-        where: { id: parseInt(departmentId, 10) },
+        where: { id: +departmentId },
       });
       if (!department) {
         sendError(res, 404, 'Department not found');
@@ -86,8 +86,17 @@ export const createEmployee = async (req: Request, res: Response) => {
 // List Employees
 export const listEmployees = async (req: Request, res: Response) => {
   try {
-    const { role, staff_id, name, department, designation, page, limit } =
-      req.query;
+    const {
+      role,
+      staff_id,
+      name,
+      department,
+      designation,
+      page,
+      limit,
+      month,
+      year,
+    } = req.query;
 
     const pageNumber: number = parseInt(page as string, 10) || 1;
     const itemsPerPage: number = parseInt(limit as string, 10) || 10;
@@ -97,7 +106,8 @@ export const listEmployees = async (req: Request, res: Response) => {
       .createQueryBuilder('employee')
       .leftJoinAndSelect('employee.user', 'user')
       .leftJoinAndSelect('employee.department', 'department')
-      .leftJoinAndSelect('employee.designation', 'designation');
+      .leftJoinAndSelect('employee.designation', 'designation')
+      .leftJoinAndSelect('employee.payroll', 'payroll');
 
     if (role) {
       const roleId = await AppDataSource.getRepository(Role)
@@ -169,6 +179,14 @@ export const listEmployees = async (req: Request, res: Response) => {
       });
     }
 
+    if (month) {
+      query = query.andWhere('payroll.month ILIKE :month', { month });
+    }
+
+    if (year) {
+      query = query.andWhere('payroll.year ILIKE :year', { year });
+    }
+
     const totalEmployees = await query.getCount();
     const totalPages = Math.ceil(totalEmployees / itemsPerPage);
 
@@ -193,7 +211,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const employeeRepository = AppDataSource.getRepository(Employee);
     const employee = await employeeRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!employee) {
       return sendError(res, 404, 'Employee not found');
@@ -213,7 +231,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
       const { id } = req.params;
       const employeeRepository = queryRunner.manager.getRepository(Employee);
       const employee = await employeeRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!employee) {
         sendError(res, 404, 'Employee not found');
@@ -243,7 +261,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
 
       if (userId) {
         const user = await userRepository.findOne({
-          where: { id: parseInt(userId, 10) },
+          where: { id: +userId },
         });
         if (!user) {
           sendError(res, 404, 'User not found');
@@ -254,7 +272,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
 
       if (designationId) {
         const designation = await designationRepository.findOne({
-          where: { id: parseInt(designationId, 10) },
+          where: { id: +designationId },
         });
         if (!designation) {
           sendError(res, 404, 'Designation not found');
@@ -266,7 +284,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
 
       if (departmentId) {
         const department = await departmentRepository.findOne({
-          where: { id: parseInt(departmentId, 10) },
+          where: { id: +departmentId },
         });
         if (!department) {
           sendError(res, 404, 'Department not found');
@@ -304,7 +322,7 @@ export const deleteEmployeeById = async (req: Request, res: Response) => {
       const { id } = req.params;
       const employeeRepository = queryRunner.manager.getRepository(Employee);
       const employee = await employeeRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!employee) {
         sendError(res, 404, 'Employee not found');

@@ -36,7 +36,7 @@ export const getSessionById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const sessionRepository = AppDataSource.getRepository(Session);
     const session = await sessionRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!session) {
       sendError(res, 404, 'Session not found', 'Session not found');
@@ -57,7 +57,7 @@ export const updateSessionById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const sessionRepository = queryRunner.manager.getRepository(Session);
       const session = await sessionRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!session) {
         sendError(res, 404, 'Session not found', 'Session not found');
@@ -81,7 +81,7 @@ export const deleteSessionById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const sessionRepository = queryRunner.manager.getRepository(Session);
       const session = await sessionRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!session) {
         sendError(res, 404, 'Session not found', 'Session not found');

@@ -36,7 +36,7 @@ export const getCourseById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const courseRepository = AppDataSource.getRepository(Course);
     const course = await courseRepository.findOne({
-      where: { id: parseInt(id, 10) },
+      where: { id: +id },
     });
     if (!course) {
       return sendError(res, 404, 'Course not found');
@@ -56,7 +56,7 @@ export const updateCourseById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const courseRepository = queryRunner.manager.getRepository(Course);
       const course = await courseRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!course) {
         sendError(res, 404, 'Course not found');
@@ -79,7 +79,7 @@ export const deleteCourseById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const courseRepository = queryRunner.manager.getRepository(Course);
       const course = await courseRepository.findOne({
-        where: { id: parseInt(id, 10) },
+        where: { id: +id },
       });
       if (!course) {
         sendError(res, 404, 'Course not found');
