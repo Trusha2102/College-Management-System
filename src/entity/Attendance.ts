@@ -7,7 +7,7 @@ export class Attendance {
   id!: number;
 
   @ManyToOne(() => Employee, (employee) => employee.id)
-  staff!: Employee;
+  employee!: Employee;
 
   @Column()
   date!: Date;

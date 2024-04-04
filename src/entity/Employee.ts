@@ -21,7 +21,7 @@ export class Employee {
   @ManyToOne(() => User, (user) => user.id)
   user!: User;
 
-  @Column()
+  @Column({ unique: true })
   staff_id!: number;
 
   @ManyToOne(() => Designation, (designation) => designation.id)
@@ -60,7 +60,7 @@ export class Employee {
   @Column()
   work_location!: string;
 
-  @OneToMany(() => Attendance, (attendance) => attendance.staff)
+  @OneToMany(() => Attendance, (attendance) => attendance.employee)
   attendance!: Attendance[];
 
   @OneToMany(() => Payroll, (payroll) => payroll.employee)
