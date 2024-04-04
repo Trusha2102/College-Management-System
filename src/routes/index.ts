@@ -23,6 +23,7 @@ import parentDetailsRoutes from './student/parentsDetailsRoutes';
 import resultRoutes from './student/resultRoutes';
 import payrollRoutes from './employee/payrollRoutes';
 import staffAttendanceRoutes from './employee/staffAttendanceRoutes';
+import staffLoanRoutes from './employee/staffLoanRoutes';
 
 const router = express.Router();
 
@@ -50,5 +51,6 @@ router.use('/parents-details', parentDetailsRoutes);
 router.use('/result', resultRoutes);
 router.use('/payroll', payrollRoutes);
 router.use('/attendance', staffAttendanceRoutes);
+router.use('/staff-loan', staffLoanRoutes);
 
 export default router;

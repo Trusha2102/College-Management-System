@@ -1,6 +1,13 @@
 // StaffLoan.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { Employee } from './Employee';
+import { Installment } from './Installment';
 
 @Entity()
 export class StaffLoan {
@@ -20,8 +27,14 @@ export class StaffLoan {
   installment_amount!: number;
 
   @Column()
-  status!: string;
+  status!: String;
 
-  @Column()
+  @Column({ nullable: true })
   action_by!: number;
+
+  @Column({ nullable: true })
+  collected_on_date!: Date;
+
+  @OneToMany(() => Installment, (installment) => installment.staff_loan)
+  installments!: Installment[];
 }
