@@ -41,4 +41,10 @@ export class Payroll {
 
   @Column()
   note!: string;
+
+  @Column({ nullable: true })
+  is_deduction_collected!: boolean;
+
+  @Column({ nullable: true })
+  collected_deduction_amount!: number;
 }
