@@ -3,10 +3,10 @@ import * as permissionController from '../../controllers/permissions/permissionC
 
 const router = express.Router();
 
-router.post('/', permissionController.createPermission);
-router.get('/', permissionController.getAllPermissions);
+router.post('/add', permissionController.createPermission);
+router.get('/list', permissionController.getAllPermissions);
 // router.get('/:id', permissionController.getPermissionById);
-router.put('/:id', permissionController.updatePermissionById);
-router.delete('/:id', permissionController.deletePermissionById);
+router.put('/update/:id', permissionController.updatePermissionById);
+router.delete('/delete/:id', permissionController.deletePermissionById);
 
 export default router;

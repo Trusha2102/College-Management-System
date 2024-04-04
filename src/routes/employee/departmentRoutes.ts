@@ -10,18 +10,18 @@ import {
 const router = express.Router();
 
 // Create a new student
-router.post('/', createDepartment);
+router.post('/add', createDepartment);
 
 // Get a student by ID
-router.get('/:id', getDepartmentById);
+router.get('/view/:id', getDepartmentById);
 
 // Update a student by ID
-router.put('/:id', updateDepartment);
+router.put('/update/:id', updateDepartment);
 
 // Delete a student by ID
-router.delete('/:id', deleteDepartmentById);
+router.delete('/delete/:id', deleteDepartmentById);
 
 // List all students
-router.get('/', listDepartments);
+router.get('/list', listDepartments);
 
 export default router;

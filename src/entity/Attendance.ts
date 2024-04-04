@@ -1,4 +1,3 @@
-// Attendance.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Employee } from './Employee';
 

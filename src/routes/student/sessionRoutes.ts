@@ -10,18 +10,18 @@ import {
 const router = express.Router();
 
 // Create a new student
-router.post('/', createSession);
+router.post('/add', createSession);
 
 // Get a student by ID
-router.get('/:id', getSessionById);
+router.get('/view/:id', getSessionById);
 
 // Update a student by ID
-router.put('/:id', updateSessionById);
+router.put('/update/:id', updateSessionById);
 
 // Delete a student by ID
-router.delete('/:id', deleteSessionById);
+router.delete('/delete/:id', deleteSessionById);
 
 // List all students
-router.get('/', getAllSessions);
+router.get('/list', getAllSessions);
 
 export default router;
