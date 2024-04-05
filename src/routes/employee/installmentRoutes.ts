@@ -4,14 +4,14 @@ import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
-// router.post('/add', staffLoanController.createStaffLoan);
-// router.put('/update/:id', staffLoanController.updateStaffLoanById);
-// router.delete('/delete/:id', staffLoanController.deleteStaffLoanById);
+// router.post('/add', installmentController.createInstallment);
+router.put('/update/:id', installmentController.updateInstallment);
+router.delete('/delete/:id', installmentController.deleteInstallment);
 router.get(
   '/list/:staffLoanId',
   permissionProtect,
   installmentController.getInstallmentsByStaffLoanId,
 );
-// router.get('/list', staffLoanController.getAllStaffLoans);
+router.get('/view/:id', installmentController.getInstallmentById);
 
 export default router;
