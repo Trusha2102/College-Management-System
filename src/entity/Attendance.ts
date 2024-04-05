@@ -1,4 +1,3 @@
-// Attendance.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Employee } from './Employee';
 
@@ -8,7 +7,7 @@ export class Attendance {
   id!: number;
 
   @ManyToOne(() => Employee, (employee) => employee.id)
-  staff!: Employee;
+  employee!: Employee;
 
   @Column()
   date!: Date;

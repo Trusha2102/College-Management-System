@@ -46,5 +46,8 @@ export class Payroll {
   is_deduction_collected!: boolean;
 
   @Column({ nullable: true })
+  deduction_collected_on_date!: Date;
+
+  @Column({ nullable: true })
   collected_deduction_amount!: number;
 }

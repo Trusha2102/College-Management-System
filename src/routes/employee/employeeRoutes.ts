@@ -10,18 +10,18 @@ import {
 const router = express.Router();
 
 // Create a new student
-router.post('/', createEmployee);
+router.post('/add', createEmployee);
 
 // Get a student by ID
-router.get('/:id', getEmployeeById);
+router.get('/view/:id', getEmployeeById);
 
 // Update a student by ID
-router.put('/:id', updateEmployee);
+router.put('/update/:id', updateEmployee);
 
 // Delete a student by ID
-router.delete('/:id', deleteEmployeeById);
+router.delete('/delete/:id', deleteEmployeeById);
 
 // List all students
-router.get('/', listEmployees);
+router.get('/list', listEmployees);
 
 export default router;

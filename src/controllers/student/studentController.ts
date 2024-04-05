@@ -165,7 +165,6 @@ const listStudents = async (req: Request, res: Response) => {
     let {
       name,
       section_name,
-      class_name,
       course_id,
       semester_id,
       enrollment_no,
@@ -182,8 +181,7 @@ const listStudents = async (req: Request, res: Response) => {
     // Create the base query
     let query = studentRepository
       .createQueryBuilder('student')
-      .leftJoinAndSelect('student.section', 'section')
-      .leftJoinAndSelect('section.class', 'class');
+      .leftJoinAndSelect('student.section', 'section');
 
     // Apply filters if provided
     if (name) {
@@ -199,11 +197,7 @@ const listStudents = async (req: Request, res: Response) => {
         section_name: `%${section_name}%`,
       });
     }
-    if (class_name) {
-      query = query.andWhere('class.class_name LIKE :class_name', {
-        class_name: `%${class_name}%`,
-      });
-    }
+
     if (enrollment_no) {
       query = query.andWhere('student.enrollment_no = :enrollment_no', {
         enrollment_no,

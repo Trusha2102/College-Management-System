@@ -6,18 +6,18 @@ const roleController = require('../../controllers/permissions/roleController');
 // import verifyToken from '../../utils/verifyToken'; // Assuming this is the path to your verifyToken middleware
 
 // Create a new role
-router.post('/', roleController.createRole);
+router.post('/add', roleController.createRole);
 
 // Get all roles
-router.get('/get-roles', roleController.getAllRoles);
+router.get('/get-roles/list', roleController.getAllRoles);
 
 // Get a role by ID
-router.get('/:id', roleController.getRoleById);
+router.get('/view/:id', roleController.getRoleById);
 
 // Update a role by ID
-router.put('/:id', roleController.updateRoleById);
+router.put('/update/:id', roleController.updateRoleById);
 
 // Delete a role by ID
-router.delete('/:id', roleController.deleteRoleById);
+router.delete('/delete/:id', roleController.deleteRoleById);
 
 export default router;

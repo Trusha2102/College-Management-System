@@ -3,6 +3,6 @@ import * as dashboardController from '../../controllers/dashboard/dashboardContr
 
 const router = express.Router();
 
-router.get('/count', dashboardController.getRecordsCount);
+router.get('/count/view', dashboardController.getRecordsCount);
 
 export default router;
