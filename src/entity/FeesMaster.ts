@@ -4,10 +4,14 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  ManyToMany,
+  JoinTable,
+  JoinColumn,
 } from 'typeorm';
 import { Student } from './Student';
-import { FeesType } from './FeesType';
+import { FeesGroup } from './FeesGroup';
 import { FeesPayment } from './FeesPayment';
+import { Fine } from './Fine';
 
 @Entity()
 export class FeesMaster {
@@ -17,20 +21,19 @@ export class FeesMaster {
   @ManyToOne(() => Student, (student) => student.fees_master)
   student!: Student;
 
-  @ManyToOne(() => FeesType, (feesType) => feesType.fees_master)
-  feesType!: FeesType;
+  @ManyToMany(() => FeesGroup)
+  @JoinTable()
+  feesGroups!: FeesGroup[];
+
+  @Column({ type: 'date' })
+  due_date!: Date;
+
+  @ManyToOne(() => Fine)
+  @JoinColumn({ name: 'fine_type_id' })
+  fineType!: Fine;
 
   @Column()
-  student_id!: number;
-
-  @Column()
-  fees_type_id!: number;
-
-  @Column()
-  fine_name!: string;
-
-  @Column()
-  fine_amount!: number;
+  fine_type_id!: number;
 
   @Column()
   discount_name!: string;

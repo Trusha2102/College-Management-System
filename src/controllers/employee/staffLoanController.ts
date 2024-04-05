@@ -20,6 +20,7 @@ export const createStaffLoan = async (req: Request, res: Response) => {
       // Fetch the saved StaffLoan record using the employee_id
       const fetchedStaffLoan = await staffLoanRepository.findOne({
         where: { employee: req.body.employee_id },
+        order: { id: 'DESC' },
       });
 
       // Check if the StaffLoan record is found
@@ -30,24 +31,43 @@ export const createStaffLoan = async (req: Request, res: Response) => {
 
       const staffLoanId = fetchedStaffLoan.id;
 
-      // Create Installment records
+      // Generate Installment records
       const installmentRepository =
         queryRunner.manager.getRepository(Installment);
-      const currentMonth = new Date().getMonth(); // Get current month (0-indexed)
-      const currentYear = new Date().getFullYear();
-      const installmentMonths = generateInstallmentMonths(
-        currentMonth,
-        req.body.no_of_installments,
-      );
-      const installmentRecords = installmentMonths.map((month) => {
-        return installmentRepository.create({
+      const noOfInstallments = req.body.no_of_installments;
+      const installmentAmount = req.body.installment_amount;
+      const currentMonth = new Date().getMonth();
+      let currentYear = new Date().getFullYear();
+      const installmentRecords = [];
+
+      for (let i = 0; i < noOfInstallments; i++) {
+        // Determine the month and year for the installment
+        const monthIndex = (currentMonth + i) % 12;
+        const monthName = getMonthName(monthIndex);
+        const installmentYear = getInstallmentYear(
+          currentYear,
+          currentMonth,
+          monthIndex,
+        );
+
+        // Create Installment record
+        const installmentRecord = installmentRepository.create({
           staff_loan: { id: staffLoanId },
           amount: req.body.installment_amount,
-          month,
-          year: getInstallmentYear(currentMonth, currentYear, month),
+          month: monthName,
+          year: installmentYear.toString(),
           status: false,
         });
-      });
+
+        installmentRecords.push(installmentRecord);
+
+        // Update current year if December is encountered
+        if (monthName === 'December') {
+          currentYear++;
+        }
+      }
+
+      // Save Installment records
       await installmentRepository.save(installmentRecords);
 
       sendResponse(res, 201, 'StaffLoan created successfully', savedStaffLoan);
@@ -57,18 +77,19 @@ export const createStaffLoan = async (req: Request, res: Response) => {
   }
 };
 
-// Function to generate installment months
-const generateInstallmentMonths = (
+function getInstallmentYear(
+  currentYear: number,
   currentMonth: number,
-  noOfInstallments: number,
-): string[] => {
-  const months: string[] = [];
-  for (let i = 1; i <= noOfInstallments; i++) {
-    const nextMonth = (currentMonth + i) % 12; // Get next month (0-indexed)
-    months.push(getMonthName(nextMonth));
+  monthIndex: number,
+): number {
+  // If the current month is December and the next month is January,
+  // increment the year
+  if (currentMonth === 11 && monthIndex === 0) {
+    return currentYear + 1;
   }
-  return months;
-};
+  // Otherwise, keep the current year
+  return currentYear;
+}
 
 // Function to get month name from index
 const getMonthName = (monthIndex: number): string => {
@@ -87,18 +108,6 @@ const getMonthName = (monthIndex: number): string => {
     'December',
   ];
   return monthNames[monthIndex];
-};
-
-// Function to get installment year
-const getInstallmentYear = (
-  currentMonth: number,
-  currentYear: number,
-  installmentMonth: string,
-): string => {
-  if (currentMonth + 1 >= 12) {
-    return String(currentYear + 1);
-  }
-  return String(currentYear);
 };
 
 // Update StaffLoan by ID
