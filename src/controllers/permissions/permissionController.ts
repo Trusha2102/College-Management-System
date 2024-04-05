@@ -5,6 +5,8 @@ import runTransaction from '../../utils/runTransaction';
 import { sendError, sendResponse } from '../../utils/commonResponse';
 import { Role } from '../../entity/Role';
 import { Module } from '../../entity/Module';
+import { CasbinService } from '../../casbin/enforcer';
+const casbin = new CasbinService();
 
 const createPermission = async (req: Request, res: Response) => {
   try {
@@ -36,6 +38,9 @@ const createPermission = async (req: Request, res: Response) => {
         operation,
       });
       await queryRunner.manager.save(permission);
+      if (module?.name && role?.name) {
+        await casbin.enforcer.addPolicy(role?.name, module?.name, operation);
+      }
       res.status(201).json(permission);
     });
   } catch (error) {
@@ -67,6 +72,15 @@ const updatePermissionById = async (req: Request, res: Response) => {
     if (!role) {
       return sendError(res, 400, 'Role not found');
     }
+    const findPermission = await AppDataSource.manager.findOne(Permission, {
+      where: { id: +id },
+      relations: ['role', 'module'],
+    });
+    await AppDataSource.manager.update(Permission, parseInt(id, 10), {
+      roleId,
+      moduleId,
+      operation,
+    });
 
     // Check if moduleId exists in Module table
     const moduleRepository = AppDataSource.getRepository(Module);
@@ -87,6 +101,38 @@ const updatePermissionById = async (req: Request, res: Response) => {
       const updatedPermission = await queryRunner.manager.findOne(Permission, {
         where: { id: +id },
       });
+      const findRole = await AppDataSource.manager.findOne(Role, {
+        where: { id: roleId },
+      });
+
+      const findModule = await AppDataSource.manager.findOne(Module, {
+        where: { id: moduleId },
+      });
+
+      if (findModule?.name && findRole?.name) {
+        const findPolicy = await casbin.enforcer.getFilteredPolicy(
+          0,
+          findPermission?.role?.name as string,
+          findPermission?.module?.name as string,
+          findPermission?.operation as string,
+        );
+        if (findPolicy) {
+          await casbin.enforcer.updatePolicy(
+            [
+              findPermission?.role?.name as string,
+              findPermission?.module?.name as string,
+              findPermission?.operation as string,
+            ],
+            [findRole?.name, findModule?.name, operation],
+          );
+        } else {
+          await casbin.enforcer.addPolicy(
+            findRole?.name,
+            findModule?.name,
+            operation,
+          );
+        }
+      }
       sendResponse(
         res,
         200,

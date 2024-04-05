@@ -1,14 +1,31 @@
-import { newEnforcer } from 'casbin';
-import { EntityManager, getConnectionOptions, createConnection } from 'typeorm';
-import TypeORMAdapter from './TypeORMAdapter';
+import { Enforcer, newEnforcer } from 'casbin';
+import TypeORMAdapter, { TypeORMAdapterOptions } from 'typeorm-adapter';
+import path from 'path';
 
-export async function getEnforcer(entityManager: EntityManager) {
-  const connectionOptions = await getConnectionOptions(); // Get connection options
-  const connection = await createConnection(connectionOptions); // Create a new connection
-  const adapter = new TypeORMAdapter(connection.options); // Pass connection options to the adapter
-  const enforcer = await newEnforcer('casbin_model.conf', adapter);
+export class CasbinService {
+  public enforcer!: Enforcer;
 
-  await enforcer.loadPolicy(); // Load policies from the database
+  constructor() {
+    this.init();
+  }
 
-  return enforcer;
+  private async init(): Promise<void> {
+    const databaseParams: TypeORMAdapterOptions = {
+      name: 'casbin',
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: +(process?.env?.DB_PORT || 5432),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+    };
+
+    const a = await TypeORMAdapter.newAdapter(databaseParams);
+    const filePath = path.join(
+      __dirname + '/../../src/casbin/casbinModel.conf',
+    );
+    this.enforcer = await newEnforcer(filePath, a);
+    // Load the policy from DB.
+    this.enforcer.loadPolicy();
+  }
 }
