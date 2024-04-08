@@ -5,7 +5,7 @@ import { Role } from '../entity/Role';
 import AppDataSource from '../data-source';
 import * as jwt from 'jsonwebtoken';
 import { routeAction } from '../utils/routeActions';
-import { CasbinService } from '../casbin/enforcer';
+import CasbinService from '../casbin/enforcer';
 const casbin = new CasbinService();
 
 const permissionProtect = async (
@@ -14,6 +14,8 @@ const permissionProtect = async (
   next: NextFunction,
 ) => {
   let token: string | null = null;
+
+  console.log('THE PERMISSION PROTECT MIDDLEWARE IS ADDED');
 
   if (
     req.headers.authorization &&
@@ -51,7 +53,11 @@ const permissionProtect = async (
     }
     //@ts-ignore
     const action = routeAction[`${route}`];
-    const status = await casbin.enforcer.enforce(role.name, module, action);
+
+    const enforcer = await casbin.getEnforcer();
+    console.log('These are the permission creds:', role.name, module, action);
+    const status = await enforcer.enforce(role.name, module, action);
+    console.log('🚀 ~ status:', status);
     if (!status) {
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }

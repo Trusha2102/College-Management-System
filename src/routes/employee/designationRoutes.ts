@@ -6,23 +6,23 @@ import {
   updateDesignation,
   deleteDesignationById,
 } from '../../controllers/employee/designationController';
-import permissionProtect from '../../middlewares/permissionMiddleware';
+// import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
 // Create a new student
-router.post('/add', permissionProtect, createDesignation);
+router.post('/add', createDesignation);
 
 // Get a student by ID
-router.get('/view/:id', permissionProtect, getDesignationById);
+router.get('/view/:id', getDesignationById);
 
 // Update a student by ID
-router.put('/update/:id', permissionProtect, updateDesignation);
+router.put('/update/:id', updateDesignation);
 
 // Delete a student by ID
-router.delete('/delete/:id', permissionProtect, deleteDesignationById);
+router.delete('/delete/:id', deleteDesignationById);
 
 // List all students
-router.get('/list', permissionProtect, listDesignations);
+router.get('/list', listDesignations);
 
 export default router;

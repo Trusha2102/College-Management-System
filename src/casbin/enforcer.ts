@@ -1,30 +1,35 @@
-import { Enforcer, newEnforcer } from 'casbin';
+import { Enforcer, newEnforcer, newSyncedEnforcer } from 'casbin';
 import TypeORMAdapter, { TypeORMAdapterOptions } from 'typeorm-adapter';
 import path from 'path';
+import { InternalServerError } from '../services/errorHandler';
 
-export class CasbinService {
-  public enforcer!: Enforcer;
+export default class CasbinService {
+  public async getEnforcer() {
+    try {
+      const databaseParams: TypeORMAdapterOptions = {
+        type: 'postgres',
+        host: process.env.DB_HOST,
+        port: +(process?.env?.DB_PORT || 5432),
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+      };
 
-  constructor() {
-    this.init();
-  }
+      const adapter = await TypeORMAdapter.newAdapter(databaseParams);
 
-  private async init(): Promise<void> {
-    const databaseParams: TypeORMAdapterOptions = {
-      type: 'postgres',
-      host: process.env.DB_HOST,
-      port: +(process?.env?.DB_PORT || 5432),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-    };
+      const filePath = path.join(
+        __dirname + '/../../src/casbin/casbinModel.conf',
+      );
+      const enforcer = await newEnforcer(filePath, adapter);
 
-    const a = await TypeORMAdapter.newAdapter(databaseParams);
-    const filePath = path.join(
-      __dirname + '/../../src/casbin/casbinModel.conf',
-    );
-    this.enforcer = await newEnforcer(filePath, a);
-    // Load the policy from DB.
-    this.enforcer.loadPolicy();
+      return enforcer;
+
+      // Load the policy from DB.
+      //   this.enforcer.loadPolicy();
+    } catch (error: any) {
+      throw new InternalServerError(
+        `Failed to initialize enforcer: ${error.message || error}`,
+      );
+    }
   }
 }
