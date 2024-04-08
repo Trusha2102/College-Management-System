@@ -5,11 +5,15 @@ import bodyParser from 'body-parser';
 import routes from './routes';
 // import routes from './routes';
 import AppDataSource from './data-source';
+import cors from 'cors';
 // const AppDataSource = require('./data-source');
 const PORT = process?.env?.PORT || 3000;
 
 // Create Express app
 let app = express();
+
+// Use CORS middleware
+app.use(cors());
 
 // Middleware
 app.use(bodyParser.json());

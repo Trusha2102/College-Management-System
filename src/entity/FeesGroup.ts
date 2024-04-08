@@ -1,13 +1,5 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToMany,
-  ManyToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { FeesType } from './FeesType';
-import { Fine } from './Fine';
-import { FeesMaster } from './FeesMaster';
 
 @Entity()
 export class FeesGroup {
@@ -20,9 +12,9 @@ export class FeesGroup {
   @Column()
   description!: string;
 
-  @OneToMany(() => FeesType, (feesType) => feesType.feesGroup)
+  @OneToMany(() => FeesType, (feesType) => feesType)
   feesTypes!: FeesType[];
 
-  @OneToMany(() => Fine, (fine) => fine.feesGroup)
-  fines!: Fine[];
+  @Column('simple-array', { nullable: true, name: 'fees_type_data' })
+  feesTypeData?: string[];
 }

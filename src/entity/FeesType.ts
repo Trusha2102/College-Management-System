@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { FeesGroup } from './FeesGroup';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity()
 export class FeesType {
@@ -15,9 +14,6 @@ export class FeesType {
   @Column()
   due_date!: Date;
 
-  @Column()
-  amount!: number;
-
-  @ManyToOne(() => FeesGroup, (feesGroup) => feesGroup.feesTypes)
-  feesGroup!: FeesGroup;
+  // @Column()
+  // amount!: number;
 }

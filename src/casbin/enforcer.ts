@@ -11,7 +11,6 @@ export class CasbinService {
 
   private async init(): Promise<void> {
     const databaseParams: TypeORMAdapterOptions = {
-      name: 'casbin',
       type: 'postgres',
       host: process.env.DB_HOST,
       port: +(process?.env?.DB_PORT || 5432),
