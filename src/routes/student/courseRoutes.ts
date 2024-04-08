@@ -6,23 +6,23 @@ import {
   updateCourseById,
   deleteCourseById,
 } from '../../controllers/student/courseController';
-import permissionProtect from '../../middlewares/permissionMiddleware';
+// import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
 // Create a new student
-router.post('/add', permissionProtect, createCourse);
+router.post('/add', createCourse);
 
 // Get a student by ID
-router.get('/view/:id', permissionProtect, getCourseById);
+router.get('/view/:id', getCourseById);
 
 // Update a student by ID
-router.put('/update/:id', permissionProtect, updateCourseById);
+router.put('/update/:id', updateCourseById);
 
 // Delete a student by ID
-router.delete('/delete/:id', permissionProtect, deleteCourseById);
+router.delete('/delete/:id', deleteCourseById);
 
 // List all students
-router.get('/list', permissionProtect, getAllCourses);
+router.get('/list', getAllCourses);
 
 export default router;

@@ -1,28 +1,32 @@
 import express from 'express';
 import * as expenseHeadController from '../../controllers/income_expense/expenseHeadController';
-import permissionProtect from '../../middlewares/permissionMiddleware';
+// import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
-router.post('/add', permissionProtect, expenseHeadController.createExpenseHead);
+router.post(
+  '/add',
+  // permissionProtect,
+  expenseHeadController.createExpenseHead,
+);
 router.get(
   '/list',
-  permissionProtect,
+  // permissionProtect,
   expenseHeadController.getAllExpenseHeads,
 );
 router.get(
   '/view/:id',
-  permissionProtect,
+  // permissionProtect,
   expenseHeadController.getExpenseHeadById,
 );
 router.put(
   '/update/:id',
-  permissionProtect,
+  // permissionProtect,
   expenseHeadController.updateExpenseHeadById,
 );
 router.delete(
   '/delete/:id',
-  permissionProtect,
+  // permissionProtect,
   expenseHeadController.deleteExpenseHeadById,
 );
 
