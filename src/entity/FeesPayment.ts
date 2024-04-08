@@ -10,7 +10,7 @@ export class FeesPayment {
   @ManyToOne(() => Student, (student) => student.fees_payment)
   student!: Student;
 
-  @ManyToOne(() => FeesMaster, (feesMaster) => feesMaster.fees_payment)
+  @ManyToOne(() => FeesMaster, (feesMaster) => feesMaster.feesPayments)
   feesMaster!: FeesMaster;
 
   @Column()

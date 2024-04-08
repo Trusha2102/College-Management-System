@@ -8,13 +8,25 @@ const createRole = async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
 
+    const normalizedName = name.trim().toLowerCase();
+
+    const roleRepository = AppDataSource.getRepository(Role);
+    const existingRole = await roleRepository
+      .createQueryBuilder('role')
+      .where('LOWER(role.name) ILIKE LOWER(:name)', {
+        name: `%${normalizedName}%`,
+      })
+      .getOne();
+
+    if (existingRole) {
+      sendError(res, 400, 'Role with a similar name already exists', null);
+      return;
+    }
+
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      const role = queryRunner.manager.create(Role, {
-        name: name,
-      });
+      const role = queryRunner.manager.create(Role, { name: normalizedName });
       await queryRunner.manager.save(role);
-
       sendResponse(res, 200, 'Role', role);
     });
   } catch (error) {
@@ -51,9 +63,25 @@ const updateRoleById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name } = req.body;
 
+    const normalizedName = name.trim().toLowerCase();
+
+    const roleRepository = AppDataSource.getRepository(Role);
+    const existingRole = await roleRepository
+      .createQueryBuilder('role')
+      .where('LOWER(role.name) ILIKE LOWER(:name) AND role.id != :id', {
+        name: `%${normalizedName}%`,
+        id,
+      })
+      .getOne();
+
+    if (existingRole) {
+      sendError(res, 400, 'Role with the same name already exists', null);
+      return;
+    }
+
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      await queryRunner.manager.update(Role, id, { name });
+      await queryRunner.manager.update(Role, id, { name: normalizedName });
       const updatedRole = await queryRunner.manager.findOne(Role, {
         where: { id: +id },
       });

@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Session } from './Session';
 import { Section } from './Section';
@@ -143,6 +144,7 @@ export class Student {
   @OneToMany(() => FeesPayment, (feesPayment) => feesPayment.student)
   fees_payment!: FeesPayment[];
 
-  @OneToMany(() => FeesMaster, (feesMaster) => feesMaster.student)
-  fees_master!: FeesMaster[];
+  @OneToOne(() => FeesMaster, (feesMaster) => feesMaster.student)
+  @JoinColumn()
+  feesMaster?: FeesMaster;
 }

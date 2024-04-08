@@ -4,10 +4,18 @@ import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
-router.post('/add', expenseController.createExpense);
+router.post('/add', permissionProtect, expenseController.createExpense);
 router.get('/list', permissionProtect, expenseController.getAllExpenses);
 router.get('/view/:id', permissionProtect, expenseController.getExpenseById);
-router.put('/update/:id', expenseController.updateExpenseById);
-router.delete('/delete/:id', expenseController.deleteExpenseById);
+router.put(
+  '/update/:id',
+  permissionProtect,
+  expenseController.updateExpenseById,
+);
+router.delete(
+  '/delete/:id',
+  permissionProtect,
+  expenseController.deleteExpenseById,
+);
 
 export default router;

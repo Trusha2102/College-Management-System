@@ -3,44 +3,57 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  ManyToMany,
+  JoinTable,
   OneToMany,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Student } from './Student';
-import { FeesType } from './FeesType';
+import { FeesGroup } from './FeesGroup';
 import { FeesPayment } from './FeesPayment';
+import { Fine } from './Fine';
 
 @Entity()
 export class FeesMaster {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => Student, (student) => student.fees_master)
+  @OneToOne(() => Student, (student) => student.feesMaster)
+  @JoinColumn({ name: 'student_id' })
   student!: Student;
 
-  @ManyToOne(() => FeesType, (feesType) => feesType.fees_master)
-  feesType!: FeesType;
+  @ManyToMany(() => FeesGroup)
+  @JoinTable()
+  feesGroups!: FeesGroup[];
 
-  @Column()
-  student_id!: number;
+  @Column({ type: 'date' })
+  due_date!: Date;
 
-  @Column()
-  fees_type_id!: number;
+  @ManyToOne(() => Fine)
+  @JoinColumn({ name: 'fine_type_id' })
+  fineType?: Fine;
 
-  @Column()
-  fine_name!: string;
+  @OneToMany(() => Fine, (fine) => fine.feesMaster)
+  fines!: Fine[];
 
-  @Column()
-  fine_amount!: number;
+  @Column({ nullable: true })
+  discount_name?: string;
 
-  @Column()
-  discount_name!: string;
+  @Column({ nullable: true })
+  discount_amount?: number;
 
-  @Column()
-  discount_amount!: number;
-
-  @Column()
-  net_amount!: number;
+  @Column({ nullable: true })
+  net_amount?: number;
 
   @OneToMany(() => FeesPayment, (feesPayment) => feesPayment.feesMaster)
-  fees_payment!: FeesPayment[];
+  feesPayments!: FeesPayment[];
+
+  @Column({ nullable: true })
+  student_id?: number;
+
+  @ManyToMany(() => FeesGroup)
+  @JoinTable()
+  @Column('simple-array', { nullable: true })
+  fees_group_ids?: number[];
 }

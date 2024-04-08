@@ -32,9 +32,6 @@ export class Course {
   @OneToMany(() => Result, (result) => result.course)
   result!: Result[];
 
-  @OneToMany(() => FeesType, (feesType) => feesType.course)
-  fees_type!: FeesType[];
-
   @OneToMany(() => Student, (student) => student.course)
   students!: Student[];
 }
