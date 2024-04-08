@@ -12,12 +12,10 @@ const PORT = process?.env?.PORT || 3000;
 // Create Express app
 let app = express();
 
-// Use CORS middleware
-app.use(cors());
-
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 AppDataSource.initialize()
   .then(() => {
