@@ -60,13 +60,14 @@ export const createExpense = async (req: Request, res: Response) => {
 // Get all expenses
 export const getAllExpenses = async (req: Request, res: Response) => {
   try {
-    const { search } = req.query;
+    const { search, page, limit } = req.query;
     const expenseRepository = AppDataSource.getRepository(Expense);
-    let expenses: Expense[];
+    let query = expenseRepository.createQueryBuilder('expense');
+    let expenses = [];
 
+    // If search term is provided, apply filtering
     if (search) {
-      expenses = await expenseRepository
-        .createQueryBuilder('expense')
+      query = query
         .where('LOWER(expense.name) LIKE LOWER(:search)', {
           search: `%${search}%`,
         })
@@ -76,13 +77,30 @@ export const getAllExpenses = async (req: Request, res: Response) => {
         .orWhere('LOWER(expense.description) LIKE LOWER(:search)', {
           search: `%${search}%`,
         })
-        .orWhere('expense.date::text LIKE :search', { search: `%${search}%` })
-        .getMany();
-    } else {
-      expenses = await expenseRepository.find();
+        .orWhere('expense.date::text LIKE :search', { search: `%${search}%` });
     }
 
-    sendResponse(res, 200, 'Success', expenses);
+    // Fetch total count of all records
+    const totalCount = await query.getCount();
+
+    // If page and limit are provided, apply pagination
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      // Fetch paginated data
+      expenses = await query.skip(skip).take(limitNumber).getMany();
+    } else {
+      // If page and limit are not provided, fetch all expenses
+      expenses = await query.getMany();
+    }
+
+    sendResponse(res, 200, 'Expenses found', {
+      expenses,
+      totalNoOfRecords: expenses.length,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch expenses', error.message);
   }

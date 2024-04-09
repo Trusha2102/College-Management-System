@@ -60,13 +60,14 @@ export const createIncome = async (req: Request, res: Response) => {
 // Get all incomes
 export const getAllIncomes = async (req: Request, res: Response) => {
   try {
-    const { search } = req.query;
+    const { search, page, limit } = req.query;
     const incomeRepository = AppDataSource.getRepository(Income);
-    let incomes: Income[];
+    let query = incomeRepository.createQueryBuilder('income');
+    let incomes = [];
 
+    // If search term is provided, apply filtering
     if (search) {
-      incomes = await incomeRepository
-        .createQueryBuilder('income')
+      query = query
         .where('LOWER(income.name) LIKE LOWER(:search)', {
           search: `%${search}%`,
         })
@@ -76,13 +77,30 @@ export const getAllIncomes = async (req: Request, res: Response) => {
         .orWhere('LOWER(income.description) LIKE LOWER(:search)', {
           search: `%${search}%`,
         })
-        .orWhere('income.date::text LIKE :search', { search: `%${search}%` })
-        .getMany();
-    } else {
-      incomes = await incomeRepository.find();
+        .orWhere('income.date::text LIKE :search', { search: `%${search}%` });
     }
 
-    sendResponse(res, 200, 'Success', incomes);
+    // Fetch total count of all records
+    const totalCount = await query.getCount();
+
+    // If page and limit are provided, apply pagination
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      // Fetch paginated data
+      incomes = await query.skip(skip).take(limitNumber).getMany();
+    } else {
+      // If page and limit are not provided, fetch all incomes
+      incomes = await query.getMany();
+    }
+
+    sendResponse(res, 200, 'Incomes found', {
+      incomes,
+      totalNoOfRecords: incomes.length,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch incomes', error.message);
   }

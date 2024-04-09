@@ -18,10 +18,10 @@ const getRecordsCount = async (req: Request, res: Response) => {
 
     // Get role_id for Teacher and Staff roles
     const teacherRole = await roleRepository.findOne({
-      where: { name: 'Teacher' },
+      where: { name: 'teacher' },
     });
     const staffRole = await roleRepository.findOne({
-      where: { name: 'Staff' },
+      where: { name: 'staff' },
     });
 
     if (!teacherRole || !staffRole) {

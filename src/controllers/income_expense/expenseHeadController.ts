@@ -33,25 +33,43 @@ export const createExpenseHead = async (req: Request, res: Response) => {
 // Get all expense heads
 export const getAllExpenseHeads = async (req: Request, res: Response) => {
   try {
-    const { search } = req.query;
+    const { search, page, limit } = req.query;
     const expenseHeadRepository = AppDataSource.getRepository(ExpenseHead);
-    let expenseHead: ExpenseHead[];
+    let query = expenseHeadRepository.createQueryBuilder('expenseHead');
+    let expenseHeads = [];
 
+    // If search term is provided, apply filtering
     if (search) {
-      expenseHead = await expenseHeadRepository
-        .createQueryBuilder('expenseHead')
+      query = query
         .where('LOWER(expenseHead.expense_head) LIKE LOWER(:search)', {
           search: `%${search}%`,
         })
         .orWhere('LOWER(expenseHead.description) LIKE LOWER(:search)', {
           search: `%${search}%`,
-        })
-        .getMany();
-    } else {
-      expenseHead = await expenseHeadRepository.find();
+        });
     }
 
-    sendResponse(res, 200, 'Success', expenseHead);
+    // Fetch total count of all records
+    const totalCount = await query.getCount();
+
+    // If page and limit are provided, apply pagination
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      // Fetch paginated data
+      expenseHeads = await query.skip(skip).take(limitNumber).getMany();
+    } else {
+      // If page and limit are not provided, fetch all expense heads
+      expenseHeads = await query.getMany();
+    }
+
+    sendResponse(res, 200, 'Expense heads found', {
+      expenseHeads,
+      totalNoOfRecords: expenseHeads.length,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch expense heads', error.message);
   }
