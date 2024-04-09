@@ -19,6 +19,9 @@ const getAllNotices = async (req: Request, res: Response) => {
     const [notices, totalCount] = await noticeRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
+      order: {
+        createdAt: 'DESC',
+      },
     });
 
     const totalPages = Math.ceil(totalCount / limit);

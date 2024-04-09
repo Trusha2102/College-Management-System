@@ -23,7 +23,9 @@ export const createCourse = async (req: Request, res: Response) => {
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
     const courseRepository = AppDataSource.getRepository(Course);
-    const courses = await courseRepository.find();
+    const courses = await courseRepository.find({
+      order: { createdAt: 'DESC' },
+    });
     sendResponse(res, 200, 'Courses fetched successfully', courses);
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch courses', error.message);

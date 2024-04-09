@@ -114,6 +114,7 @@ export const listSemesters = async (req: Request, res: Response) => {
     const semesterRepository = AppDataSource.getRepository(Semester);
     const semesters = await semesterRepository.find({
       where: { course: { id: +courseId } },
+      order: { createdAt: 'DESC' },
     });
     sendResponse(res, 200, 'Semesters found', semesters);
   } catch (error: any) {

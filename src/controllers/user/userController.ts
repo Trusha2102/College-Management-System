@@ -104,6 +104,7 @@ const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await AppDataSource.manager.find(User, {
       where: { is_active: true },
+      order: { createdAt: 'DESC' },
     });
     sendResponse(res, 200, 'Users', users);
   } catch (error) {

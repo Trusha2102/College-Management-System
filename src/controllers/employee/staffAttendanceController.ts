@@ -41,7 +41,11 @@ export const createAttendance = async (req: Request, res: Response) => {
 export const getAllAttendances = async (req: Request, res: Response) => {
   try {
     const attendanceRepository = AppDataSource.getRepository(Attendance);
-    const attendances = await attendanceRepository.find();
+    const attendances = await attendanceRepository.find({
+      order: {
+        createdAt: 'DESC',
+      },
+    });
     sendResponse(res, 200, 'Success', attendances);
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch attendances', error.message);

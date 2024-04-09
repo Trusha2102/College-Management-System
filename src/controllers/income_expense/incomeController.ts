@@ -83,6 +83,8 @@ export const getAllIncomes = async (req: Request, res: Response) => {
     // Fetch total count of all records
     const totalCount = await query.getCount();
 
+    query = query.orderBy('income.createdAt', 'DESC');
+
     // If page and limit are provided, apply pagination
     if (page && limit) {
       const pageNumber = parseInt(page as string, 10);

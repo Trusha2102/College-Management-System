@@ -182,7 +182,11 @@ export const getAllStaffLoans = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
-      const staffLoans = await staffLoanRepository.find();
+      const staffLoans = await staffLoanRepository.find({
+        order: {
+          createdAt: 'DESC',
+        },
+      });
       sendResponse(res, 200, 'Success', staffLoans);
     });
   } catch (error: any) {

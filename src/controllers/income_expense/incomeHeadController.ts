@@ -28,36 +28,68 @@ export const createIncomeHead = async (req: Request, res: Response) => {
 // Get all income heads
 export const getAllIncomeHeads = async (req: Request, res: Response) => {
   try {
-    const { search } = req.query;
+    const { search, page, limit } = req.query;
     const incomeHeadRepository = AppDataSource.getRepository(IncomeHead);
-    let incomeHeads: IncomeHead[];
+    let query = incomeHeadRepository.createQueryBuilder('incomeHead');
 
+    // If search term is provided, apply filtering
     if (search) {
-      incomeHeads = await incomeHeadRepository
-        .createQueryBuilder('incomeHead')
+      query = query
         .where('LOWER(incomeHead.income_head) LIKE LOWER(:search)', {
           search: `%${search}%`,
         })
         .orWhere('LOWER(incomeHead.description) LIKE LOWER(:search)', {
           search: `%${search}%`,
-        })
-        .getMany();
-    } else {
-      incomeHeads = await incomeHeadRepository.find();
+        });
     }
 
-    const totalNoOfRecords = incomeHeads.length;
-    const totalCount = totalNoOfRecords;
+    // Fetch total count of all records
+    const totalCount = await query.getCount();
 
-    sendResponse(res, 200, 'Income heads found', {
-      incomeHeads,
-      totalNoOfRecords,
-      totalCount,
-    });
+    // Add order by createdAt DESC
+    query = query.orderBy('incomeHead.createdAt', 'DESC');
+
+    // If page and limit are provided, apply pagination
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      // Fetch paginated data
+      const incomeHeads = await query.skip(skip).take(limitNumber).getMany();
+
+      return res.status(200).json({
+        status: true,
+        message: 'Income heads found',
+        data: {
+          incomeHeads,
+          totalNoOfRecords: incomeHeads.length,
+          totalCount,
+        },
+      });
+    } else {
+      // If page and limit are not provided, fetch all income heads
+      const incomeHeads = await query.getMany();
+
+      return res.status(200).json({
+        status: true,
+        message: 'Income heads found',
+        data: {
+          incomeHeads,
+          totalNoOfRecords: incomeHeads.length,
+          totalCount,
+        },
+      });
+    }
   } catch (error: any) {
-    sendError(res, 500, 'Failed to fetch income heads', error.message);
+    return res.status(500).json({
+      status: false,
+      message: 'Failed to fetch income heads',
+      error: error.message,
+    });
   }
 };
+
 // Get income head by ID
 export const getIncomeHeadById = async (req: Request, res: Response) => {
   try {

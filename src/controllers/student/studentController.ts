@@ -239,6 +239,9 @@ const listStudents = async (req: Request, res: Response) => {
     // Apply pagination
     const totalCount = await query.getCount();
     const totalPages = Math.ceil(totalCount / limit);
+
+    query = query.orderBy('student.createdAt', 'DESC');
+
     query = query.skip((page - 1) * limit).take(limit);
 
     // Execute the query
@@ -267,7 +270,6 @@ const getStudentById = async (req: Request, res: Response) => {
 };
 
 const updateStudentById = async (req: Request, res: Response) => {
-  console.log('UPDATE API WAS CALLED');
   try {
     upload.fields([
       { name: 'profile_picture', maxCount: 1 },

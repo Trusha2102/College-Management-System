@@ -25,7 +25,9 @@ export const createSection = async (req: Request, res: Response) => {
 export const listSections = async (req: Request, res: Response) => {
   try {
     const sectionRepository = AppDataSource.getRepository(Section);
-    const sections = await sectionRepository.find();
+    const sections = await sectionRepository.find({
+      order: { createdAt: 'DESC' },
+    });
     sendResponse(res, 200, 'Sections found', sections);
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch sections', error.message);
