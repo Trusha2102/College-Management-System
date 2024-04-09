@@ -22,8 +22,11 @@ export class FeesGroup {
   @OneToMany(() => FeesType, (feesType) => feesType)
   feesTypes!: FeesType[];
 
-  @Column('simple-array', { nullable: true, name: 'fees_type_data' })
-  feesTypeData?: string[];
+  // @Column('simple-array', { nullable: true, name: 'fees_type_data' })
+  // feesTypeData?: string[];
+
+  @Column({ nullable: true, name: 'fees_type_data' })
+  feesTypeData?: string;
 
   @CreateDateColumn({
     name: 'created_at',
