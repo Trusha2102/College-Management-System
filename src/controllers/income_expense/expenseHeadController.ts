@@ -33,27 +33,62 @@ export const createExpenseHead = async (req: Request, res: Response) => {
 // Get all expense heads
 export const getAllExpenseHeads = async (req: Request, res: Response) => {
   try {
-    const { search } = req.query;
+    const { search, page, limit } = req.query;
     const expenseHeadRepository = AppDataSource.getRepository(ExpenseHead);
-    let expenseHead: ExpenseHead[];
+    let query = expenseHeadRepository.createQueryBuilder('expenseHead');
 
+    // If search term is provided, apply filtering
     if (search) {
-      expenseHead = await expenseHeadRepository
-        .createQueryBuilder('expenseHead')
+      query = query
         .where('LOWER(expenseHead.expense_head) LIKE LOWER(:search)', {
           search: `%${search}%`,
         })
         .orWhere('LOWER(expenseHead.description) LIKE LOWER(:search)', {
           search: `%${search}%`,
-        })
-        .getMany();
-    } else {
-      expenseHead = await expenseHeadRepository.find();
+        });
     }
 
-    sendResponse(res, 200, 'Success', expenseHead);
+    // Fetch total count of all records
+    const totalCount = await query.getCount();
+
+    // If page and limit are provided, apply pagination
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      // Fetch paginated data
+      const expenseHeads = await query.skip(skip).take(limitNumber).getMany();
+
+      return res.status(200).json({
+        status: true,
+        message: 'Expense heads found',
+        data: {
+          expenseHeads,
+          totalNoOfRecords: expenseHeads.length,
+          totalCount,
+        },
+      });
+    }
+
+    // If page and limit are not provided, fetch all expense heads
+    const expenseHeads = await query.getMany();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Expense heads found',
+      data: {
+        expenseHeads,
+        totalNoOfRecords: expenseHeads.length,
+        totalCount,
+      },
+    });
   } catch (error: any) {
-    sendError(res, 500, 'Failed to fetch expense heads', error.message);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch expense heads',
+      error: error.message,
+    });
   }
 };
 

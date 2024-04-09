@@ -29,11 +29,51 @@ export const createDesignation = async (req: Request, res: Response) => {
 // Get All Designations
 export const listDesignations = async (req: Request, res: Response) => {
   try {
+    const { page, limit } = req.query;
     const designationRepository = AppDataSource.getRepository(Designation);
+    let query = designationRepository.createQueryBuilder('designation');
+
+    // Fetch total count
+    const totalCount = await query.getCount();
+
+    // If page and limit are provided, apply pagination
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      // Fetch paginated data
+      const designations = await query.skip(skip).take(limitNumber).getMany();
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Designations found',
+        data: {
+          designations,
+          totalNoOfRecords: designations.length,
+          totalCount,
+        },
+      });
+    }
+
+    // If page and limit are not provided, fetch all designations
     const designations = await designationRepository.find();
-    sendResponse(res, 200, 'Designations found', designations);
+
+    return res.status(200).json({
+      status: true,
+      message: 'Designations found',
+      data: {
+        designations,
+        totalNoOfRecords: designations.length,
+        totalCount,
+      },
+    });
   } catch (error: any) {
-    sendError(res, 500, 'Failed to fetch designations', error.message);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch designations',
+      error: error.message,
+    });
   }
 };
 

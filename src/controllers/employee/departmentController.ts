@@ -26,11 +26,51 @@ export const createDepartment = async (req: Request, res: Response) => {
 // Get All Departments
 export const listDepartments = async (req: Request, res: Response) => {
   try {
+    const { page, limit } = req.query;
     const departmentRepository = AppDataSource.getRepository(Department);
+    let query = departmentRepository.createQueryBuilder('department');
+
+    // Fetch total count
+    const totalCount = await query.getCount();
+
+    // If page and limit are provided, apply pagination
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      // Fetch paginated data
+      const departments = await query.skip(skip).take(limitNumber).getMany();
+
+      return res.status(200).json({
+        status: 'success',
+        message: 'Departments found',
+        data: {
+          departments,
+          totalNoOfRecords: departments.length,
+          totalCount,
+        },
+      });
+    }
+
+    // If page and limit are not provided, fetch all departments
     const departments = await departmentRepository.find();
-    sendResponse(res, 200, 'Departments found', departments);
+
+    return res.status(200).json({
+      status: true,
+      message: 'Departments found',
+      data: {
+        departments,
+        totalNoOfRecords: departments.length,
+        totalCount,
+      },
+    });
   } catch (error: any) {
-    sendError(res, 500, 'Failed to fetch departments', error.message);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch departments',
+      error: error.message,
+    });
   }
 };
 

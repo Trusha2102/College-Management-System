@@ -6,6 +6,7 @@ import { sendError, sendResponse } from '../../utils/commonResponse';
 import { Role } from '../../entity/Role';
 import { Module } from '../../entity/Module';
 import { CasbinService } from '../../casbin/enforcer';
+import { In, Not } from 'typeorm';
 const casbinService = new CasbinService();
 
 const createPermission = async (req: Request, res: Response) => {
@@ -86,7 +87,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
 
   try {
     const { id } = req.params;
-    const { roleId, moduleId, operation } = req.body;
+    const { roleId, permission } = req.body;
 
     // Check if roleId exists in Role table
     const roleRepository = AppDataSource.getRepository(Role);
@@ -96,73 +97,74 @@ const updatePermissionById = async (req: Request, res: Response) => {
     if (!role) {
       return sendError(res, 400, 'Role not found');
     }
-    const findPermission = await AppDataSource.manager.findOne(Permission, {
-      where: { id: +id },
-      relations: ['role', 'module'],
-    });
-    await AppDataSource.manager.update(Permission, parseInt(id, 10), {
-      roleId,
-      moduleId,
-      operation,
-    });
-
-    // Check if moduleId exists in Module table
-    const moduleRepository = AppDataSource.getRepository(Module);
-    const module = await moduleRepository.findOne({
-      where: { id: +moduleId },
-    });
-    if (!module) {
-      return sendError(res, 400, 'Module not found');
-    }
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      await queryRunner.manager.update(Permission, +id, {
-        roleId,
-        moduleId,
-        operation,
-      });
-      const updatedPermission = await queryRunner.manager.findOne(Permission, {
-        where: { id: +id },
-      });
-      const findRole = await AppDataSource.manager.findOne(Role, {
-        where: { id: roleId },
-      });
+      for (const perm of permission) {
+        const { moduleId, operations } = perm;
 
-      const findModule = await AppDataSource.manager.findOne(Module, {
-        where: { id: moduleId },
-      });
-
-      if (findModule?.name && findRole?.name) {
-        const findPolicy = await casbin.getFilteredPolicy(
-          0,
-          findPermission?.role?.name as string,
-          findPermission?.module?.name as string,
-          findPermission?.operation as string,
-        );
-        if (findPolicy) {
-          await casbin.updatePolicy(
-            [
-              findPermission?.role?.name as string,
-              findPermission?.module?.name as string,
-              findPermission?.operation as string,
-            ],
-            [findRole?.name, findModule?.name, operation],
-          );
-        } else {
-          await casbin.addPolicy(findRole?.name, findModule?.name, operation);
+        // Check if moduleId exists in Module table
+        const moduleRepository = AppDataSource.getRepository(Module);
+        const module = await moduleRepository.findOne({
+          where: { id: moduleId },
+        });
+        if (!module) {
+          sendError(res, 400, 'Module not found');
+          return;
         }
+
+        for (const operation of operations) {
+          const existingPermission = await AppDataSource.manager.findOne(
+            Permission,
+            {
+              where: {
+                roleId: +roleId,
+                moduleId: +moduleId,
+                operation: operation,
+              },
+            },
+          );
+
+          if (!existingPermission) {
+            // Create new permission if it doesn't exist
+            await queryRunner.manager.insert(Permission, {
+              roleId: +roleId,
+              moduleId: +moduleId,
+              operation: operation,
+            });
+
+            // Add policy to Casbin
+            await casbin.addPolicy(role.name, module.name, operation);
+          }
+        }
+
+        // Delete permissions not found in the update object
+        await queryRunner.manager.delete(Permission, {
+          roleId: +roleId,
+          moduleId: +moduleId,
+          operation: Not(In(operations)),
+        });
+
+        // Remove policies not found in the update object from Casbin
+        const existingPolicies = await casbin.getFilteredPolicy(
+          0,
+          role.name,
+          module.name,
+        );
+        const existingOperations = existingPolicies.map((policy) => policy[2]);
+        const operationsToDelete = existingOperations.filter(
+          (op) => !operations.includes(op),
+        );
+        operationsToDelete.forEach(async (op: string) => {
+          await casbin.removePolicy(role.name, module.name, op);
+        });
       }
-      sendResponse(
-        res,
-        200,
-        'Permission updated successfully',
-        updatedPermission,
-      );
     });
+
+    sendResponse(res, 200, 'Permissions updated successfully');
   } catch (error) {
     console.error(error);
-    sendError(res, 500, 'Failed to update permission');
+    sendError(res, 500, 'Failed to update permissions');
   }
 };
 
