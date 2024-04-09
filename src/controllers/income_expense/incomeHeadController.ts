@@ -46,8 +46,8 @@ export const getAllIncomeHeads = async (req: Request, res: Response) => {
       incomeHeads = await incomeHeadRepository.find();
     }
 
-    const totalNoOfRecords = incomeHeads.length; // Calculate total number of records
-    const totalCount = totalNoOfRecords; // Total count equals the length of data when no pagination is applied
+    const totalNoOfRecords = incomeHeads.length;
+    const totalCount = totalNoOfRecords;
 
     sendResponse(res, 200, 'Income heads found', {
       incomeHeads,

@@ -4,7 +4,6 @@ import { Notice } from '../../entity/Notice';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
-import { LessThanOrEqual } from 'typeorm';
 import runTransaction from '../../utils/runTransaction';
 
 const upload = configureMulter('./uploads/Notice', 2 * 1024 * 1024); //2MB Limit
@@ -18,9 +17,6 @@ const getAllNotices = async (req: Request, res: Response) => {
     limit = parseInt(limit as string, 10);
 
     const [notices, totalCount] = await noticeRepository.findAndCount({
-      where: {
-        publishOn: LessThanOrEqual(new Date()),
-      },
       skip: (page - 1) * limit,
       take: limit,
     });
