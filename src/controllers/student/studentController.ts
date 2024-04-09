@@ -267,6 +267,7 @@ const getStudentById = async (req: Request, res: Response) => {
 };
 
 const updateStudentById = async (req: Request, res: Response) => {
+  console.log('UPDATE API WAS CALLED');
   try {
     upload.fields([
       { name: 'profile_picture', maxCount: 1 },
@@ -346,13 +347,7 @@ const updateStudentById = async (req: Request, res: Response) => {
             (files as { [fieldname: string]: Express.Multer.File[] })[
               'profile_picture'
             ]?.[0]?.path || student.profile_picture,
-          other_docs:
-            (files as { [fieldname: string]: Express.Multer.File[] })[
-              'other_docs'
-            ]?.map((file) => ({
-              name: file.originalname,
-              path: file.path,
-            })) || student.other_docs,
+          other_docs: otherDocs || student.other_docs,
         };
 
         // Merge the updated data with existing data
