@@ -5,10 +5,12 @@ import runTransaction from '../../utils/runTransaction';
 import { sendError, sendResponse } from '../../utils/commonResponse';
 import { Role } from '../../entity/Role';
 import { Module } from '../../entity/Module';
-import CasbinService from '../../casbin/enforcer';
-const casbin = new CasbinService();
+import { CasbinService } from '../../casbin/enforcer';
+const casbinService = new CasbinService();
 
 const createPermission = async (req: Request, res: Response) => {
+  const casbin = await casbinService.getEnforcer();
+
   try {
     const { role: roleName, permission: permissionsData } = req.body;
 
@@ -51,7 +53,7 @@ const createPermission = async (req: Request, res: Response) => {
         // Create a permission record for each operation
         for (const op of operation) {
           const permissionRecord = queryRunner.manager.create(Permission, {
-            roleId: role.id,
+            roleId: role?.id,
             moduleId,
             operation: op,
           });
@@ -59,10 +61,7 @@ const createPermission = async (req: Request, res: Response) => {
           createdPermissions.push(permissionRecord);
         }
 
-        // Add policy to casbin enforcer
-        const enforcer = await casbin.getEnforcer();
-
-        await enforcer.addPolicy(role.name, module.name, operation);
+        await casbin.addPolicy(role?.name as string, module?.name, operation);
       }
       res.status(201).json(createdPermissions);
     });
@@ -83,6 +82,8 @@ const getAllPermissions = async (req: Request, res: Response) => {
 };
 
 const updatePermissionById = async (req: Request, res: Response) => {
+  const casbin = await casbinService.getEnforcer();
+
   try {
     const { id } = req.params;
     const { roleId, moduleId, operation } = req.body;
@@ -132,16 +133,15 @@ const updatePermissionById = async (req: Request, res: Response) => {
         where: { id: moduleId },
       });
 
-      const enforcer = await casbin.getEnforcer();
       if (findModule?.name && findRole?.name) {
-        const findPolicy = await enforcer.getFilteredPolicy(
+        const findPolicy = await casbin.getFilteredPolicy(
           0,
           findPermission?.role?.name as string,
           findPermission?.module?.name as string,
           findPermission?.operation as string,
         );
         if (findPolicy) {
-          await enforcer.updatePolicy(
+          await casbin.updatePolicy(
             [
               findPermission?.role?.name as string,
               findPermission?.module?.name as string,
@@ -150,7 +150,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
             [findRole?.name, findModule?.name, operation],
           );
         } else {
-          await enforcer.addPolicy(findRole?.name, findModule?.name, operation);
+          await casbin.addPolicy(findRole?.name, findModule?.name, operation);
         }
       }
       sendResponse(
