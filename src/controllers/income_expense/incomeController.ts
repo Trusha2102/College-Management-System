@@ -63,6 +63,7 @@ export const getAllIncomes = async (req: Request, res: Response) => {
     const { search, page, limit } = req.query;
     const incomeRepository = AppDataSource.getRepository(Income);
     let query = incomeRepository.createQueryBuilder('income');
+    let incomes = [];
 
     // If search term is provided, apply filtering
     if (search) {
@@ -89,37 +90,19 @@ export const getAllIncomes = async (req: Request, res: Response) => {
       const skip = (pageNumber - 1) * limitNumber;
 
       // Fetch paginated data
-      const incomes = await query.skip(skip).take(limitNumber).getMany();
-
-      return res.status(200).json({
-        status: true,
-        message: 'Incomes found',
-        data: {
-          incomes,
-          totalNoOfRecords: incomes.length,
-          totalCount,
-        },
-      });
+      incomes = await query.skip(skip).take(limitNumber).getMany();
+    } else {
+      // If page and limit are not provided, fetch all incomes
+      incomes = await query.getMany();
     }
 
-    // If page and limit are not provided, fetch all incomes
-    const incomes = await query.getMany();
-
-    return res.status(200).json({
-      status: 'success',
-      message: 'Incomes found',
-      data: {
-        incomes,
-        totalNoOfRecords: incomes.length,
-        totalCount,
-      },
+    sendResponse(res, 200, 'Incomes found', {
+      incomes,
+      totalNoOfRecords: incomes.length,
+      totalCount,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch incomes',
-      error: error.message,
-    });
+    sendError(res, 500, 'Failed to fetch incomes', error.message);
   }
 };
 

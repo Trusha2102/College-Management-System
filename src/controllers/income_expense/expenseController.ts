@@ -63,6 +63,7 @@ export const getAllExpenses = async (req: Request, res: Response) => {
     const { search, page, limit } = req.query;
     const expenseRepository = AppDataSource.getRepository(Expense);
     let query = expenseRepository.createQueryBuilder('expense');
+    let expenses = [];
 
     // If search term is provided, apply filtering
     if (search) {
@@ -89,37 +90,19 @@ export const getAllExpenses = async (req: Request, res: Response) => {
       const skip = (pageNumber - 1) * limitNumber;
 
       // Fetch paginated data
-      const expenses = await query.skip(skip).take(limitNumber).getMany();
-
-      return res.status(200).json({
-        status: true,
-        message: 'Expenses found',
-        data: {
-          expenses,
-          totalNoOfRecords: expenses.length,
-          totalCount,
-        },
-      });
+      expenses = await query.skip(skip).take(limitNumber).getMany();
+    } else {
+      // If page and limit are not provided, fetch all expenses
+      expenses = await query.getMany();
     }
 
-    // If page and limit are not provided, fetch all expenses
-    const expenses = await query.getMany();
-
-    return res.status(200).json({
-      status: 'success',
-      message: 'Expenses found',
-      data: {
-        expenses,
-        totalNoOfRecords: expenses.length,
-        totalCount,
-      },
+    sendResponse(res, 200, 'Expenses found', {
+      expenses,
+      totalNoOfRecords: expenses.length,
+      totalCount,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch expenses',
-      error: error.message,
-    });
+    sendError(res, 500, 'Failed to fetch expenses', error.message);
   }
 };
 

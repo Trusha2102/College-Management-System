@@ -36,6 +36,7 @@ export const getAllExpenseHeads = async (req: Request, res: Response) => {
     const { search, page, limit } = req.query;
     const expenseHeadRepository = AppDataSource.getRepository(ExpenseHead);
     let query = expenseHeadRepository.createQueryBuilder('expenseHead');
+    let expenseHeads = [];
 
     // If search term is provided, apply filtering
     if (search) {
@@ -58,37 +59,19 @@ export const getAllExpenseHeads = async (req: Request, res: Response) => {
       const skip = (pageNumber - 1) * limitNumber;
 
       // Fetch paginated data
-      const expenseHeads = await query.skip(skip).take(limitNumber).getMany();
-
-      return res.status(200).json({
-        status: true,
-        message: 'Expense heads found',
-        data: {
-          expenseHeads,
-          totalNoOfRecords: expenseHeads.length,
-          totalCount,
-        },
-      });
+      expenseHeads = await query.skip(skip).take(limitNumber).getMany();
+    } else {
+      // If page and limit are not provided, fetch all expense heads
+      expenseHeads = await query.getMany();
     }
 
-    // If page and limit are not provided, fetch all expense heads
-    const expenseHeads = await query.getMany();
-
-    return res.status(200).json({
-      status: 'success',
-      message: 'Expense heads found',
-      data: {
-        expenseHeads,
-        totalNoOfRecords: expenseHeads.length,
-        totalCount,
-      },
+    sendResponse(res, 200, 'Expense heads found', {
+      expenseHeads,
+      totalNoOfRecords: expenseHeads.length,
+      totalCount,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch expense heads',
-      error: error.message,
-    });
+    sendError(res, 500, 'Failed to fetch expense heads', error.message);
   }
 };
 

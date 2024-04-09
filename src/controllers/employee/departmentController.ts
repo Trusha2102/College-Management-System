@@ -29,6 +29,7 @@ export const listDepartments = async (req: Request, res: Response) => {
     const { page, limit } = req.query;
     const departmentRepository = AppDataSource.getRepository(Department);
     let query = departmentRepository.createQueryBuilder('department');
+    let departments = [];
 
     // Fetch total count
     const totalCount = await query.getCount();
@@ -40,37 +41,19 @@ export const listDepartments = async (req: Request, res: Response) => {
       const skip = (pageNumber - 1) * limitNumber;
 
       // Fetch paginated data
-      const departments = await query.skip(skip).take(limitNumber).getMany();
-
-      return res.status(200).json({
-        status: 'success',
-        message: 'Departments found',
-        data: {
-          departments,
-          totalNoOfRecords: departments.length,
-          totalCount,
-        },
-      });
+      departments = await query.skip(skip).take(limitNumber).getMany();
+    } else {
+      // If page and limit are not provided, fetch all departments
+      departments = await departmentRepository.find();
     }
 
-    // If page and limit are not provided, fetch all departments
-    const departments = await departmentRepository.find();
-
-    return res.status(200).json({
-      status: true,
-      message: 'Departments found',
-      data: {
-        departments,
-        totalNoOfRecords: departments.length,
-        totalCount,
-      },
+    sendResponse(res, 200, 'Departments found', {
+      departments,
+      totalNoOfRecords: departments.length,
+      totalCount,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch departments',
-      error: error.message,
-    });
+    sendError(res, 500, 'Failed to fetch departments', error.message);
   }
 };
 

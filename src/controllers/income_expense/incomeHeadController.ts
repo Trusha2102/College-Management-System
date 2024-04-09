@@ -46,12 +46,18 @@ export const getAllIncomeHeads = async (req: Request, res: Response) => {
       incomeHeads = await incomeHeadRepository.find();
     }
 
-    sendResponse(res, 200, 'Success', incomeHeads);
+    const totalNoOfRecords = incomeHeads.length; // Calculate total number of records
+    const totalCount = totalNoOfRecords; // Total count equals the length of data when no pagination is applied
+
+    sendResponse(res, 200, 'Income heads found', {
+      incomeHeads,
+      totalNoOfRecords,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch income heads', error.message);
   }
 };
-
 // Get income head by ID
 export const getIncomeHeadById = async (req: Request, res: Response) => {
   try {
