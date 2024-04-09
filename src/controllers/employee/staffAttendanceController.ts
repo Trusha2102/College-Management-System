@@ -40,12 +40,30 @@ export const createAttendance = async (req: Request, res: Response) => {
 // Get all attendances
 export const getAllAttendances = async (req: Request, res: Response) => {
   try {
+    const { date, employeeId } = req.query;
     const attendanceRepository = AppDataSource.getRepository(Attendance);
-    const attendances = await attendanceRepository.find({
-      order: {
-        createdAt: 'DESC',
-      },
-    });
+    let query = attendanceRepository.createQueryBuilder('attendance');
+
+    // If date is provided, filter by date
+    if (date) {
+      query = query.where('DATE(attendance.date) = DATE(:date)', {
+        date: date,
+      });
+    }
+
+    // If employeeId is provided, filter by employeeId
+    if (employeeId) {
+      query = query.andWhere('attendance.employeeId = :employeeId', {
+        employeeId: parseInt(employeeId as string),
+      });
+    }
+
+    // Apply ordering by createdAt in descending order
+    query = query.orderBy('attendance.createdAt', 'DESC');
+
+    // Fetch the attendances based on the query
+    const attendances = await query.getMany();
+
     sendResponse(res, 200, 'Success', attendances);
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch attendances', error.message);

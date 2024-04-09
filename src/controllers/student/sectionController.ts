@@ -3,16 +3,31 @@ import { Section } from '../../entity/Section';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { ILike } from 'typeorm';
 
 export const createSection = async (req: Request, res: Response) => {
   try {
     const { section } = req.body;
 
+    const trimmedSectionName = section.trim();
+
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const sectionRepository = queryRunner.manager.getRepository(Section);
+
+      const existingSection = await sectionRepository.findOne({
+        where: {
+          section: ILike(trimmedSectionName),
+        },
+      });
+
+      if (existingSection) {
+        sendError(res, 400, 'A section with a similar name already exists');
+        return;
+      }
+
       const newSection = sectionRepository.create({
-        section,
+        section: trimmedSectionName,
       });
       await sectionRepository.save(newSection);
       sendResponse(res, 201, 'Section created successfully', newSection);
@@ -64,6 +79,19 @@ export const updateSectionById = async (req: Request, res: Response) => {
       });
       if (!updatedSection) {
         sendError(res, 404, 'Section not found');
+        return;
+      }
+
+      const trimmedSectionName = section.trim();
+
+      const existingSection = await sectionRepository.findOne({
+        where: {
+          section: ILike(trimmedSectionName),
+        },
+      });
+
+      if (existingSection) {
+        sendError(res, 400, 'A section with a similar name already exists');
         return;
       }
 
