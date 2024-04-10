@@ -26,10 +26,17 @@ export const createDepartment = async (req: Request, res: Response) => {
 // Get All Departments
 export const listDepartments = async (req: Request, res: Response) => {
   try {
-    const { page, limit } = req.query;
+    const { page, limit, search } = req.query;
     const departmentRepository = AppDataSource.getRepository(Department);
     let query = departmentRepository.createQueryBuilder('department');
     let departments = [];
+
+    // Apply search filter if search query parameter is provided
+    if (search) {
+      query = query.where('LOWER(department.department) LIKE LOWER(:search)', {
+        search: `%${search}%`,
+      });
+    }
 
     // Fetch total count
     const totalCount = await query.getCount();
@@ -41,12 +48,16 @@ export const listDepartments = async (req: Request, res: Response) => {
       const skip = (pageNumber - 1) * limitNumber;
 
       // Fetch paginated data
-      departments = await query.skip(skip).take(limitNumber).getMany();
+      departments = await query
+        .orderBy('department.createdAt', 'DESC')
+        .skip(skip)
+        .take(limitNumber)
+        .getMany();
     } else {
       // If page and limit are not provided, fetch all departments
-      departments = await departmentRepository.find({
-        order: { createdAt: 'DESC' },
-      });
+      departments = await query
+        .orderBy('department.createdAt', 'DESC')
+        .getMany();
     }
 
     sendResponse(res, 200, 'Departments found', {

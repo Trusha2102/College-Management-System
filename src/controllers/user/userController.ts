@@ -102,11 +102,27 @@ const createUser = async (req: Request, res: Response) => {
 
 const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const users = await AppDataSource.manager.find(User, {
+    const { page, limit } = req.query;
+
+    // Convert page and limit parameters to numbers
+    const pageNumber = page ? parseInt(page as string) : 1;
+    const limitNumber = limit ? parseInt(limit as string) : 10;
+
+    // Calculate offset based on page number and limit
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // Fetch users with pagination and total count
+    const [users, totalCount] = await AppDataSource.manager.findAndCount(User, {
       where: { is_active: true },
       order: { createdAt: 'DESC' },
+      skip: offset,
+      take: limitNumber,
     });
-    sendResponse(res, 200, 'Users', users);
+
+    sendResponse(res, 200, 'Users', {
+      users,
+      totalCount,
+    });
   } catch (error) {
     console.error(error);
     sendError(res, 500, 'Failed to fetch users');

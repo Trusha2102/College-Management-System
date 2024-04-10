@@ -152,12 +152,29 @@ export const deleteSemesterById = async (req: Request, res: Response) => {
 export const listSemesters = async (req: Request, res: Response) => {
   try {
     const { courseId } = req.params;
-    const semesterRepository = AppDataSource.getRepository(Semester);
-    const semesters = await semesterRepository.find({
+    const { page, limit } = req.query;
+
+    // Convert page and limit parameters to numbers
+    const pageNumber = page ? parseInt(page as string) : 1;
+    const limitNumber = limit ? parseInt(limit as string) : 10;
+
+    // Calculate offset based on page number and limit
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // Fetch semesters with pagination
+    const [semesters, totalCount] = await AppDataSource.getRepository(
+      Semester,
+    ).findAndCount({
       where: { course: { id: +courseId } },
       order: { createdAt: 'DESC' },
+      skip: offset,
+      take: limitNumber,
     });
-    sendResponse(res, 200, 'Semesters found', semesters);
+
+    sendResponse(res, 200, 'Semesters found', {
+      semesters,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch semesters', error.message);
   }

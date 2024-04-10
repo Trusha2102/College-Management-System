@@ -6,11 +6,7 @@ const router = express.Router();
 
 router.post('/add', feesGroupController.createFeesGroup);
 router.put('/update/:id', feesGroupController.updateFeesGroupById);
-router.delete(
-  '/delete/:id',
-
-  feesGroupController.deleteFeesGroupById,
-);
+router.delete('/delete/:id', feesGroupController.deleteFeesGroupById);
 router.get('/view/:id', feesGroupController.getFeesGroupById);
 router.get('/list', feesGroupController.getAllFeesGroups);
 

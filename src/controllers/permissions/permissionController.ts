@@ -10,7 +10,7 @@ import { In, Not } from 'typeorm';
 const casbinService = new CasbinService();
 
 const createPermission = async (req: Request, res: Response) => {
-  const casbin = await casbinService.getEnforcer();
+  // const casbin = await casbinService.getEnforcer();
 
   try {
     const { role: roleName, permission: permissionsData } = req.body;
@@ -62,7 +62,7 @@ const createPermission = async (req: Request, res: Response) => {
           createdPermissions.push(permissionRecord);
         }
 
-        await casbin.addPolicy(role?.name as string, module?.name, operation);
+        // await casbin.addPolicy(role?.name as string, module?.name, operation);
       }
       res.status(201).json(createdPermissions);
     });

@@ -60,11 +60,32 @@ export const deleteFeesType = async (req: Request, res: Response) => {
 // Get all FeesTypes
 export const getAllFeesTypes = async (req: Request, res: Response) => {
   try {
+    const { page, limit } = req.query;
+
     const feesTypeRepository = AppDataSource.getRepository(FeesType);
-    const allFeesTypes = await feesTypeRepository.find({
-      order: { createdAt: 'DESC' },
+    let query = feesTypeRepository.createQueryBuilder('feesType');
+
+    // Count total number of records
+    const totalCount = await query.getCount();
+
+    // Apply pagination if page and limit are provided
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      query = query.skip(skip).take(limitNumber);
+    }
+
+    // Fetch fees types
+    const allFeesTypes = await query
+      .orderBy('feesType.createdAt', 'DESC')
+      .getMany();
+
+    sendResponse(res, 200, 'FeesTypes fetched successfully', {
+      feesTypes: allFeesTypes,
+      totalCount,
     });
-    sendResponse(res, 200, 'FeesTypes fetched successfully', allFeesTypes);
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch FeesTypes', error.message);
   }
