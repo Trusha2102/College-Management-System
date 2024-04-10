@@ -4,10 +4,6 @@ import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
-router.get(
-  '/count/view',
-  permissionProtect,
-  dashboardController.getRecordsCount,
-);
+router.get('/view', permissionProtect, dashboardController.getRecordsCount);
 
 export default router;

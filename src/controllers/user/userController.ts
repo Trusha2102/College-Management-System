@@ -73,6 +73,7 @@ const createUser = async (req: Request, res: Response) => {
       user.work_experience = userData.work_experience;
       user.aadhar_card = userData.aadhar_card;
       user.role_id = role_id;
+      user.role = role_id;
       user.mobile = userData.mobile;
       user.dob = new Date(userData.dob);
       user.profile_picture = profilePicturePath;
