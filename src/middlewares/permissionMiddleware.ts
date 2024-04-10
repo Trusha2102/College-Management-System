@@ -15,8 +15,6 @@ const permissionProtect = async (
 ) => {
   let token: string | null = null;
 
-  console.log('THE PERMISSION PROTECT MIDDLEWARE IS ADDED');
-
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
@@ -35,7 +33,7 @@ const permissionProtect = async (
     }
     const roleRepository = AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
-      where: { id: decoded.role_id },
+      where: { id: decoded.user.role_id },
     });
     if (!role) {
       return next(sendError(res, 401, 'Not authorized to access this route'));
