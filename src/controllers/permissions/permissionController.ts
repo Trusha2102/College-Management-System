@@ -83,7 +83,7 @@ const getAllPermissions = async (req: Request, res: Response) => {
 };
 
 const updatePermissionById = async (req: Request, res: Response) => {
-  const casbin = await casbinService.getEnforcer();
+  // const casbin = await casbinService.getEnforcer();
 
   try {
     const { id } = req.params;
@@ -134,7 +134,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
             });
 
             // Add policy to Casbin
-            await casbin.addPolicy(role.name, module.name, operation);
+            // await casbin.addPolicy(role.name, module.name, operation);
           }
         }
 
@@ -146,18 +146,18 @@ const updatePermissionById = async (req: Request, res: Response) => {
         });
 
         // Remove policies not found in the update object from Casbin
-        const existingPolicies = await casbin.getFilteredPolicy(
-          0,
-          role.name,
-          module.name,
-        );
-        const existingOperations = existingPolicies.map((policy) => policy[2]);
-        const operationsToDelete = existingOperations.filter(
-          (op) => !operations.includes(op),
-        );
-        operationsToDelete.forEach(async (op: string) => {
-          await casbin.removePolicy(role.name, module.name, op);
-        });
+        // const existingPolicies = await casbin.getFilteredPolicy(
+        //   0,
+        //   role.name,
+        //   module.name,
+        // );
+        // const existingOperations = existingPolicies.map((policy) => policy[2]);
+        // const operationsToDelete = existingOperations.filter(
+        //   (op) => !operations.includes(op),
+        // );
+        // operationsToDelete.forEach(async (op: string) => {
+        //   // await casbin.removePolicy(role.name, module.name, op);
+        // });
       }
     });
 
@@ -194,9 +194,61 @@ const deletePermissionById = async (req: Request, res: Response) => {
   }
 };
 
+const generatePermissionsHTML = async (req: Request, res: Response) => {
+  try {
+    const permissionRepository = AppDataSource.getRepository(Permission);
+    const permissions = await permissionRepository.find();
+
+    // Group permissions by roleId and moduleId
+    const groupedPermissions: { [key: string]: Permission } = {};
+    permissions.forEach((permission: Permission) => {
+      const key = `${permission.roleId}-${permission.moduleId}`;
+      if (!(key in groupedPermissions)) {
+        groupedPermissions[key] = permission;
+      }
+    });
+
+    let htmlContent =
+      '<html><head><title>Permissions</title></head><body><h1>Permissions</h1><table><tr><th>Role ID</th><th>Module ID</th><th>Write</th><th>Read</th><th>Edit</th><th>Delete</th></tr>';
+
+    // Generate HTML rows
+    Object.values(groupedPermissions).forEach((permission: Permission) => {
+      const { roleId, moduleId } = permission;
+      let writeColor = 'red';
+      let readColor = 'red';
+      let editColor = 'red';
+      let deleteColor = 'red';
+
+      permissions.forEach((perm: Permission) => {
+        if (perm.roleId === roleId && perm.moduleId === moduleId) {
+          if (perm.operation === 'write') {
+            writeColor = 'green';
+          } else if (perm.operation === 'read') {
+            readColor = 'green';
+          } else if (perm.operation === 'edit') {
+            editColor = 'green';
+          } else if (perm.operation === 'delete') {
+            deleteColor = 'green';
+          }
+        }
+      });
+
+      htmlContent += `<tr><td>${roleId}</td><td>${moduleId}</td><td style="background-color:${writeColor}">${writeColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${readColor}">${readColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${editColor}">${editColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${deleteColor}">${deleteColor === 'green' ? 'Yes' : 'No'}</td></tr>`;
+    });
+
+    htmlContent += '</table></body></html>';
+
+    res.status(200).send(htmlContent);
+  } catch (error) {
+    console.error('Failed to generate permissions HTML:', error);
+    res.status(500).send('Failed to generate permissions HTML');
+  }
+};
+
 export {
   createPermission,
   getAllPermissions,
   updatePermissionById,
   deletePermissionById,
+  generatePermissionsHTML,
 };

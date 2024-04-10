@@ -5,10 +5,30 @@ import { Course } from '../../entity/Course';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { ILike } from 'typeorm';
 
 export const createSemester = async (req: Request, res: Response) => {
   try {
     const { semester, courseId } = req.body;
+
+    const trimmedSemesterName = semester.trim();
+    if (!trimmedSemesterName) {
+      return sendError(res, 400, 'Semester is required');
+    }
+
+    const existingSemester = await AppDataSource.manager.findOne(Semester, {
+      where: {
+        semester: ILike(trimmedSemesterName),
+        course: courseId,
+      },
+    });
+    if (existingSemester) {
+      return sendError(
+        res,
+        400,
+        'A semester with a similar name already exists for this course',
+      );
+    }
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
@@ -66,6 +86,27 @@ export const updateSemesterById = async (req: Request, res: Response) => {
         return;
       }
 
+      const trimmedSemesterName = semester.trim();
+      if (!trimmedSemesterName) {
+        sendError(res, 400, 'Semester is required');
+        return;
+      }
+
+      const existingSemester = await AppDataSource.manager.findOne(Semester, {
+        where: {
+          semester: ILike(trimmedSemesterName),
+          course: courseId,
+        },
+      });
+      if (existingSemester) {
+        sendError(
+          res,
+          400,
+          'A semester with a similar name already exists for this course',
+        );
+        return;
+      }
+
       const semesterRepository = queryRunner.manager.getRepository(Semester);
       const semesterToUpdate = await semesterRepository.findOne({
         where: { id: +id },
@@ -114,6 +155,7 @@ export const listSemesters = async (req: Request, res: Response) => {
     const semesterRepository = AppDataSource.getRepository(Semester);
     const semesters = await semesterRepository.find({
       where: { course: { id: +courseId } },
+      order: { createdAt: 'DESC' },
     });
     sendResponse(res, 200, 'Semesters found', semesters);
   } catch (error: any) {

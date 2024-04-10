@@ -44,7 +44,9 @@ export const listDepartments = async (req: Request, res: Response) => {
       departments = await query.skip(skip).take(limitNumber).getMany();
     } else {
       // If page and limit are not provided, fetch all departments
-      departments = await departmentRepository.find();
+      departments = await departmentRepository.find({
+        order: { createdAt: 'DESC' },
+      });
     }
 
     sendResponse(res, 200, 'Departments found', {

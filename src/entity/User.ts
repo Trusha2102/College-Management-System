@@ -5,6 +5,8 @@ import {
   BaseEntity,
   OneToMany,
   ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Role } from './Role';
 import { Address } from './Address';
@@ -93,6 +95,23 @@ export class User {
 
   @OneToMany(() => Employee, (employee: { user: any }) => employee.user)
   employee!: Employee[];
+
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    nullable: false,
+  })
+  createdAt!: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+    nullable: false,
+  })
+  updatedAt!: Date;
 
   @OneToMany(
     () => ActivityLog,

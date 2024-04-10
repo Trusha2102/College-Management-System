@@ -187,6 +187,9 @@ export const listEmployees = async (req: Request, res: Response) => {
       query = query.andWhere('payroll.year ILIKE :year', { year });
     }
 
+    // Order employees by created_at in descending order
+    query = query.orderBy('employee.createdAt', 'DESC');
+
     const totalEmployees = await query.getCount();
     const totalPages = Math.ceil(totalEmployees / itemsPerPage);
 

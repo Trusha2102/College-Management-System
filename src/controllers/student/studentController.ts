@@ -14,6 +14,8 @@ import { StudentHistory } from '../../entity/StudentHistory';
 const upload = configureMulter('./uploads/Student', 5 * 1024 * 1024); // 5MB limit
 
 const createStudent = async (req: Request, res: Response) => {
+  let errorOccurred = false; // Flag to track if an error has occurred
+
   try {
     upload.fields([
       { name: 'profile_picture', maxCount: 1 },
@@ -21,8 +23,10 @@ const createStudent = async (req: Request, res: Response) => {
     ])(req, res, async (err: any) => {
       if (err) {
         console.error(err);
+        errorOccurred = true; // Set flag to true when an error occurs
         return sendError(res, 500, 'Failed to upload files', err.message);
       }
+
       const { body, files } = req;
       // Process other_docs files
       const otherDocsFiles =
@@ -56,6 +60,7 @@ const createStudent = async (req: Request, res: Response) => {
 
         if (!course) {
           sendError(res, 400, 'Invalid course ID', 'Course not found');
+          errorOccurred = true;
           return;
         }
 
@@ -65,6 +70,7 @@ const createStudent = async (req: Request, res: Response) => {
 
         if (!semester) {
           sendError(res, 400, 'Invalid semester ID', 'Semester not found');
+          errorOccurred = true;
           return;
         }
 
@@ -74,6 +80,7 @@ const createStudent = async (req: Request, res: Response) => {
 
         if (!session) {
           sendError(res, 400, 'Invalid session ID', 'Session not found');
+          errorOccurred = true;
           return;
         }
 
@@ -84,6 +91,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique email',
             'Email already exists',
           );
+          errorOccurred = true;
           return;
         }
 
@@ -99,6 +107,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique enrollment_no',
             'Enrollment number already exists',
           );
+          errorOccurred = true;
           return;
         }
 
@@ -114,6 +123,7 @@ const createStudent = async (req: Request, res: Response) => {
             'Please add unique admission_no',
             'Admission number already exists',
           );
+          errorOccurred = true;
           return;
         }
 
@@ -150,11 +160,17 @@ const createStudent = async (req: Request, res: Response) => {
         }
       });
 
-      sendResponse(res, 201, 'Student created successfully', student);
+      if (!errorOccurred) {
+        // Send response only if no error has occurred
+        sendResponse(res, 201, 'Student created successfully', student);
+      }
     });
   } catch (error: any) {
-    console.error(error);
-    sendError(res, 500, 'Failed to create student', error.message);
+    if (!errorOccurred) {
+      // Handle error only if no error has occurred in the upload callback
+      console.error(error);
+      sendError(res, 500, 'Failed to create student', error.message);
+    }
   }
 };
 
@@ -223,6 +239,9 @@ const listStudents = async (req: Request, res: Response) => {
     // Apply pagination
     const totalCount = await query.getCount();
     const totalPages = Math.ceil(totalCount / limit);
+
+    query = query.orderBy('student.createdAt', 'DESC');
+
     query = query.skip((page - 1) * limit).take(limit);
 
     // Execute the query
@@ -330,13 +349,7 @@ const updateStudentById = async (req: Request, res: Response) => {
             (files as { [fieldname: string]: Express.Multer.File[] })[
               'profile_picture'
             ]?.[0]?.path || student.profile_picture,
-          other_docs:
-            (files as { [fieldname: string]: Express.Multer.File[] })[
-              'other_docs'
-            ]?.map((file) => ({
-              name: file.originalname,
-              path: file.path,
-            })) || student.other_docs,
+          other_docs: otherDocs || student.other_docs,
         };
 
         // Merge the updated data with existing data

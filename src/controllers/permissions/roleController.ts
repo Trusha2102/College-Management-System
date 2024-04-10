@@ -37,7 +37,9 @@ const createRole = async (req: Request, res: Response) => {
 
 const getAllRoles = async (req: Request, res: Response) => {
   try {
-    const roles = await AppDataSource.manager.find(Role);
+    const roles = await AppDataSource.manager.find(Role, {
+      order: { createdAt: 'DESC' },
+    });
     sendResponse(res, 200, 'Role', roles);
   } catch (error) {
     console.error(error);

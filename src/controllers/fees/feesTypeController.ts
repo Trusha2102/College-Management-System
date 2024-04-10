@@ -61,7 +61,9 @@ export const deleteFeesType = async (req: Request, res: Response) => {
 export const getAllFeesTypes = async (req: Request, res: Response) => {
   try {
     const feesTypeRepository = AppDataSource.getRepository(FeesType);
-    const allFeesTypes = await feesTypeRepository.find();
+    const allFeesTypes = await feesTypeRepository.find({
+      order: { createdAt: 'DESC' },
+    });
     sendResponse(res, 200, 'FeesTypes fetched successfully', allFeesTypes);
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch FeesTypes', error.message);

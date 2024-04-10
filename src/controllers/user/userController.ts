@@ -6,6 +6,7 @@ import { Role } from '../../entity/Role';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
+import runTransaction from '../../utils/runTransaction';
 
 const upload = configureMulter('./uploads/profilePicture', 5 * 1024 * 1024); // 5MB limit
 
@@ -20,8 +21,10 @@ const createUser = async (req: Request, res: Response) => {
           return sendError(res, 500, 'Failed to upload profile picture');
         }
       }
-      if (!req.file) {
-        return sendError(res, 400, 'No file uploaded');
+
+      let profilePicturePath = '';
+      if (req.file) {
+        profilePicturePath = req.file.path;
       }
 
       const {
@@ -72,12 +75,15 @@ const createUser = async (req: Request, res: Response) => {
       user.role_id = role_id;
       user.mobile = userData.mobile;
       user.dob = new Date(userData.dob);
-      user.profile_picture = req.file.path;
+      user.profile_picture = profilePicturePath;
       user.social_media_links = parsedSocialMediaLinks;
       user.address_id = parsedAddressId as number;
       user.bank_details_id = parsedBankAccountId as number;
 
-      await AppDataSource.manager.save(user);
+      const queryRunner = AppDataSource.createQueryRunner();
+      await runTransaction(queryRunner, async () => {
+        await queryRunner.manager.save(user);
+      });
 
       sendResponse(res, 201, 'User', {
         user,
@@ -98,6 +104,7 @@ const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await AppDataSource.manager.find(User, {
       where: { is_active: true },
+      order: { createdAt: 'DESC' },
     });
     sendResponse(res, 200, 'Users', users);
   } catch (error) {
@@ -159,6 +166,13 @@ const updateUserById = async (req: Request, res: Response) => {
         return sendError(res, 404, 'Role not found');
       }
 
+      const existingUser = await AppDataSource.manager.findOne(User, {
+        where: { email: userData.email },
+      });
+      if (existingUser && existingUser.id !== +userId) {
+        return sendError(res, 400, 'Email address already exists');
+      }
+
       const marital_status = userData.marital_status === 'true';
       const parsedSocialMediaLinks = social_media_links.split(',');
       const parsedAddressId = address_id === 'null' ? null : +address_id;
@@ -196,7 +210,10 @@ const updateUserById = async (req: Request, res: Response) => {
       user.address_id = parsedAddressId || user.address_id;
       user.bank_details_id = parsedBankAccountId || user.bank_details_id;
 
-      await AppDataSource.manager.save(user);
+      const queryRunner = AppDataSource.createQueryRunner();
+      await runTransaction(queryRunner, async () => {
+        await queryRunner.manager.save(user);
+      });
 
       sendResponse(res, 200, 'User', {
         user,

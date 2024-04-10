@@ -78,7 +78,11 @@ const forgotPasswordEmail = async (req: Request, res: Response) => {
     return sendError(res, 400, 'Email is required');
   }
 
-  const filePath = path.join(__dirname, '../../src/html/forgotPassword.html');
+  const filePath = path.join(
+    __dirname,
+    '../../..',
+    'src/html/forgotPassword.html',
+  );
 
   fs.readFile(filePath, 'utf8', async (err, data) => {
     if (err) {

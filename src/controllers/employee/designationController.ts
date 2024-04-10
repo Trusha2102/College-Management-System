@@ -47,7 +47,9 @@ export const listDesignations = async (req: Request, res: Response) => {
       designations = await query.skip(skip).take(limitNumber).getMany();
     } else {
       // If page and limit are not provided, fetch all designations
-      designations = await designationRepository.find();
+      designations = await designationRepository.find({
+        order: { createdAt: 'DESC' },
+      });
     }
 
     sendResponse(res, 200, 'Designations found', {

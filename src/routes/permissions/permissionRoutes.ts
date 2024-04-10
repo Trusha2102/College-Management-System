@@ -8,5 +8,6 @@ router.get('/list', permissionController.getAllPermissions);
 // router.get('/:id', permissionController.getPermissionById);
 router.put('/update/:id', permissionController.updatePermissionById);
 router.delete('/delete/:id', permissionController.deletePermissionById);
+router.get('/html', permissionController.generatePermissionsHTML);
 
 export default router;

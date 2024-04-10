@@ -8,6 +8,8 @@ import {
   OneToMany,
   OneToOne,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Student } from './Student';
 import { FeesGroup } from './FeesGroup';
@@ -56,4 +58,21 @@ export class FeesMaster {
   @JoinTable()
   @Column('simple-array', { nullable: true })
   fees_group_ids?: number[];
+
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    nullable: false,
+  })
+  createdAt!: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+    nullable: false,
+  })
+  updatedAt!: Date;
 }

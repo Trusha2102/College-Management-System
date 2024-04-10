@@ -26,6 +26,7 @@ import staffAttendanceRoutes from './employee/staffAttendanceRoutes';
 import staffLoanRoutes from './employee/staffLoanRoutes';
 import installmentRoutes from './employee/installmentRoutes';
 import feesTypeRoutes from './fees/feesTypeRoutes';
+import feesGroupRoutes from './fees/feesGroupRoutes';
 
 const router = express.Router();
 
@@ -56,5 +57,6 @@ router.use('/attendance', staffAttendanceRoutes);
 router.use('/staff-loan', staffLoanRoutes);
 router.use('/installment', installmentRoutes);
 router.use('/fees-type', feesTypeRoutes);
+router.use('/fees-group', feesGroupRoutes);
 
 export default router;

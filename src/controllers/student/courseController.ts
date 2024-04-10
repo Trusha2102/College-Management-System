@@ -3,14 +3,36 @@ import AppDataSource from '../../data-source';
 import { Course } from '../../entity/Course';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { ILike } from 'typeorm';
 
 // Create a new course
 export const createCourse = async (req: Request, res: Response) => {
   try {
+    const trimmedCourseName = req.body.name.trim();
+
+    if (!trimmedCourseName) {
+      return sendError(res, 400, 'Course is required');
+    }
+
+    const existingCourse = await AppDataSource.manager.findOne(Course, {
+      where: {
+        name: ILike(trimmedCourseName),
+      },
+    });
+
+    // If a similar course name already exists, send an error response
+    if (existingCourse) {
+      return sendError(res, 400, 'A course with a similar name already exists');
+    }
+
+    // Create a new course
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const courseRepository = queryRunner.manager.getRepository(Course);
-      const newCourse = courseRepository.create(req.body);
+      const newCourse = courseRepository.create({
+        ...req.body,
+        name: trimmedCourseName,
+      });
       await courseRepository.save(newCourse);
       sendResponse(res, 201, 'Course created successfully', newCourse);
     });
@@ -23,7 +45,9 @@ export const createCourse = async (req: Request, res: Response) => {
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
     const courseRepository = AppDataSource.getRepository(Course);
-    const courses = await courseRepository.find();
+    const courses = await courseRepository.find({
+      order: { createdAt: 'DESC' },
+    });
     sendResponse(res, 200, 'Courses fetched successfully', courses);
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch courses', error.message);
@@ -62,7 +86,21 @@ export const updateCourseById = async (req: Request, res: Response) => {
         sendError(res, 404, 'Course not found');
         return;
       }
-      courseRepository.merge(course, req.body);
+
+      const trimmedCourseName = req.body.name.trim();
+
+      const existingCourse = await courseRepository.findOne({
+        where: {
+          name: ILike(trimmedCourseName),
+        },
+      });
+
+      if (existingCourse && existingCourse.id !== +id) {
+        sendError(res, 400, 'A course with a similar name already exists');
+        return;
+      }
+
+      courseRepository.merge(course, { ...req.body, name: trimmedCourseName });
       const updatedCourse = await courseRepository.save(course);
       sendResponse(res, 200, 'Course updated successfully', updatedCourse);
     });
