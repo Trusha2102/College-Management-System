@@ -6,11 +6,11 @@ const router = express.Router();
 
 router.post('/add', userController.createUser);
 router.get('/list', userController.getAllUsers);
-router.get(
-  '/in-active/list',
-  permissionProtect,
-  userController.getAllDeletedUsers,
-);
+// router.get(
+//   '/in-active/list',
+//   permissionProtect,
+//   userController.getAllDeletedUsers,
+// );
 router.get('/view/:id', permissionProtect, userController.getUserById);
 router.put('/update/:id', userController.updateUserById);
 router.delete('/delete/:id', permissionProtect, userController.deleteUserById);

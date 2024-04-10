@@ -194,11 +194,24 @@ const generatePermissionsHTML = async (req: Request, res: Response) => {
     });
 
     let htmlContent =
-      '<html><head><title>Permissions</title></head><body><h1>Permissions</h1><table><tr><th>Role ID</th><th>Module ID</th><th>Write</th><th>Read</th><th>Edit</th><th>Delete</th></tr>';
+      '<html><head><title>Permissions</title></head><body><h1>Permissions</h1><table><tr><th>Role Name</th><th>Module Name</th><th>Write</th><th>Read</th><th>Edit</th><th>Delete</th></tr>';
 
     // Generate HTML rows
-    Object.values(groupedPermissions).forEach((permission: Permission) => {
-      const { roleId, moduleId } = permission;
+    for (const groupedPermission of Object.values(groupedPermissions)) {
+      const { roleId, moduleId } = groupedPermission;
+
+      // Fetch role name
+      const role = await AppDataSource.getRepository(Role).findOne({
+        where: { id: roleId },
+      });
+      const roleName = role ? role.name : 'Unknown Role';
+
+      // Fetch module name
+      const module = await AppDataSource.getRepository(Module).findOne({
+        where: { id: moduleId },
+      });
+      const moduleName = module ? module.name : 'Unknown Module';
+
       let writeColor = 'red';
       let readColor = 'red';
       let editColor = 'red';
@@ -218,8 +231,8 @@ const generatePermissionsHTML = async (req: Request, res: Response) => {
         }
       });
 
-      htmlContent += `<tr><td>${roleId}</td><td>${moduleId}</td><td style="background-color:${writeColor}">${writeColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${readColor}">${readColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${editColor}">${editColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${deleteColor}">${deleteColor === 'green' ? 'Yes' : 'No'}</td></tr>`;
-    });
+      htmlContent += `<tr><td>${roleName}</td><td>${moduleName}</td><td style="background-color:${writeColor}">${writeColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${readColor}">${readColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${editColor}">${editColor === 'green' ? 'Yes' : 'No'}</td><td style="background-color:${deleteColor}">${deleteColor === 'green' ? 'Yes' : 'No'}</td></tr>`;
+    }
 
     htmlContent += '</table></body></html>';
 

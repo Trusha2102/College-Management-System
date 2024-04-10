@@ -42,16 +42,19 @@ const permissionProtect = async (
 
     const parts = req.baseUrl.split('/');
     const module = parts[parts.length - 1];
-    let route = '';
 
-    if (req.url.split('/').length > 2) {
-      const lastSlashIndex = req.url.lastIndexOf('/');
-      route = req.url.substring(1, lastSlashIndex);
-    } else {
-      route = req.url.replace('/', '');
+    // Parse the req.url for action keywords
+    let action = '';
+    if (req.url.includes('add')) {
+      action = 'write';
+    } else if (req.url.includes('update')) {
+      action = 'edit';
+    } else if (req.url.includes('delete')) {
+      action = 'delete';
+    } else if (req.url.includes('list') || req.url.includes('view')) {
+      action = 'read';
     }
-    //@ts-ignore
-    const action = routeAction[`${route}`];
+
     const status = await casbin.enforce(role.name, module, action);
     if (!status) {
       return next(sendError(res, 401, 'Not authorized to access this route'));
