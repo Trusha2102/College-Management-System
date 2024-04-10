@@ -10,7 +10,7 @@ import { In, Not } from 'typeorm';
 const casbinService = new CasbinService();
 
 const createPermission = async (req: Request, res: Response) => {
-  // const casbin = await casbinService.getEnforcer();
+  const casbin = await casbinService.getEnforcer();
 
   try {
     const { role: roleName, permission: permissionsData } = req.body;
@@ -59,10 +59,9 @@ const createPermission = async (req: Request, res: Response) => {
             operation: op,
           });
           await queryRunner.manager.save(permissionRecord);
+          await casbin.addPolicy(role?.name as string, module?.name, op);
           createdPermissions.push(permissionRecord);
         }
-
-        // await casbin.addPolicy(role?.name as string, module?.name, operation);
       }
       res.status(201).json(createdPermissions);
     });
@@ -83,7 +82,7 @@ const getAllPermissions = async (req: Request, res: Response) => {
 };
 
 const updatePermissionById = async (req: Request, res: Response) => {
-  // const casbin = await casbinService.getEnforcer();
+  const casbin = await casbinService.getEnforcer();
 
   try {
     const { id } = req.params;
@@ -112,8 +111,11 @@ const updatePermissionById = async (req: Request, res: Response) => {
           sendError(res, 400, 'Module not found');
           return;
         }
-
+        // Delete policy to Casbin
+        await casbin.removeFilteredPolicy(0, role.name, module.name);
         for (const operation of operations) {
+          // Add policy to Casbin
+          await casbin.addPolicy(role.name, module.name, operation);
           const existingPermission = await AppDataSource.manager.findOne(
             Permission,
             {
@@ -132,9 +134,6 @@ const updatePermissionById = async (req: Request, res: Response) => {
               moduleId: +moduleId,
               operation: operation,
             });
-
-            // Add policy to Casbin
-            // await casbin.addPolicy(role.name, module.name, operation);
           }
         }
 
@@ -144,20 +143,6 @@ const updatePermissionById = async (req: Request, res: Response) => {
           moduleId: +moduleId,
           operation: Not(In(operations)),
         });
-
-        // Remove policies not found in the update object from Casbin
-        // const existingPolicies = await casbin.getFilteredPolicy(
-        //   0,
-        //   role.name,
-        //   module.name,
-        // );
-        // const existingOperations = existingPolicies.map((policy) => policy[2]);
-        // const operationsToDelete = existingOperations.filter(
-        //   (op) => !operations.includes(op),
-        // );
-        // operationsToDelete.forEach(async (op: string) => {
-        //   // await casbin.removePolicy(role.name, module.name, op);
-        // });
       }
     });
 
