@@ -146,7 +146,7 @@ export const deleteSectionById = async (req: Request, res: Response) => {
       }
 
       await sectionRepository.remove(section);
-      sendResponse(res, 204, 'Section deleted successfully');
+      sendResponse(res, 200, 'Section deleted successfully');
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete section', error.message);

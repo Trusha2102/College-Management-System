@@ -201,6 +201,7 @@ export const updatePayrollById = async (req: Request, res: Response) => {
     sendError(res, 500, 'Failed to update payroll', error.message);
   }
 };
+
 // Delete payroll by ID
 export const deletePayrollById = async (req: Request, res: Response) => {
   try {

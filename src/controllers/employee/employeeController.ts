@@ -348,7 +348,7 @@ export const deleteEmployeeById = async (req: Request, res: Response) => {
       employee.is_active = false; // Soft delete by setting is_active to false
       await employeeRepository.save(employee);
 
-      sendResponse(res, 204, 'Employee deleted successfully');
+      sendResponse(res, 200, 'Employee deleted successfully');
     } catch (error: any) {
       sendError(res, 500, 'Failed to delete employee', error.message);
     }

@@ -150,7 +150,7 @@ export const deleteCourseById = async (req: Request, res: Response) => {
         return;
       }
       await courseRepository.remove(course);
-      sendResponse(res, 204, 'Course deleted successfully');
+      sendResponse(res, 200, 'Course deleted successfully');
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete course', error.message);

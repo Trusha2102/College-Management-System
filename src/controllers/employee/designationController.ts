@@ -135,7 +135,7 @@ export const deleteDesignationById = async (req: Request, res: Response) => {
       }
       await designationRepository.remove(designation);
 
-      sendResponse(res, 204, 'Designation deleted successfully');
+      sendResponse(res, 200, 'Designation deleted successfully');
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete designation', error.message);

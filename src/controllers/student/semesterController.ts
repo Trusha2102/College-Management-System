@@ -142,7 +142,7 @@ export const deleteSemesterById = async (req: Request, res: Response) => {
         return;
       }
       await semesterRepository.remove(semesterToDelete);
-      sendResponse(res, 204, 'Semester deleted successfully');
+      sendResponse(res, 200, 'Semester deleted successfully');
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete semester', error.message);

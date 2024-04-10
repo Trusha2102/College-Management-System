@@ -121,6 +121,7 @@ export const updateDepartment = async (req: Request, res: Response) => {
 };
 
 export const deleteDepartmentById = async (req: Request, res: Response) => {
+  console.log('THE DEPARTMENT DELETE API WAS CALLED');
   const { id } = req.params;
   const queryRunner = AppDataSource.createQueryRunner();
 
@@ -139,7 +140,7 @@ export const deleteDepartmentById = async (req: Request, res: Response) => {
 
       await departmentRepository.remove(department);
 
-      sendResponse(res, 204, 'Department deleted successfully');
+      sendResponse(res, 200, 'Department deleted successfully');
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete department', error.message);
