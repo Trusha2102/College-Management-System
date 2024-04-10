@@ -10,7 +10,8 @@ import { Installment } from '../../entity/Installment';
 // Get all payrolls
 export const getAllPayrolls = async (req: Request, res: Response) => {
   try {
-    const { month, year, name, role_id, is_deduction_collected } = req.query;
+    const { month, year, name, role_id, is_deduction_collected, page, limit } =
+      req.query;
 
     const payrollRepository = AppDataSource.getRepository(Payroll);
     const queryBuilder = payrollRepository
@@ -40,20 +41,23 @@ export const getAllPayrolls = async (req: Request, res: Response) => {
         'payroll.is_deduction_collected = :is_deduction_collected',
         { is_deduction_collected },
       );
-      if (month) {
-        queryBuilder.andWhere('payroll.month ILIKE :month', {
-          month: `%${month}%`,
-        });
-      }
-      if (year) {
-        queryBuilder.andWhere('payroll.year ILIKE :year', {
-          year: `%${year}%`,
-        });
-      }
     }
 
+    // Apply pagination if page and limit are provided
+    let totalRecords = 0;
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      queryBuilder.skip(skip).take(limitNumber);
+    }
+    totalRecords = await queryBuilder.getCount();
     const payrolls = await queryBuilder.getMany();
-    sendResponse(res, 200, 'Success', payrolls);
+    sendResponse(res, 200, 'Success', {
+      payrolls,
+      totalRecords,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch payrolls', error.message);
   }
@@ -197,6 +201,7 @@ export const updatePayrollById = async (req: Request, res: Response) => {
     sendError(res, 500, 'Failed to update payroll', error.message);
   }
 };
+
 // Delete payroll by ID
 export const deletePayrollById = async (req: Request, res: Response) => {
   try {

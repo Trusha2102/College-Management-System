@@ -62,8 +62,27 @@ export const createFeesGroup = async (req: Request, res: Response) => {
 // Get all Fees Groups
 export const getAllFeesGroups = async (req: Request, res: Response) => {
   try {
-    const feesGroups = await AppDataSource.manager.find(FeesGroup);
-    sendResponse(res, 200, 'Fees Groups fetched successfully', feesGroups);
+    const { page, limit } = req.query;
+
+    // Calculate offset based on page and limit parameters
+    const offset = page
+      ? parseInt(page as string) * (limit ? parseInt(limit as string) : 10)
+      : 0;
+    const take = limit ? parseInt(limit as string) : 10;
+
+    // Fetch fees groups with pagination
+    const [feesGroups, totalCount] = await AppDataSource.manager.findAndCount(
+      FeesGroup,
+      {
+        skip: offset,
+        take,
+      },
+    );
+
+    sendResponse(res, 200, 'Fees Groups fetched successfully', {
+      feesGroups,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch Fees Groups', error.message);
   }
@@ -91,7 +110,7 @@ export const updateFeesGroupById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const feesGroupRepository = queryRunner.manager.getRepository(FeesGroup);
       let feesGroup = await feesGroupRepository.findOne({
-        where: { id: req.body.id },
+        where: { id: +req.params.id },
       });
       if (!feesGroup) {
         sendResponse(res, 404, 'Fees Group not found');

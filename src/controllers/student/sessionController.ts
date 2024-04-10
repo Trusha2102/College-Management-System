@@ -91,7 +91,7 @@ export const deleteSessionById = async (req: Request, res: Response) => {
       session.is_active = false;
       await sessionRepository.save(session);
 
-      sendResponse(res, 204, 'Session deleted successfully', null);
+      sendResponse(res, 200, 'Session deleted successfully', null);
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete session', error.message);

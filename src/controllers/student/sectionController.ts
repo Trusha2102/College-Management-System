@@ -39,11 +39,37 @@ export const createSection = async (req: Request, res: Response) => {
 
 export const listSections = async (req: Request, res: Response) => {
   try {
-    const sectionRepository = AppDataSource.getRepository(Section);
-    const sections = await sectionRepository.find({
+    const { page, limit, section } = req.query;
+
+    // Convert page and limit parameters to numbers
+    const pageNumber = page ? parseInt(page as string) : 1;
+    const limitNumber = limit ? parseInt(limit as string) : 10;
+
+    // Calculate offset based on page number and limit
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // Initialize filter object
+    const filter: any = {};
+
+    // Add section filter if provided
+    if (section) {
+      filter.section = ILike(`%${section}%`);
+    }
+
+    // Fetch sections with pagination and filter
+    const [sections, totalCount] = await AppDataSource.getRepository(
+      Section,
+    ).findAndCount({
+      where: filter,
       order: { createdAt: 'DESC' },
+      skip: offset,
+      take: limitNumber,
     });
-    sendResponse(res, 200, 'Sections found', sections);
+
+    sendResponse(res, 200, 'Sections found', {
+      sections,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch sections', error.message);
   }
@@ -120,7 +146,7 @@ export const deleteSectionById = async (req: Request, res: Response) => {
       }
 
       await sectionRepository.remove(section);
-      sendResponse(res, 204, 'Section deleted successfully');
+      sendResponse(res, 200, 'Section deleted successfully');
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete section', error.message);

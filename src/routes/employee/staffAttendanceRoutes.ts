@@ -1,32 +1,32 @@
 import express from 'express';
 import * as staffAttendanceController from '../../controllers/employee/staffAttendanceController';
-// import permissionProtect from '../../middlewares/permissionMiddleware';
+import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
 router.post(
   '/add',
-  // permissionProtect,
+  permissionProtect,
   staffAttendanceController.createAttendance,
 );
 router.get(
   '/view/:id',
-  // permissionProtect,
+  permissionProtect,
   staffAttendanceController.getAttendanceById,
 );
 router.get(
   '/list',
-  // permissionProtect,
+  permissionProtect,
   staffAttendanceController.getAllAttendances,
 );
 router.put(
   '/update/:id',
-  // permissionProtect,
+  permissionProtect,
   staffAttendanceController.updateAttendanceById,
 );
 router.delete(
   '/delete/:id',
-  // permissionProtect,
+  permissionProtect,
   staffAttendanceController.deleteAttendanceById,
 );
 

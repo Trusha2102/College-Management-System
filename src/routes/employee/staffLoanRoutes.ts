@@ -1,33 +1,25 @@
 import express from 'express';
 import * as staffLoanController from '../../controllers/employee/staffLoanController';
-// import permissionProtect from '../../middlewares/permissionMiddleware';
+import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
-router.post(
-  '/add',
-  // permissionProtect,
-  staffLoanController.createStaffLoan,
-);
+router.post('/add', permissionProtect, staffLoanController.createStaffLoan);
 router.put(
   '/update/:id',
-  // permissionProtect,
+  permissionProtect,
   staffLoanController.updateStaffLoanById,
 );
 router.delete(
   '/delete/:id',
-  // permissionProtect,
+  permissionProtect,
   staffLoanController.deleteStaffLoanById,
 );
 router.get(
   '/view/:id',
-  // permissionProtect,
+  permissionProtect,
   staffLoanController.getStaffLoanById,
 );
-router.get(
-  '/list',
-  // permissionProtect,
-  staffLoanController.getAllStaffLoans,
-);
+router.get('/list', permissionProtect, staffLoanController.getAllStaffLoans);
 
 export default router;

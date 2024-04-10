@@ -173,12 +173,30 @@ export const deleteResultById = async (req: Request, res: Response) => {
 export const listResultsByStudentId = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-    const resultRepository = AppDataSource.getRepository(Result);
-    const results = await resultRepository.find({
+    const { page, limit } = req.query;
+
+    // Convert page and limit parameters to numbers
+    const pageNumber = page ? parseInt(page as string) : 1;
+    const limitNumber = limit ? parseInt(limit as string) : 10;
+
+    // Calculate offset based on page number and limit
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // Fetch results with pagination
+    const [results, totalCount] = await AppDataSource.getRepository(
+      Result,
+    ).findAndCount({
       where: { student: { id: +studentId } },
       relations: ['student', 'course', 'semester'],
+      order: { createdAt: 'DESC' },
+      skip: offset,
+      take: limitNumber,
     });
-    sendResponse(res, 200, 'Results found', results);
+
+    sendResponse(res, 200, 'Results found', {
+      results,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to get results', error.message);
   }

@@ -44,11 +44,37 @@ export const createCourse = async (req: Request, res: Response) => {
 // Get all courses
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
-    const courseRepository = AppDataSource.getRepository(Course);
-    const courses = await courseRepository.find({
+    const { page, limit, name } = req.query;
+
+    // Convert page and limit parameters to numbers
+    const pageNumber = page ? parseInt(page as string) : 1;
+    const limitNumber = limit ? parseInt(limit as string) : 10;
+
+    // Calculate offset based on page number and limit
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // Initialize filter object
+    const filter: any = {};
+
+    // Add name filter if provided
+    if (name) {
+      filter.name = ILike(`%${name}%`);
+    }
+
+    // Fetch courses with pagination and filter
+    const [courses, totalCount] = await AppDataSource.getRepository(
+      Course,
+    ).findAndCount({
+      where: filter,
       order: { createdAt: 'DESC' },
+      skip: offset,
+      take: limitNumber,
     });
-    sendResponse(res, 200, 'Courses fetched successfully', courses);
+
+    sendResponse(res, 200, 'Courses fetched successfully', {
+      courses,
+      totalCount,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch courses', error.message);
   }
@@ -124,7 +150,7 @@ export const deleteCourseById = async (req: Request, res: Response) => {
         return;
       }
       await courseRepository.remove(course);
-      sendResponse(res, 204, 'Course deleted successfully');
+      sendResponse(res, 200, 'Course deleted successfully');
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete course', error.message);

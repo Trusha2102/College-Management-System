@@ -12,6 +12,7 @@ export const getInstallmentsByStaffLoanId = async (
 ) => {
   try {
     const { staffLoanId } = req.params;
+    const { page, limit } = req.query;
 
     if (!staffLoanId) {
       return res
@@ -20,12 +21,29 @@ export const getInstallmentsByStaffLoanId = async (
     }
 
     const installmentRepository = AppDataSource.getRepository(Installment);
+    let query = installmentRepository
+      .createQueryBuilder('installment')
+      .where('installment.staff_loan = :staffLoanId', { staffLoanId });
 
-    const installments = await installmentRepository.find({
-      where: { staff_loan: { id: +staffLoanId } },
+    // Count total number of records
+    const totalCount = await query.getCount();
+
+    // Apply pagination if page and limit are provided
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      query = query.skip(skip).take(limitNumber);
+    }
+
+    // Fetch installments
+    const installments = await query.getMany();
+
+    sendResponse(res, 200, 'Installments retrieved successfully', {
+      installments,
+      totalRecords: totalCount,
     });
-
-    sendResponse(res, 200, 'Installments retrieved successfully', installments);
   } catch (error: any) {
     // Handle errors
     console.error('Error:', error);

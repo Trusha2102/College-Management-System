@@ -96,6 +96,7 @@ export const listEmployees = async (req: Request, res: Response) => {
       limit,
       month,
       year,
+      staff_loan_search,
     } = req.query;
 
     const pageNumber: number = parseInt(page as string, 10) || 1;
@@ -110,6 +111,7 @@ export const listEmployees = async (req: Request, res: Response) => {
       .leftJoinAndSelect('employee.payroll', 'payroll');
 
     if (role) {
+      // Filter by role
       const roleId = await AppDataSource.getRepository(Role)
         .createQueryBuilder('role')
         .where('role.name ILIKE :role', { role: `%${role}%` })
@@ -126,6 +128,7 @@ export const listEmployees = async (req: Request, res: Response) => {
     }
 
     if (staff_id) {
+      // Filter by staff_id
       query = query.andWhere(
         'CAST(employee.staff_id AS TEXT) ILIKE :staff_id',
         {
@@ -135,6 +138,7 @@ export const listEmployees = async (req: Request, res: Response) => {
     }
 
     if (name) {
+      // Filter by name
       query = query.andWhere(
         '(user.first_name ILIKE :name OR user.last_name ILIKE :name OR user.father_name ILIKE :name)',
         {
@@ -144,6 +148,7 @@ export const listEmployees = async (req: Request, res: Response) => {
     }
 
     if (department) {
+      // Filter by department
       const departmentId = await AppDataSource.getRepository(Department)
         .createQueryBuilder('department')
         .where('department.department ILIKE :department', {
@@ -162,6 +167,7 @@ export const listEmployees = async (req: Request, res: Response) => {
     }
 
     if (designation) {
+      // Filter by designation
       const designationId = await AppDataSource.getRepository(Designation)
         .createQueryBuilder('designation')
         .where('designation.designation ILIKE :designation', {
@@ -180,11 +186,18 @@ export const listEmployees = async (req: Request, res: Response) => {
     }
 
     if (month) {
+      // Filter by month
       query = query.andWhere('payroll.month ILIKE :month', { month });
     }
 
     if (year) {
+      // Filter by year
       query = query.andWhere('payroll.year ILIKE :year', { year });
+    }
+
+    if (staff_loan_search && staff_loan_search === 'true') {
+      // Filter by staff_loan_search flag
+      query = query.andWhere('payroll.is_staff_loan = true');
     }
 
     // Order employees by created_at in descending order
@@ -335,7 +348,7 @@ export const deleteEmployeeById = async (req: Request, res: Response) => {
       employee.is_active = false; // Soft delete by setting is_active to false
       await employeeRepository.save(employee);
 
-      sendResponse(res, 204, 'Employee deleted successfully');
+      sendResponse(res, 200, 'Employee deleted successfully');
     } catch (error: any) {
       sendError(res, 500, 'Failed to delete employee', error.message);
     }

@@ -175,7 +175,6 @@ const createStudent = async (req: Request, res: Response) => {
 };
 
 const listStudents = async (req: Request, res: Response) => {
-  console.log('LIST API WAS CALLED');
   try {
     // Extract query parameters and convert to numbers
     let {

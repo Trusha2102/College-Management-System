@@ -179,15 +179,34 @@ export const getStaffLoanById = async (req: Request, res: Response) => {
 // Get all StaffLoans
 export const getAllStaffLoans = async (req: Request, res: Response) => {
   try {
+    const { page, limit } = req.query;
+
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
-      const staffLoans = await staffLoanRepository.find({
-        order: {
-          createdAt: 'DESC',
-        },
+      let query = staffLoanRepository
+        .createQueryBuilder('staffLoan')
+        .orderBy('staffLoan.createdAt', 'DESC');
+
+      // Count total number of records
+      const totalCount = await query.getCount();
+
+      // Apply pagination if page and limit are provided
+      if (page && limit) {
+        const pageNumber = parseInt(page as string, 10);
+        const limitNumber = parseInt(limit as string, 10);
+        const skip = (pageNumber - 1) * limitNumber;
+
+        query = query.skip(skip).take(limitNumber);
+      }
+
+      // Fetch staff loans
+      const staffLoans = await query.getMany();
+
+      sendResponse(res, 200, 'Success', {
+        staffLoans,
+        totalRecords: totalCount,
       });
-      sendResponse(res, 200, 'Success', staffLoans);
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch StaffLoans', error.message);

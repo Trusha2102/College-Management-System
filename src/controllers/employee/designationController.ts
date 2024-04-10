@@ -29,10 +29,20 @@ export const createDesignation = async (req: Request, res: Response) => {
 // Get All Designations
 export const listDesignations = async (req: Request, res: Response) => {
   try {
-    const { page, limit } = req.query;
+    const { page, limit, search } = req.query;
     const designationRepository = AppDataSource.getRepository(Designation);
     let query = designationRepository.createQueryBuilder('designation');
     let designations = [];
+
+    // Apply search filter if search query parameter is provided
+    if (search) {
+      query = query.where(
+        'LOWER(designation.designation) LIKE LOWER(:search)',
+        {
+          search: `%${search}%`,
+        },
+      );
+    }
 
     // Fetch total count
     const totalCount = await query.getCount();
@@ -44,12 +54,16 @@ export const listDesignations = async (req: Request, res: Response) => {
       const skip = (pageNumber - 1) * limitNumber;
 
       // Fetch paginated data
-      designations = await query.skip(skip).take(limitNumber).getMany();
+      designations = await query
+        .orderBy('designation.createdAt', 'DESC')
+        .skip(skip)
+        .take(limitNumber)
+        .getMany();
     } else {
       // If page and limit are not provided, fetch all designations
-      designations = await designationRepository.find({
-        order: { createdAt: 'DESC' },
-      });
+      designations = await query
+        .orderBy('designation.createdAt', 'DESC')
+        .getMany();
     }
 
     sendResponse(res, 200, 'Designations found', {
@@ -121,7 +135,7 @@ export const deleteDesignationById = async (req: Request, res: Response) => {
       }
       await designationRepository.remove(designation);
 
-      sendResponse(res, 204, 'Designation deleted successfully');
+      sendResponse(res, 200, 'Designation deleted successfully');
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete designation', error.message);
