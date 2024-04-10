@@ -1,20 +1,20 @@
 import express from 'express';
 import * as payrollController from '../../controllers/employee/payrollController';
-// import permissionProtect from '../../middlewares/permissionMiddleware';
+import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
-router.post('/add', payrollController.createPayroll);
-router.get('/view/:id', payrollController.getPayrollById);
-router.get('/list', payrollController.getAllPayrolls);
+router.post('/add', permissionProtect, payrollController.createPayroll);
+router.get('/view/:id', permissionProtect, payrollController.getPayrollById);
+router.get('/list', permissionProtect, payrollController.getAllPayrolls);
 router.put(
   '/update/:id',
-  // permissionProtect,
+  permissionProtect,
   payrollController.updatePayrollById,
 );
 router.delete(
   '/delete/:id',
-  // permissionProtect,
+  permissionProtect,
   payrollController.deletePayrollById,
 );
 

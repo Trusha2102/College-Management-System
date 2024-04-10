@@ -1,27 +1,27 @@
 import express from 'express';
 import * as parentsDetailsController from '../../controllers/student/parentsDetailsController';
-// import permissionProtect from '../../middlewares/permissionMiddleware';
+import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
 router.post(
   '/add',
-  // permissionProtect,
+  permissionProtect,
   parentsDetailsController.createParentDetails,
 );
 router.get(
   '/view/:id',
-  // permissionProtect,
+  permissionProtect,
   parentsDetailsController.getParentDetailsById,
 );
 router.put(
   '/update/:id',
-  // permissionProtect,
+  permissionProtect,
   parentsDetailsController.updateParentDetailsById,
 );
 router.delete(
   '/delete/:id',
-  // permissionProtect,
+  permissionProtect,
   parentsDetailsController.deleteParentDetailsById,
 );
 

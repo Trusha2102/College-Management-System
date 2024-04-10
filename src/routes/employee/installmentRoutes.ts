@@ -1,28 +1,28 @@
 import express from 'express';
 import * as installmentController from '../../controllers/employee/installmentController';
-// import permissionProtect from '../../middlewares/permissionMiddleware';
+import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
 // router.post('/add', installmentController.createInstallment);
 router.put(
   '/update/:id',
-  // permissionProtect,
+  permissionProtect,
   installmentController.updateInstallment,
 );
 router.delete(
   '/delete/:id',
-  // permissionProtect,
+  permissionProtect,
   installmentController.deleteInstallment,
 );
 router.get(
   '/list/:staffLoanId',
-  // permissionProtect,
+  permissionProtect,
   installmentController.getInstallmentsByStaffLoanId,
 );
 router.get(
   '/view/:id',
-  // permissionProtect,
+  permissionProtect,
   installmentController.getInstallmentById,
 );
 
