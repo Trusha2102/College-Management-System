@@ -90,7 +90,7 @@ export class User {
   @Column({ nullable: true })
   bank_details_id!: number;
 
-  @Column('simple-array')
+  @Column('simple-array', { nullable: true })
   social_media_links!: string[];
 
   @OneToMany(() => Employee, (employee: { user: any }) => employee.user)

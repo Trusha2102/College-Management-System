@@ -8,6 +8,10 @@ import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import bcrypt from 'bcrypt';
+import configureMulter from '../../utils/multerConfig';
+import multer from 'multer';
+
+const upload = configureMulter('./uploads/profilePicture', 5 * 1024 * 1024); // 5MB limit
 
 // Create Employee with Transaction and QueryRunner
 export const createEmployee = async (req: Request, res: Response) => {
@@ -356,100 +360,140 @@ export const deleteEmployeeById = async (req: Request, res: Response) => {
   });
 };
 
-// export const createEmployeeWithUser = async (req: Request, res: Response) => {
-//   const queryRunner = AppDataSource.createQueryRunner();
-//   try {
-//     await runTransaction(queryRunner, async () => {
-//       const {
-//         first_name,
-//         last_name,
-//         father_name,
-//         mother_name,
-//         email,
-//         password,
-//         role_id,
-//         social_media_links,
-//         address_id,
-//         bank_details_id,
-//         mobile,
-//         dob,
-//         profile_picture,
-//         staffId,
-//         designationId,
-//         departmentId,
-//         salary,
-//         deduction,
-//         contractType,
-//         doj,
-//         dol,
-//         workShift,
-//         workLocation,
-//       } = req.body;
+export const createEmployeeWithUser = async (req: Request, res: Response) => {
+  const queryRunner = AppDataSource.createQueryRunner();
+  try {
+    await runTransaction(queryRunner, async () => {
+      upload.single('profile_picture')(req, res, async (err: any) => {
+        if (err) {
+          console.error(err);
+          if (err instanceof multer.MulterError) {
+            return sendError(res, 400, 'File upload error: ' + err.message);
+          } else {
+            return sendError(res, 500, 'Failed to upload profile picture');
+          }
+        }
 
-//       // Create a user record
-//       const userRepository = queryRunner.manager.getRepository(User);
-//       const hashedPassword = await bcrypt.hash(password, 10);
-//       const newUser = userRepository.create({
-//         first_name,
-//         last_name,
-//         father_name,
-//         mother_name,
-//         email,
-//         password: hashedPassword,
-//         role_id,
-//         social_media_links: social_media_links.split(','),
-//         address_id: address_id === 'null' ? null : +address_id,
-//         bank_details_id: bank_details_id === 'null' ? null : +bank_details_id,
-//         mobile,
-//         dob: new Date(dob),
-//         profile_picture,
-//       });
-//       await userRepository.save(newUser);
+        let profilePicturePath = '';
+        if (req.file) {
+          profilePicturePath = req.file.path;
+        }
+        // Extract user data from the request body
+        const {
+          first_name,
+          last_name,
+          father_name,
+          mother_name,
+          email,
+          password,
+          role_id,
+          social_media_links,
+          address_id,
+          bank_details_id,
+          mobile,
+          dob,
+          marital_status,
+          staffId,
+          designationId,
+          departmentId,
+          salary,
+          deduction,
+          contractType,
+          doj,
+          dol,
+          workShift,
+          workLocation,
+          gender,
+          qualification,
+          work_experience,
+          aadhar_card,
+        } = req.body;
 
-//       // Create an employee record
-//       const designationRepository =
-//         queryRunner.manager.getRepository(Designation);
-//       const departmentRepository =
-//         queryRunner.manager.getRepository(Department);
-//       const employeeRepository = queryRunner.manager.getRepository(Employee);
+        // Create a user record
+        let parsedSocialMediaLinks;
+        const marital_status_bool = marital_status === 'true';
+        if (social_media_links) {
+          parsedSocialMediaLinks = social_media_links?.split(',');
+        }
 
-//       const designation = await designationRepository.findOne({
-//         where: { id: +designationId },
-//       });
-//       if (!designation) {
-//         sendError(res, 404, 'Designation not found');
-//         return; // Exit the callback
-//       }
+        const parsedAddressId = address_id === 'null' ? null : +address_id;
+        const parsedBankAccountId =
+          bank_details_id === 'null' ? null : +bank_details_id;
 
-//       const department = await departmentRepository.findOne({
-//         where: { id: +departmentId },
-//       });
-//       if (!department) {
-//         sendError(res, 404, 'Department not found');
-//         return; // Exit the callback
-//       }
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-//       const newEmployee = employeeRepository.create({
-//         user: newUser,
-//         staff_id: staffId,
-//         designation,
-//         designation_id: designationId,
-//         department,
-//         department_id: departmentId,
-//         salary,
-//         deduction,
-//         contract_type: contractType,
-//         DOJ: doj,
-//         DOL: dol,
-//         work_shift: workShift,
-//         work_location: workLocation,
-//       });
+        const user = new User();
+        user.first_name = first_name;
+        user.last_name = last_name;
+        user.father_name = father_name;
+        user.mother_name = mother_name;
+        user.email = email;
+        user.password = hashedPassword;
+        user.is_active = true;
+        user.marital_status = marital_status_bool;
+        user.gender = gender;
+        user.qualification = qualification;
+        user.work_experience = work_experience;
+        user.aadhar_card = aadhar_card;
+        user.role_id = role_id;
+        user.role = role_id;
+        user.mobile = mobile;
+        user.dob = new Date(dob);
+        user.profile_picture = profilePicturePath;
+        user.social_media_links = parsedSocialMediaLinks || null;
+        user.address_id = parsedAddressId as number;
+        user.bank_details_id = parsedBankAccountId as number;
 
-//       await employeeRepository.save(newEmployee);
+        let newUser;
+        await runTransaction(queryRunner, async () => {
+          newUser = await queryRunner.manager.save(user);
+        });
 
-//       sendResponse(res, 201, 'Employee created successfully', newEmployee);
-//     });
-//   } catch (error: any) {
-//     sendError(res, 500, 'Failed to create employee with user', error.message);
-//   }
-// };
+        // Create an employee record
+        const designationRepository =
+          queryRunner.manager.getRepository(Designation);
+        const departmentRepository =
+          queryRunner.manager.getRepository(Department);
+        const employeeRepository = queryRunner.manager.getRepository(Employee);
+
+        const designation = await designationRepository.findOne({
+          where: { id: +designationId },
+        });
+        if (!designation) {
+          sendError(res, 404, 'Designation not found');
+          return; // Exit the callback
+        }
+
+        const department = await departmentRepository.findOne({
+          where: { id: +departmentId },
+        });
+        if (!department) {
+          sendError(res, 404, 'Department not found');
+          return; // Exit the callback
+        }
+
+        const newEmployee = employeeRepository.create({
+          user: newUser,
+          staff_id: staffId,
+          designation,
+          designation_id: designationId,
+          department,
+          department_id: departmentId,
+          salary,
+          deduction,
+          contract_type: contractType,
+          DOJ: doj,
+          DOL: dol,
+          work_shift: workShift,
+          work_location: workLocation,
+        });
+
+        await employeeRepository.save(newEmployee);
+
+        sendResponse(res, 201, 'Employee created successfully', newEmployee);
+      });
+    });
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to create employee with user', error.message);
+  }
+};

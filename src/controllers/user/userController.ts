@@ -51,8 +51,12 @@ const createUser = async (req: Request, res: Response) => {
         return sendError(res, 404, 'Role not found');
       }
 
+      let parsedSocialMediaLinks;
       const marital_status = userData.marital_status === 'true';
-      const parsedSocialMediaLinks = social_media_links.split(',');
+      if (social_media_links) {
+        parsedSocialMediaLinks = social_media_links?.split(',');
+      }
+
       const parsedAddressId = address_id === 'null' ? null : +address_id;
       const parsedBankAccountId =
         bank_details_id === 'null' ? null : +bank_details_id;
@@ -77,7 +81,7 @@ const createUser = async (req: Request, res: Response) => {
       user.mobile = userData.mobile;
       user.dob = new Date(userData.dob);
       user.profile_picture = profilePicturePath;
-      user.social_media_links = parsedSocialMediaLinks;
+      user.social_media_links = parsedSocialMediaLinks || null;
       user.address_id = parsedAddressId as number;
       user.bank_details_id = parsedBankAccountId as number;
 
