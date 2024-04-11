@@ -24,6 +24,14 @@ export const createIncome = async (req: Request, res: Response) => {
         }
       }
 
+      // Check required fields
+      const requiredFields = ['income_head_id', 'name', 'amount', 'date'];
+      for (const field of requiredFields) {
+        if (!(field in req.body)) {
+          return sendError(res, 400, `${field} is required`);
+        }
+      }
+
       // Check if the income_head_id exists in the IncomeHead table
       const incomeHeadRepository = AppDataSource.getRepository(IncomeHead);
 

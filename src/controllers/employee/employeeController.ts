@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, query } from 'express';
 import { Employee } from '../../entity/Employee';
 import { Designation } from '../../entity/Designation';
 import { Department } from '../../entity/Department';
@@ -73,8 +73,8 @@ export const createEmployee = async (req: Request, res: Response) => {
         salary,
         deduction,
         contract_type: contractType,
-        DOJ: doj,
-        DOL: dol,
+        doj: doj,
+        dol: dol,
         work_shift: workShift,
         work_location: workLocation,
       });
@@ -319,8 +319,8 @@ export const updateEmployee = async (req: Request, res: Response) => {
       if (salary) employee.salary = salary;
       if (deduction) employee.deduction = deduction;
       if (contractType) employee.contract_type = contractType;
-      if (doj) employee.DOJ = doj;
-      if (dol) employee.DOL = dol;
+      if (doj) employee.doj = doj;
+      if (dol) employee.dol = dol;
       if (workShift) employee.work_shift = workShift;
       if (workLocation) employee.work_location = workLocation;
       if (is_active) employee.is_active = is_active;
@@ -361,23 +361,35 @@ export const deleteEmployeeById = async (req: Request, res: Response) => {
 };
 
 export const createEmployeeWithUser = async (req: Request, res: Response) => {
-  const queryRunner = AppDataSource.createQueryRunner();
   try {
-    await runTransaction(queryRunner, async () => {
-      upload.single('profile_picture')(req, res, async (err: any) => {
-        if (err) {
-          console.error(err);
-          if (err instanceof multer.MulterError) {
-            return sendError(res, 400, 'File upload error: ' + err.message);
-          } else {
-            return sendError(res, 500, 'Failed to upload profile picture');
-          }
+    // Handle file upload
+    upload.single('profile_picture')(req, res, async (err: any) => {
+      if (err) {
+        console.error(err);
+        if (err instanceof multer.MulterError) {
+          sendError(res, 400, 'File upload error: ' + err.message);
+          return;
+        } else {
+          sendError(res, 500, 'Failed to upload profile picture');
+          return;
         }
+      }
 
-        let profilePicturePath = '';
-        if (req.file) {
-          profilePicturePath = req.file.path;
-        }
+      let profilePicturePath = '';
+      if (req.file) {
+        profilePicturePath = req.file.path;
+      }
+      const queryRunner = AppDataSource.createQueryRunner();
+
+      await runTransaction(queryRunner, async () => {
+        const userRepository = queryRunner.manager.getRepository(User);
+        const roleRepository = queryRunner.manager.getRepository(Role);
+        const designationRepository =
+          queryRunner.manager.getRepository(Designation);
+        const departmentRepository =
+          queryRunner.manager.getRepository(Department);
+        const employeeRepository = queryRunner.manager.getRepository(Employee);
+
         // Extract user data from the request body
         const {
           first_name,
@@ -409,19 +421,34 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           aadhar_card,
         } = req.body;
 
-        // Create a user record
-        let parsedSocialMediaLinks;
-        const marital_status_bool = marital_status === 'true';
-        if (social_media_links) {
-          parsedSocialMediaLinks = social_media_links?.split(',');
+        // Check if role_id exists in Role table
+        const role = await roleRepository.findOne({ where: { id: role_id } });
+        if (!role) {
+          sendError(res, 404, 'Role not found');
+          return;
         }
 
-        const parsedAddressId = address_id === 'null' ? null : +address_id;
-        const parsedBankAccountId =
-          bank_details_id === 'null' ? null : +bank_details_id;
+        // Check if staffId and email already exists
+        const existingEmployee = await employeeRepository.findOne({
+          where: {
+            staff_id: staffId,
+          },
+        });
+        if (existingEmployee) {
+          sendError(res, 400, 'StaffId already exists');
+          return;
+        }
 
+        const existingUser = await userRepository.findOne({
+          where: { email: email },
+        });
+        if (existingUser) {
+          sendError(res, 400, 'Email already exists');
+          return;
+        }
+
+        // Create a user record
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const user = new User();
         user.first_name = first_name;
         user.last_name = last_name;
@@ -430,38 +457,31 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         user.email = email;
         user.password = hashedPassword;
         user.is_active = true;
-        user.marital_status = marital_status_bool;
+        user.marital_status = marital_status === 'true';
         user.gender = gender;
         user.qualification = qualification;
         user.work_experience = work_experience;
         user.aadhar_card = aadhar_card;
         user.role_id = role_id;
-        user.role = role_id;
         user.mobile = mobile;
         user.dob = new Date(dob);
         user.profile_picture = profilePicturePath;
-        user.social_media_links = parsedSocialMediaLinks || null;
-        user.address_id = parsedAddressId as number;
-        user.bank_details_id = parsedBankAccountId as number;
+        user.social_media_links = social_media_links
+          ? social_media_links.split(',')
+          : null;
+        user.address_id = address_id === 'null' ? 0 : +address_id;
+        user.bank_details_id =
+          bank_details_id === 'null' ? 0 : +bank_details_id;
 
-        let newUser;
-        await runTransaction(queryRunner, async () => {
-          newUser = await queryRunner.manager.save(user);
-        });
-
-        // Create an employee record
-        const designationRepository =
-          queryRunner.manager.getRepository(Designation);
-        const departmentRepository =
-          queryRunner.manager.getRepository(Department);
-        const employeeRepository = queryRunner.manager.getRepository(Employee);
+        // Save the user
+        const newUser = await userRepository.save(user);
 
         const designation = await designationRepository.findOne({
           where: { id: +designationId },
         });
         if (!designation) {
           sendError(res, 404, 'Designation not found');
-          return; // Exit the callback
+          return;
         }
 
         const department = await departmentRepository.findOne({
@@ -469,7 +489,7 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         });
         if (!department) {
           sendError(res, 404, 'Department not found');
-          return; // Exit the callback
+          return;
         }
 
         const newEmployee = employeeRepository.create({
@@ -482,18 +502,178 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           salary,
           deduction,
           contract_type: contractType,
-          DOJ: doj,
-          DOL: dol,
+          doj: new Date(doj) || null,
+          dol: dol || '',
           work_shift: workShift,
           work_location: workLocation,
         });
 
         await employeeRepository.save(newEmployee);
 
+        // Send success response
         sendResponse(res, 201, 'Employee created successfully', newEmployee);
       });
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to create employee with user', error.message);
+  }
+};
+
+export const updateEmployeeWithUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Handle file upload
+    upload.single('profile_picture')(req, res, async (err: any) => {
+      if (err) {
+        console.error(err);
+        if (err instanceof multer.MulterError) {
+          sendError(res, 400, 'File upload error: ' + err.message);
+          return;
+        } else {
+          sendError(res, 500, 'Failed to upload profile picture');
+          return;
+        }
+      }
+
+      let profilePicturePath = '';
+      if (req.file) {
+        profilePicturePath = req.file.path;
+      }
+
+      const queryRunner = AppDataSource.createQueryRunner();
+
+      await runTransaction(queryRunner, async () => {
+        const userRepository = queryRunner.manager.getRepository(User);
+        const roleRepository = queryRunner.manager.getRepository(Role);
+        const designationRepository =
+          queryRunner.manager.getRepository(Designation);
+        const departmentRepository =
+          queryRunner.manager.getRepository(Department);
+        const employeeRepository = queryRunner.manager.getRepository(Employee);
+
+        const employee = await employeeRepository.findOne({
+          where: { id: +id },
+          relations: ['user'],
+        });
+
+        if (!employee) {
+          sendError(res, 404, 'Employee not found');
+          return;
+        }
+
+        // Extract user data from the request body
+        const {
+          first_name,
+          last_name,
+          father_name,
+          mother_name,
+          email,
+          password,
+          role_id,
+          social_media_links,
+          address_id,
+          bank_details_id,
+          mobile,
+          dob,
+          marital_status,
+          designationId,
+          departmentId,
+          salary,
+          deduction,
+          contractType,
+          doj,
+          dol,
+          workShift,
+          workLocation,
+          gender,
+          qualification,
+          work_experience,
+          aadhar_card,
+        } = req.body;
+
+        // Check if role_id exists in Role table
+        const role = await roleRepository.findOne({ where: { id: role_id } });
+        if (!role) {
+          sendError(res, 404, 'Role not found');
+          return;
+        }
+
+        const existingUser = await userRepository.findOne({
+          where: { email: email },
+        });
+        if (existingUser) {
+          sendError(res, 400, 'Email already exists');
+          return;
+        }
+
+        // Update user record
+        employee.user.first_name = first_name;
+        employee.user.last_name = last_name;
+        employee.user.father_name = father_name;
+        employee.user.mother_name = mother_name;
+        employee.user.email = email;
+        if (password) {
+          const hashedPassword = await bcrypt.hash(password, 10);
+          employee.user.password = hashedPassword;
+        }
+        employee.user.marital_status = marital_status === 'true';
+        employee.user.gender = gender;
+        employee.user.qualification = qualification;
+        employee.user.work_experience = work_experience;
+        employee.user.aadhar_card = aadhar_card;
+        employee.user.role_id = role_id;
+        employee.user.mobile = mobile;
+        employee.user.dob = new Date(dob);
+        if (profilePicturePath) {
+          employee.user.profile_picture = profilePicturePath;
+        }
+        employee.user.social_media_links = social_media_links
+          ? social_media_links.split(',')
+          : null;
+        employee.user.address_id = address_id === 'null' ? 0 : +address_id;
+        employee.user.bank_details_id =
+          bank_details_id === 'null' ? 0 : +bank_details_id;
+
+        await userRepository.save(employee.user);
+
+        const designation = await designationRepository.findOne({
+          where: { id: +designationId },
+        });
+        if (!designation) {
+          sendError(res, 404, 'Designation not found');
+          return;
+        }
+
+        const department = await departmentRepository.findOne({
+          where: { id: +departmentId },
+        });
+        if (!department) {
+          sendError(res, 404, 'Department not found');
+          return;
+        }
+
+        // Update employee record
+        // employee.staff_id = employee.staff_id;
+        employee.designation = designation;
+        employee.designation_id = designationId;
+        employee.department = department;
+        employee.department_id = departmentId;
+        employee.salary = salary;
+        employee.deduction = deduction;
+        employee.contract_type = contractType;
+        employee.doj = new Date(doj) || null;
+        employee.dol = dol || '';
+        employee.work_shift = workShift;
+        employee.work_location = workLocation;
+
+        await employeeRepository.save(employee);
+
+        // Send success response
+        sendResponse(res, 200, 'Employee updated successfully', employee);
+      });
+    });
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to update employee with user', error.message);
   }
 };

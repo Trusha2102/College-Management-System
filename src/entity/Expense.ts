@@ -20,7 +20,7 @@ export class Expense {
   @Column()
   name!: string;
 
-  @Column()
+  @Column({ nullable: true })
   invoice_number!: number;
 
   @Column()
@@ -32,7 +32,7 @@ export class Expense {
   @Column({ nullable: true })
   attached_doc!: string;
 
-  @Column()
+  @Column({ nullable: true })
   description!: string;
 
   @CreateDateColumn({

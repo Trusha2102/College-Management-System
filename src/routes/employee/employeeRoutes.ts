@@ -5,6 +5,8 @@ import {
   getEmployeeById,
   updateEmployee,
   deleteEmployeeById,
+  createEmployeeWithUser,
+  updateEmployeeWithUser,
 } from '../../controllers/employee/employeeController';
 import permissionProtect from '../../middlewares/permissionMiddleware';
 
@@ -24,5 +26,11 @@ router.delete('/delete/:id', permissionProtect, deleteEmployeeById);
 
 // List all students
 router.get('/list', permissionProtect, listEmployees);
+
+//Create User and Employee
+router.post('/create/add', createEmployeeWithUser);
+
+//Update User with Employee Record
+router.put('/create/update/:id', updateEmployeeWithUser);
 
 export default router;

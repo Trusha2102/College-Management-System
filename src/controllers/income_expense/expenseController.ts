@@ -24,6 +24,14 @@ export const createExpense = async (req: Request, res: Response) => {
         }
       }
 
+      // Check required fields
+      const requiredFields = ['expense_head_id', 'name', 'date', 'amount'];
+      for (const field of requiredFields) {
+        if (!(field in req.body)) {
+          return sendError(res, 400, `${field} is required`);
+        }
+      }
+
       // Check if the expense_head_id exists in the ExpenseHead table
       const expenseHeadRepository = AppDataSource.getRepository(ExpenseHead);
 
