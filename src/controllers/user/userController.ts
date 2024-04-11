@@ -124,8 +124,11 @@ const getAllUsers = async (req: Request, res: Response) => {
       take: limitNumber,
     });
 
+    const totalNoOfRecords = users.length;
+
     sendResponse(res, 200, 'Users', {
       users,
+      totalNoOfRecords,
       totalCount,
     });
   } catch (error) {

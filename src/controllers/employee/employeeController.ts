@@ -214,9 +214,13 @@ export const listEmployees = async (req: Request, res: Response) => {
     query = query.skip(skip).take(itemsPerPage);
 
     const employees = await query.getMany();
+
+    const totalNoOfRecords = employees.length;
+
     sendResponse(res, 200, 'Employees found', {
       employees,
       totalEmployees,
+      totalNoOfRecords,
       totalPages,
       page: pageNumber,
       limit: itemsPerPage,

@@ -245,7 +245,18 @@ const listStudents = async (req: Request, res: Response) => {
 
     // Execute the query
     const students = await query.getMany();
-    res.status(200).json({ students, page, limit, totalCount, totalPages });
+
+    const totalNoOfRecords = students.length;
+    res
+      .status(200)
+      .json({
+        students,
+        page,
+        limit,
+        totalCount,
+        totalNoOfRecords,
+        totalPages,
+      });
   } catch (error) {
     console.error(error);
     sendError(res, 500, 'Failed to fetch students');

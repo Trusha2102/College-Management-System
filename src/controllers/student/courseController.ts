@@ -71,8 +71,11 @@ export const getAllCourses = async (req: Request, res: Response) => {
       take: limitNumber,
     });
 
+    const totalNoOfRecords = courses.length;
+
     sendResponse(res, 200, 'Courses fetched successfully', {
       courses,
+      totalNoOfRecords,
       totalCount,
     });
   } catch (error: any) {
