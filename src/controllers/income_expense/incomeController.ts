@@ -6,6 +6,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import configureMulter from '../../utils/multerConfig';
 import { IncomeHead } from '../../entity/IncomeHead';
 import multer from 'multer';
+import { Repository } from 'typeorm';
 
 const multerConfig = configureMulter('./uploads/Income', 2 * 1024 * 1024);
 
@@ -20,6 +21,14 @@ export const createIncome = async (req: Request, res: Response) => {
           return sendError(res, 400, 'File upload error: ' + err.message);
         } else {
           return sendError(res, 500, 'Failed to upload attached_doc');
+        }
+      }
+
+      // Check required fields
+      const requiredFields = ['income_head_id', 'name', 'amount', 'date'];
+      for (const field of requiredFields) {
+        if (!(field in req.body)) {
+          return sendError(res, 400, `${field} is required`);
         }
       }
 
@@ -57,27 +66,26 @@ export const createIncome = async (req: Request, res: Response) => {
   }
 };
 
-// Get all incomes
+//Get All Income Records
 export const getAllIncomes = async (req: Request, res: Response) => {
   try {
     const { search, page, limit } = req.query;
-    const incomeRepository = AppDataSource.getRepository(Income);
-    let query = incomeRepository.createQueryBuilder('income');
-    let incomes = [];
+    const incomeRepository: Repository<Income> =
+      AppDataSource.getRepository(Income);
 
-    // If search term is provided, apply filtering
+    let query = incomeRepository
+      .createQueryBuilder('income')
+      .leftJoinAndSelect('income.income_head', 'income_head');
+
+    // Apply search query filter
     if (search) {
       query = query
-        .where('LOWER(income.name) LIKE LOWER(:search)', {
+        .where('income.name ILIKE :search', { search: `%${search}%` })
+        .orWhere('income.invoice_number::text ILIKE :search', {
           search: `%${search}%`,
         })
-        .orWhere('income.invoice_number::text LIKE :search', {
-          search: `%${search}%`,
-        })
-        .orWhere('LOWER(income.description) LIKE LOWER(:search)', {
-          search: `%${search}%`,
-        })
-        .orWhere('income.date::text LIKE :search', { search: `%${search}%` });
+        .orWhere('income.description ILIKE :search', { search: `%${search}%` })
+        .orWhere('income.date::text ILIKE :search', { search: `%${search}%` });
     }
 
     // Fetch total count of all records
@@ -92,11 +100,11 @@ export const getAllIncomes = async (req: Request, res: Response) => {
       const skip = (pageNumber - 1) * limitNumber;
 
       // Fetch paginated data
-      incomes = await query.skip(skip).take(limitNumber).getMany();
-    } else {
-      // If page and limit are not provided, fetch all incomes
-      incomes = await query.getMany();
+      query = query.skip(skip).take(limitNumber);
     }
+
+    // Fetch incomes
+    const incomes = await query.getMany();
 
     sendResponse(res, 200, 'Incomes found', {
       incomes,

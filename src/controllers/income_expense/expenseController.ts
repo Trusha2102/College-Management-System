@@ -6,6 +6,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import configureMulter from '../../utils/multerConfig';
 import { ExpenseHead } from '../../entity/ExpenseHead';
 import multer from 'multer';
+import { Repository } from 'typeorm';
 
 const multerConfig = configureMulter('./uploads/Expense', 2 * 1024 * 1024);
 
@@ -20,6 +21,14 @@ export const createExpense = async (req: Request, res: Response) => {
           return sendError(res, 400, 'File upload error: ' + err.message);
         } else {
           return sendError(res, 500, 'Failed to upload attached_doc');
+        }
+      }
+
+      // Check required fields
+      const requiredFields = ['expense_head_id', 'name', 'date', 'amount'];
+      for (const field of requiredFields) {
+        if (!(field in req.body)) {
+          return sendError(res, 400, `${field} is required`);
         }
       }
 
@@ -61,23 +70,22 @@ export const createExpense = async (req: Request, res: Response) => {
 export const getAllExpenses = async (req: Request, res: Response) => {
   try {
     const { search, page, limit } = req.query;
-    const expenseRepository = AppDataSource.getRepository(Expense);
-    let query = expenseRepository.createQueryBuilder('expense');
-    let expenses = [];
+    const expenseRepository: Repository<Expense> =
+      AppDataSource.getRepository(Expense);
 
-    // If search term is provided, apply filtering
+    let query = expenseRepository
+      .createQueryBuilder('expense')
+      .leftJoinAndSelect('expense.expense_head', 'expense_head');
+
+    // Apply search query filter
     if (search) {
       query = query
-        .where('LOWER(expense.name) LIKE LOWER(:search)', {
+        .where('expense.name ILIKE :search', { search: `%${search}%` })
+        .orWhere('expense.invoice_number::text ILIKE :search', {
           search: `%${search}%`,
         })
-        .orWhere('expense.invoice_number::text LIKE :search', {
-          search: `%${search}%`,
-        })
-        .orWhere('LOWER(expense.description) LIKE LOWER(:search)', {
-          search: `%${search}%`,
-        })
-        .orWhere('expense.date::text LIKE :search', { search: `%${search}%` });
+        .orWhere('expense.description ILIKE :search', { search: `%${search}%` })
+        .orWhere('expense.date::text ILIKE :search', { search: `%${search}%` });
     }
 
     // Fetch total count of all records
@@ -92,11 +100,11 @@ export const getAllExpenses = async (req: Request, res: Response) => {
       const skip = (pageNumber - 1) * limitNumber;
 
       // Fetch paginated data
-      expenses = await query.skip(skip).take(limitNumber).getMany();
-    } else {
-      // If page and limit are not provided, fetch all expenses
-      expenses = await query.getMany();
+      query = query.skip(skip).take(limitNumber);
     }
+
+    // Fetch expenses
+    const expenses = await query.getMany();
 
     sendResponse(res, 200, 'Expenses found', {
       expenses,

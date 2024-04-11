@@ -46,11 +46,28 @@ export class Employee {
   @Column()
   contract_type!: string;
 
-  @Column()
-  DOJ!: Date;
+  @Column({ type: 'date', nullable: true })
+  doj!: Date;
 
-  @Column({ nullable: true })
-  DOL!: Date;
+  @Column({
+    type: 'date',
+    nullable: true,
+    transformer: {
+      to: (value: Date | string) => {
+        if (value instanceof Date) {
+          return value;
+        } else if (value === '') {
+          return null;
+        } else {
+          return new Date(value);
+        }
+      },
+      from: (value: Date | null) => {
+        return value;
+      },
+    },
+  })
+  dol!: Date | null;
 
   @Column()
   work_shift!: string;
