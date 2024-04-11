@@ -11,7 +11,7 @@ import bcrypt from 'bcrypt';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
 
-const upload = configureMulter('./uploads/profilePicture', 5 * 1024 * 1024); // 5MB limit
+const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024); // 2MB limit
 
 // Create Employee with Transaction and QueryRunner
 export const createEmployee = async (req: Request, res: Response) => {
@@ -360,9 +360,9 @@ export const deleteEmployeeById = async (req: Request, res: Response) => {
   });
 };
 
+//Create Employee and User Record together
 export const createEmployeeWithUser = async (req: Request, res: Response) => {
   try {
-    // Handle file upload
     upload.single('profile_picture')(req, res, async (err: any) => {
       if (err) {
         console.error(err);
@@ -390,35 +390,20 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           queryRunner.manager.getRepository(Department);
         const employeeRepository = queryRunner.manager.getRepository(Employee);
 
-        // Extract user data from the request body
         const {
-          first_name,
-          last_name,
-          father_name,
-          mother_name,
           email,
           password,
           role_id,
           social_media_links,
           address_id,
           bank_details_id,
-          mobile,
           dob,
           marital_status,
           staffId,
           designationId,
           departmentId,
-          salary,
-          deduction,
-          contractType,
           doj,
           dol,
-          workShift,
-          workLocation,
-          gender,
-          qualification,
-          work_experience,
-          aadhar_card,
         } = req.body;
 
         // Check if role_id exists in Role table
@@ -447,33 +432,23 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           return;
         }
 
-        // Create a user record
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = new User();
-        user.first_name = first_name;
-        user.last_name = last_name;
-        user.father_name = father_name;
-        user.mother_name = mother_name;
-        user.email = email;
-        user.password = hashedPassword;
-        user.is_active = true;
-        user.marital_status = marital_status === 'true';
-        user.gender = gender;
-        user.qualification = qualification;
-        user.work_experience = work_experience;
-        user.aadhar_card = aadhar_card;
-        user.role_id = role_id;
-        user.mobile = mobile;
-        user.dob = new Date(dob);
-        user.profile_picture = profilePicturePath;
-        user.social_media_links = social_media_links
-          ? social_media_links.split(',')
-          : null;
-        user.address_id = address_id === 'null' ? 0 : +address_id;
-        user.bank_details_id =
-          bank_details_id === 'null' ? 0 : +bank_details_id;
 
-        // Save the user
+        Object.assign(user, {
+          ...req.body,
+          password: hashedPassword,
+          is_active: true,
+          marital_status: marital_status === 'true',
+          dob: new Date(dob),
+          profile_picture: profilePicturePath,
+          social_media_links: social_media_links
+            ? social_media_links.split(',')
+            : null,
+          address_id: address_id === 'null' ? 0 : +address_id,
+          bank_details_id: bank_details_id === 'null' ? 0 : +bank_details_id,
+        });
+
         const newUser = await userRepository.save(user);
 
         const designation = await designationRepository.findOne({
@@ -499,18 +474,13 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           designation_id: designationId,
           department,
           department_id: departmentId,
-          salary,
-          deduction,
-          contract_type: contractType,
+          ...req.body,
           doj: new Date(doj) || null,
           dol: dol || '',
-          work_shift: workShift,
-          work_location: workLocation,
         });
 
         await employeeRepository.save(newEmployee);
 
-        // Send success response
         sendResponse(res, 201, 'Employee created successfully', newEmployee);
       });
     });
@@ -519,6 +489,7 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
   }
 };
 
+//Update Employee and User Record together
 export const updateEmployeeWithUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -545,11 +516,6 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
 
       await runTransaction(queryRunner, async () => {
         const userRepository = queryRunner.manager.getRepository(User);
-        const roleRepository = queryRunner.manager.getRepository(Role);
-        const designationRepository =
-          queryRunner.manager.getRepository(Designation);
-        const departmentRepository =
-          queryRunner.manager.getRepository(Department);
         const employeeRepository = queryRunner.manager.getRepository(Employee);
 
         const employee = await employeeRepository.findOne({
@@ -562,111 +528,31 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           return;
         }
 
-        // Extract user data from the request body
-        const {
-          first_name,
-          last_name,
-          father_name,
-          mother_name,
-          email,
-          password,
-          role_id,
-          social_media_links,
-          address_id,
-          bank_details_id,
-          mobile,
-          dob,
-          marital_status,
-          designationId,
-          departmentId,
-          salary,
-          deduction,
-          contractType,
-          doj,
-          dol,
-          workShift,
-          workLocation,
-          gender,
-          qualification,
-          work_experience,
-          aadhar_card,
-        } = req.body;
-
-        // Check if role_id exists in Role table
-        const role = await roleRepository.findOne({ where: { id: role_id } });
-        if (!role) {
-          sendError(res, 404, 'Role not found');
-          return;
-        }
-
-        const existingUser = await userRepository.findOne({
-          where: { email: email },
+        // Update user and employee records
+        Object.assign(employee.user, {
+          ...req.body,
+          password: req.body.password
+            ? await bcrypt.hash(req.body.password, 10)
+            : employee.user.password,
+          dob: new Date(req.body.dob),
+          profile_picture: profilePicturePath || employee.user.profile_picture,
+          social_media_links: req.body.social_media_links
+            ? req.body.social_media_links.split(',')
+            : null,
+          address_id: req.body.address_id === 'null' ? 0 : +req.body.address_id,
+          bank_details_id:
+            req.body.bank_details_id === 'null' ? 0 : +req.body.bank_details_id,
         });
-        if (existingUser) {
-          sendError(res, 400, 'Email already exists');
-          return;
-        }
 
-        // Update user record
-        employee.user.first_name = first_name;
-        employee.user.last_name = last_name;
-        employee.user.father_name = father_name;
-        employee.user.mother_name = mother_name;
-        employee.user.email = email;
-        if (password) {
-          const hashedPassword = await bcrypt.hash(password, 10);
-          employee.user.password = hashedPassword;
-        }
-        employee.user.marital_status = marital_status === 'true';
-        employee.user.gender = gender;
-        employee.user.qualification = qualification;
-        employee.user.work_experience = work_experience;
-        employee.user.aadhar_card = aadhar_card;
-        employee.user.role_id = role_id;
-        employee.user.mobile = mobile;
-        employee.user.dob = new Date(dob);
-        if (profilePicturePath) {
-          employee.user.profile_picture = profilePicturePath;
-        }
-        employee.user.social_media_links = social_media_links
-          ? social_media_links.split(',')
-          : null;
-        employee.user.address_id = address_id === 'null' ? 0 : +address_id;
-        employee.user.bank_details_id =
-          bank_details_id === 'null' ? 0 : +bank_details_id;
+        Object.assign(employee, {
+          ...req.body,
+          designation_id: req.body.designationId,
+          department_id: req.body.departmentId,
+          doj: new Date(req.body.doj) || null,
+          dol: req.body.dol || '',
+        });
 
         await userRepository.save(employee.user);
-
-        const designation = await designationRepository.findOne({
-          where: { id: +designationId },
-        });
-        if (!designation) {
-          sendError(res, 404, 'Designation not found');
-          return;
-        }
-
-        const department = await departmentRepository.findOne({
-          where: { id: +departmentId },
-        });
-        if (!department) {
-          sendError(res, 404, 'Department not found');
-          return;
-        }
-
-        // Update employee record
-        // employee.staff_id = employee.staff_id;
-        employee.designation = designation;
-        employee.designation_id = designationId;
-        employee.department = department;
-        employee.department_id = departmentId;
-        employee.salary = salary;
-        employee.deduction = deduction;
-        employee.contract_type = contractType;
-        employee.doj = new Date(doj) || null;
-        employee.dol = dol || '';
-        employee.work_shift = workShift;
-        employee.work_location = workLocation;
-
         await employeeRepository.save(employee);
 
         // Send success response

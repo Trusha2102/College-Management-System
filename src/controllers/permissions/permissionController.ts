@@ -85,7 +85,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
   const casbin = await casbinService.getEnforcer();
 
   try {
-    const { id } = req.params;
+    // const { id } = req.params;
     const { roleId, permission } = req.body;
 
     // Check if roleId exists in Role table
