@@ -29,8 +29,8 @@ export class FeesMaster {
   @JoinTable()
   feesGroups!: FeesGroup[];
 
-  @Column({ type: 'date' })
-  due_date!: Date;
+  // @Column({ type: 'date' })
+  // due_date!: Date;
 
   @ManyToOne(() => Fine)
   @JoinColumn({ name: 'fine_type_id' })

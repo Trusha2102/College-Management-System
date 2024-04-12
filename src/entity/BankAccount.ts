@@ -6,9 +6,11 @@ import {
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
 } from 'typeorm';
 import { Student } from './Student';
 import { User } from './User';
+import { Employee } from './Employee';
 
 @Entity()
 export class BankAccount {
@@ -30,19 +32,22 @@ export class BankAccount {
   @Column()
   account_no!: string;
 
-  @ManyToOne(() => Student, (student) => student.bank_details, {
-    nullable: true,
-  })
-  student!: Student;
+  // @ManyToOne(() => Student, (student) => student.bank_details, {
+  //   nullable: true,
+  // })
+  // student!: Student;
 
-  @Column({ nullable: true, unique: true })
-  student_id!: number;
+  // @Column({ nullable: true, unique: true })
+  // student_id!: number;
 
   @ManyToOne(() => User, (user) => user.bank_details, { nullable: true })
   user!: User;
 
   @Column({ nullable: true, unique: true })
   user_id!: number;
+
+  @OneToOne(() => Employee, (employee) => employee.bank_details)
+  employee!: Employee;
 
   @CreateDateColumn({
     name: 'created_at',

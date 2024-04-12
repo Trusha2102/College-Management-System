@@ -10,6 +10,7 @@ import runTransaction from '../../utils/runTransaction';
 import bcrypt from 'bcrypt';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
+import { BankAccount } from '../../entity/BankAccount';
 
 const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024); // 2MB limit
 
@@ -393,6 +394,8 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         const departmentRepository =
           queryRunner.manager.getRepository(Department);
         const employeeRepository = queryRunner.manager.getRepository(Employee);
+        const bankAccountRepository =
+          queryRunner.manager.getRepository(BankAccount);
 
         const {
           email,
@@ -482,10 +485,30 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           doj: new Date(doj) || null,
           dol: dol || '',
         });
-
         await employeeRepository.save(newEmployee);
 
-        sendResponse(res, 201, 'Employee created successfully', newEmployee);
+        // Save BankAccount details
+        const bankAccount = new BankAccount();
+        Object.assign(bankAccount, {
+          ...req.body,
+          pan_number: +req.body.pan_number,
+          ifsc: +req.body.ifsc,
+          user: newUser,
+          user_id: newUser.id,
+          employee: newEmployee,
+        });
+        await bankAccountRepository.save(bankAccount);
+
+        const displayEmployee = await employeeRepository.findOne({
+          where: { staff_id: staffId },
+        });
+
+        sendResponse(
+          res,
+          201,
+          'Employee created successfully',
+          displayEmployee,
+        );
       });
     });
   } catch (error: any) {
