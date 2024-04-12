@@ -17,7 +17,7 @@ const createPermission = async (req: Request, res: Response) => {
   const casbin = await casbinService.getEnforcer();
 
   try {
-    const { role: roleName, permission: permissionsData } = req.body;
+    const { role: roleName, permissions: permissionsData } = req.body;
 
     const normalizedRoleName = roleName.trim().toLowerCase();
 
@@ -55,8 +55,10 @@ const createPermission = async (req: Request, res: Response) => {
           return;
         }
 
+        const operations = operation || [''];
+
         // Create a permission record for each operation
-        for (const op of operation) {
+        for (const op of operations) {
           const permissionRecord = queryRunner.manager.create(Permission, {
             roleId: role?.id,
             moduleId,

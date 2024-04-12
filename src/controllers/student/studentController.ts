@@ -10,11 +10,12 @@ import { Session } from '../../entity/Session';
 import { Semester } from '../../entity/Semester';
 import { Course } from '../../entity/Course';
 import { StudentHistory } from '../../entity/StudentHistory';
+import { ParentDetails } from '../../entity/ParentDetails';
 
 const upload = configureMulter('./uploads/Student', 5 * 1024 * 1024); // 5MB limit
 
 const createStudent = async (req: Request, res: Response) => {
-  let errorOccurred = false; // Flag to track if an error has occurred
+  let errorOccurred = false;
 
   try {
     upload.fields([
@@ -23,12 +24,12 @@ const createStudent = async (req: Request, res: Response) => {
     ])(req, res, async (err: any) => {
       if (err) {
         console.error(err);
-        errorOccurred = true; // Set flag to true when an error occurs
+        errorOccurred = true;
         return sendError(res, 500, 'Failed to upload files', err.message);
       }
 
       const { body, files } = req;
-      // Process other_docs files
+
       const otherDocsFiles =
         (files as { [fieldname: string]: Express.Multer.File[] })[
           'other_docs'
@@ -40,6 +41,7 @@ const createStudent = async (req: Request, res: Response) => {
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
       let student;
+      let parentDetails;
       const queryRunner = AppDataSource.createQueryRunner();
       await runTransaction(queryRunner, async () => {
         const studentRepository = queryRunner.manager.getRepository(Student);
@@ -48,6 +50,8 @@ const createStudent = async (req: Request, res: Response) => {
         const courseRepository = queryRunner.manager.getRepository(Course);
         const semesterRepository = queryRunner.manager.getRepository(Semester);
         const sessionRepository = queryRunner.manager.getRepository(Session);
+        const parentDetailsRepository =
+          queryRunner.manager.getRepository(ParentDetails);
 
         const existingStudent = await studentRepository.findOne({
           where: { email: body.email },
@@ -95,7 +99,6 @@ const createStudent = async (req: Request, res: Response) => {
           return;
         }
 
-        // Check if the enrollment_no already exists in the Student table
         const existingStudentEnrollmentNo = await studentRepository.findOne({
           where: { enrollment_no: body.enrollment_no },
         });
@@ -111,7 +114,6 @@ const createStudent = async (req: Request, res: Response) => {
           return;
         }
 
-        // Check if the admission_no already exists in the Student table
         const existingStudentAdmissionNo = await studentRepository.findOne({
           where: { admission_no: body.admission_no },
         });
@@ -127,7 +129,6 @@ const createStudent = async (req: Request, res: Response) => {
           return;
         }
 
-        // Create the student with the provided data and file paths
         student = studentRepository.create({
           ...body,
           profile_picture:
@@ -140,6 +141,12 @@ const createStudent = async (req: Request, res: Response) => {
         });
 
         await studentRepository.save(student);
+
+        parentDetails = parentDetailsRepository.create({
+          ...body,
+          student: student,
+        });
+        await parentDetailsRepository.save(parentDetails);
 
         const newStudent = await studentRepository.findOne({
           where: {
@@ -161,13 +168,11 @@ const createStudent = async (req: Request, res: Response) => {
       });
 
       if (!errorOccurred) {
-        // Send response only if no error has occurred
         sendResponse(res, 201, 'Student created successfully', student);
       }
     });
   } catch (error: any) {
     if (!errorOccurred) {
-      // Handle error only if no error has occurred in the upload callback
       console.error(error);
       sendError(res, 500, 'Failed to create student', error.message);
     }
@@ -176,7 +181,6 @@ const createStudent = async (req: Request, res: Response) => {
 
 const listStudents = async (req: Request, res: Response) => {
   try {
-    // Extract query parameters and convert to numbers
     let {
       name,
       section_name,
@@ -247,16 +251,14 @@ const listStudents = async (req: Request, res: Response) => {
     const students = await query.getMany();
 
     const totalNoOfRecords = students.length;
-    res
-      .status(200)
-      .json({
-        students,
-        page,
-        limit,
-        totalCount,
-        totalNoOfRecords,
-        totalPages,
-      });
+    res.status(200).json({
+      students,
+      page,
+      limit,
+      totalCount,
+      totalNoOfRecords,
+      totalPages,
+    });
   } catch (error) {
     console.error(error);
     sendError(res, 500, 'Failed to fetch students');
