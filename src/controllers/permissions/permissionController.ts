@@ -69,7 +69,8 @@ const createPermission = async (req: Request, res: Response) => {
           createdPermissions.push(permissionRecord);
         }
       }
-      res.status(201).json(createdPermissions);
+
+      sendResponse(res, 201, 'Permission Created Successfully');
     });
   } catch (error) {
     console.error(error);
@@ -89,18 +90,20 @@ const getAllPermissions = async (req: Request, res: Response) => {
 
 const updatePermissionById = async (req: Request, res: Response) => {
   const casbin = await casbinService.getEnforcer();
+  let errorOccurred = false;
 
   try {
-    // const { id } = req.params;
     const { roleId, permission } = req.body;
 
-    // Check if roleId exists in Role table
     const roleRepository = AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
       where: { id: +roleId },
     });
+
     if (!role) {
-      return sendError(res, 400, 'Role not found');
+      sendError(res, 400, 'Role not found');
+      errorOccurred = true;
+      return;
     }
 
     const queryRunner = AppDataSource.createQueryRunner();
@@ -108,19 +111,20 @@ const updatePermissionById = async (req: Request, res: Response) => {
       for (const perm of permission) {
         const { moduleId, operations } = perm;
 
-        // Check if moduleId exists in Module table
         const moduleRepository = AppDataSource.getRepository(Module);
         const module = await moduleRepository.findOne({
           where: { id: moduleId },
         });
+
         if (!module) {
           sendError(res, 400, 'Module not found');
+          errorOccurred = true;
           return;
         }
-        // Delete policy to Casbin
+
         await casbin.removeFilteredPolicy(0, role.name, module.name);
+
         for (const operation of operations) {
-          // Add policy to Casbin
           await casbin.addPolicy(role.name, module.name, operation);
           const existingPermission = await AppDataSource.manager.findOne(
             Permission,
@@ -134,7 +138,6 @@ const updatePermissionById = async (req: Request, res: Response) => {
           );
 
           if (!existingPermission) {
-            // Create new permission if it doesn't exist
             await queryRunner.manager.insert(Permission, {
               roleId: +roleId,
               moduleId: +moduleId,
@@ -143,7 +146,6 @@ const updatePermissionById = async (req: Request, res: Response) => {
           }
         }
 
-        // Delete permissions not found in the update object
         await queryRunner.manager.delete(Permission, {
           roleId: +roleId,
           moduleId: +moduleId,
@@ -152,10 +154,14 @@ const updatePermissionById = async (req: Request, res: Response) => {
       }
     });
 
-    sendResponse(res, 200, 'Permissions updated successfully');
+    if (!errorOccurred) {
+      sendResponse(res, 200, 'Permissions updated successfully');
+    }
   } catch (error) {
     console.error(error);
-    sendError(res, 500, 'Failed to update permissions');
+    if (!errorOccurred) {
+      sendError(res, 500, 'Failed to update permissions');
+    }
   }
 };
 
@@ -296,9 +302,14 @@ export const getPermissionByRoleID = async (req: Request, res: Response) => {
       });
     }
 
-    res
-      .status(200)
-      .json({ role: role.name, permissions: formattedPermissions });
+    sendResponse(res, 200, 'Permission Fetched Successfully', {
+      role: role.name,
+      permissions: formattedPermissions,
+    });
+
+    // res
+    //   .status(200)
+    //   .json({ role: role.name, permissions: formattedPermissions });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to fetch permissions' });

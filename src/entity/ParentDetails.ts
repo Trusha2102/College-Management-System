@@ -51,8 +51,8 @@ export class ParentDetails {
   })
   student!: Student;
 
-  @Column({ nullable: true })
-  student_id!: number;
+  // @Column({ nullable: true })
+  // student_id!: number;
 
   @CreateDateColumn({
     name: 'created_at',

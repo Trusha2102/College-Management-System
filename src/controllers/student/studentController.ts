@@ -40,8 +40,11 @@ const createStudent = async (req: Request, res: Response) => {
       }));
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
+      // let student: Student;
+      // let parentDetails: ParentDetails;
       let student;
       let parentDetails;
+      let newStudent;
       const queryRunner = AppDataSource.createQueryRunner();
       await runTransaction(queryRunner, async () => {
         const studentRepository = queryRunner.manager.getRepository(Student);
@@ -148,15 +151,14 @@ const createStudent = async (req: Request, res: Response) => {
         });
         await parentDetailsRepository.save(parentDetails);
 
-        const newStudent = await studentRepository.findOne({
+        newStudent = await studentRepository.findOne({
           where: {
             admission_no: req.body.admission_no,
           },
+          relations: ['parent_details'],
         });
 
-        const newStudentId = newStudent?.id;
-
-        if (newStudentId) {
+        if (newStudent) {
           const studentHistory = studentHistoryRepository.create({
             student: newStudent,
             course: course,
@@ -168,7 +170,7 @@ const createStudent = async (req: Request, res: Response) => {
       });
 
       if (!errorOccurred) {
-        sendResponse(res, 201, 'Student created successfully', student);
+        sendResponse(res, 201, 'Student created successfully', newStudent);
       }
     });
   } catch (error: any) {
@@ -270,6 +272,7 @@ const getStudentById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const student = await AppDataSource.getRepository(Student).findOne({
       where: { id: +id },
+      relations: ['parent_details'],
     });
     if (!student) {
       return sendError(res, 404, 'Student not found');
@@ -306,11 +309,15 @@ const updateStudentById = async (req: Request, res: Response) => {
 
       const queryRunner = AppDataSource.createQueryRunner();
 
-      let updatedStudent;
+      let updatedStudent: Student | undefined;
+
       await runTransaction(queryRunner, async () => {
         const studentRepository = queryRunner.manager.getRepository(Student);
+        const parentDetailsRepository =
+          queryRunner.manager.getRepository(ParentDetails);
         const student = await studentRepository.findOne({
           where: { id: +id },
+          relations: ['parent_details'],
         });
         if (!student) {
           sendError(res, 404, 'Student not found');
@@ -368,9 +375,21 @@ const updateStudentById = async (req: Request, res: Response) => {
         studentRepository.merge(student, updatedData);
 
         updatedStudent = await studentRepository.save(student);
+
+        if (updatedStudent && updatedStudent.parent_details) {
+          const parentDetails = updatedStudent.parent_details;
+          parentDetailsRepository.merge(parentDetails, body);
+          await parentDetailsRepository.save(parentDetails);
+        }
       });
+
       if (updatedStudent) {
-        sendResponse(res, 200, 'Student updated successfully', updatedStudent);
+        // Include parent details in the response
+        const responseStudent = {
+          ...updatedStudent,
+          parent_details: updatedStudent.parent_details,
+        };
+        sendResponse(res, 200, 'Student updated successfully', responseStudent);
       }
     });
   } catch (error: any) {
