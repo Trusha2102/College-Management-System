@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { Session } from './Session';
 import { Section } from './Section';
-import { Address } from './Address';
+// import { Address } from './Address';
 import { ParentDetails } from './ParentDetails';
 import { BankAccount } from './BankAccount';
 import { Result } from './Result';
@@ -127,8 +127,14 @@ export class Student {
   @Column()
   password!: string;
 
-  @OneToOne(() => Address, (address) => address.student, { nullable: true })
-  address!: Address;
+  // @OneToOne(() => Address, (address) => address.student, { nullable: true })
+  // address!: Address;
+
+  @Column({ nullable: true })
+  permanent_address!: string;
+
+  @Column({ nullable: true })
+  current_address!: string;
 
   @OneToOne(() => ParentDetails, (parentDetails) => parentDetails.student, {
     nullable: true,

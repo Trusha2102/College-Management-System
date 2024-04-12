@@ -13,23 +13,38 @@ export class ParentDetails {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column()
-  relation_type!: string;
+  @Column({ nullable: true })
+  father_name!: string;
 
-  @Column()
-  name!: string;
+  @Column({ nullable: true })
+  mother_name!: string;
 
-  @Column()
-  occupation!: string;
+  @Column({ nullable: true })
+  father_occupation!: string;
 
-  @Column()
-  phone!: string;
+  @Column({ nullable: true })
+  mother_occupation!: string;
 
-  @Column()
-  qualification!: string;
+  @Column({ nullable: true })
+  father_phone!: string;
 
-  @Column()
-  email!: string;
+  @Column({ nullable: true })
+  mother_phone!: string;
+
+  @Column({ nullable: true })
+  guardian_name!: string;
+
+  @Column({ nullable: true })
+  guardian_phone!: string;
+
+  @Column({ nullable: true })
+  guardian_relation!: string;
+
+  // @Column()
+  // qualification!: string;
+
+  // @Column()
+  // email!: string;
 
   @ManyToOne(() => Student, (student) => student.parent_details, {
     onDelete: 'CASCADE',
@@ -38,9 +53,6 @@ export class ParentDetails {
 
   @Column({ nullable: true })
   student_id!: number;
-
-  @Column({ nullable: true })
-  photo!: string;
 
   @CreateDateColumn({
     name: 'created_at',

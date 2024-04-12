@@ -9,11 +9,15 @@ import { CasbinService } from '../../casbin/enforcer';
 import { In, Not } from 'typeorm';
 const casbinService = new CasbinService();
 
+interface GroupedPermissions {
+  [moduleId: number]: { module_name: string; operations: string[] };
+}
+
 const createPermission = async (req: Request, res: Response) => {
   const casbin = await casbinService.getEnforcer();
 
   try {
-    const { role: roleName, permission: permissionsData } = req.body;
+    const { role: roleName, permissions: permissionsData } = req.body;
 
     const normalizedRoleName = roleName.trim().toLowerCase();
 
@@ -51,8 +55,10 @@ const createPermission = async (req: Request, res: Response) => {
           return;
         }
 
+        const operations = operation || [''];
+
         // Create a permission record for each operation
-        for (const op of operation) {
+        for (const op of operations) {
           const permissionRecord = queryRunner.manager.create(Permission, {
             roleId: role?.id,
             moduleId,
@@ -85,7 +91,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
   const casbin = await casbinService.getEnforcer();
 
   try {
-    const { id } = req.params;
+    // const { id } = req.params;
     const { roleId, permission } = req.body;
 
     // Check if roleId exists in Role table
@@ -240,6 +246,62 @@ const generatePermissionsHTML = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Failed to generate permissions HTML:', error);
     res.status(500).send('Failed to generate permissions HTML');
+  }
+};
+
+export const getPermissionByRoleID = async (req: Request, res: Response) => {
+  try {
+    const roleId = req.params.roleId;
+
+    // Fetch role data
+    const roleRepository = AppDataSource.getRepository(Role);
+    const role = await roleRepository.findOne({ where: { id: +roleId } });
+
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+
+    const permissionRepository = AppDataSource.getRepository(Permission);
+    const permissions = await permissionRepository.find({
+      where: { roleId: +roleId },
+    });
+
+    const groupedPermissions: GroupedPermissions = {};
+    for (const permission of permissions) {
+      const { moduleId, operation } = permission;
+
+      const moduleRepository = AppDataSource.getRepository(Module);
+      const module = await moduleRepository.findOne({
+        where: { id: moduleId },
+      });
+
+      if (module) {
+        if (!groupedPermissions[moduleId]) {
+          groupedPermissions[moduleId] = {
+            module_name: module.name,
+            operations: [],
+          };
+        }
+        groupedPermissions[moduleId].operations.push(operation);
+      }
+    }
+
+    const formattedPermissions = [];
+    for (const moduleId in groupedPermissions) {
+      const { module_name, operations } = groupedPermissions[moduleId];
+      formattedPermissions.push({
+        moduleId: parseInt(moduleId),
+        module_name,
+        operations,
+      });
+    }
+
+    res
+      .status(200)
+      .json({ role: role.name, permissions: formattedPermissions });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch permissions' });
   }
 };
 

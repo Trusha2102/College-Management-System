@@ -24,12 +24,15 @@ const getAllNotices = async (req: Request, res: Response) => {
       },
     });
 
+    const totalNoOfRecords = notices.length;
+
     const totalPages = Math.ceil(totalCount / limit);
 
     return sendResponse(res, 200, 'Notices fetched successfully', {
       notices,
       page,
       limit,
+      totalNoOfRecords,
       totalCount,
       totalPages,
     });

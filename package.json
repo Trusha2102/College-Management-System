@@ -12,12 +12,12 @@
     "start:dev": "NODE_ENV=development tsc-watch --onSuccess \"node ./dist/app.js\"",
     "start:prod": "NODE_ENV=production pm2 start ecosystem.config.js --update-env",
     "lint": "eslint \"./src/**/*.ts\" --fix",
-    "migration:generate": "npm run typeorm migration:generate -- -d src/data-sourse.ts",
+    "migration:generate": "npm run typeorm migration:generate -- -d src/data-source.ts",
     "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "migration:create": "npx typeorm migration:create",
     "migration:revert": "ts-node ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
-    "schema:sync": "npm run typeorm shcema:sync -- -d src/data-sourse.ts",
-    "migration:show": "npm run typeorm migration:show -- -d src/data-sourse.ts"
+    "schema:sync": "npm run typeorm shcema:sync -- -d src/data-source.ts",
+    "migration:show": "npm run typeorm migration:show -- -d src/data-source.ts"
   },
   "keywords": [],
   "author": "",

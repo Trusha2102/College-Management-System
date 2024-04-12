@@ -66,8 +66,11 @@ export const listSections = async (req: Request, res: Response) => {
       take: limitNumber,
     });
 
+    const totalNoOfRecords = sections.length;
+
     sendResponse(res, 200, 'Sections found', {
       sections,
+      totalNoOfRecords,
       totalCount,
     });
   } catch (error: any) {

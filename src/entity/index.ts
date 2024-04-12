@@ -4,7 +4,7 @@ import { ActivityLog } from './ActivityLog';
 import { Role } from './Role';
 import { Permission } from './Permission';
 import { Module } from './Module';
-import { Address } from './Address';
+// import { Address } from './Address';
 import { Student } from './Student';
 import { Session } from './Session';
 import { Course } from './Course';
@@ -38,7 +38,7 @@ const Entities = [
   Role,
   Permission,
   Module,
-  Address,
+  // Address,
   Student,
   Session,
   Course,

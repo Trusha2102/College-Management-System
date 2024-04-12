@@ -82,8 +82,11 @@ export const getAllFeesTypes = async (req: Request, res: Response) => {
       .orderBy('feesType.createdAt', 'DESC')
       .getMany();
 
+    const totalNoOfRecords = allFeesTypes.length;
+
     sendResponse(res, 200, 'FeesTypes fetched successfully', {
       feesTypes: allFeesTypes,
+      totalNoOfRecords,
       totalCount,
     });
   } catch (error: any) {

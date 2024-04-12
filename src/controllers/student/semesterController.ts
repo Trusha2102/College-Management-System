@@ -171,8 +171,11 @@ export const listSemesters = async (req: Request, res: Response) => {
       take: limitNumber,
     });
 
+    const totalNoOfRecords = semesters.length;
+
     sendResponse(res, 200, 'Semesters found', {
       semesters,
+      totalNoOfRecords,
       totalCount,
     });
   } catch (error: any) {

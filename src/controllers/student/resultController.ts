@@ -193,8 +193,11 @@ export const listResultsByStudentId = async (req: Request, res: Response) => {
       take: limitNumber,
     });
 
+    const totalNoOfRecords = results.length;
+
     sendResponse(res, 200, 'Results found', {
       results,
+      totalNoOfRecords,
       totalCount,
     });
   } catch (error: any) {

@@ -79,9 +79,13 @@ export const getAllFeesGroups = async (req: Request, res: Response) => {
       },
     );
 
+    // Calculate total number of records on the current page
+    const totalNoOfRecords = feesGroups.length;
+
     sendResponse(res, 200, 'Fees Groups fetched successfully', {
       feesGroups,
       totalCount,
+      totalNoOfRecords,
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch Fees Groups', error.message);
