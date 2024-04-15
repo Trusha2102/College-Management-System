@@ -92,18 +92,8 @@ export const createEmployee = async (req: Request, res: Response) => {
 // List Employees
 export const listEmployees = async (req: Request, res: Response) => {
   try {
-    const {
-      role,
-      staff_id,
-      name,
-      department,
-      designation,
-      page,
-      limit,
-      month,
-      year,
-      staff_loan_search,
-    } = req.query;
+    const { role, search, page, limit, month, year, staff_loan_search } =
+      req.query;
 
     const pageNumber: number = parseInt(page as string, 10) || 1;
     const itemsPerPage: number = parseInt(limit as string, 10) || 10;
@@ -138,62 +128,26 @@ export const listEmployees = async (req: Request, res: Response) => {
       });
     }
 
-    if (staff_id) {
-      // Filter by staff_id
-      query = query.andWhere(
-        'CAST(employee.staff_id AS TEXT) ILIKE :staff_id',
-        {
-          staff_id: `%${staff_id}%`,
-        },
+    if (search) {
+      query = query.andWhere((queryBuilder) =>
+        queryBuilder
+          .where('user.first_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('user.last_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('user.father_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('department.department ILIKE :search', {
+            search: `%${search}%`,
+          })
+          .orWhere('designation.designation ILIKE :search', {
+            search: `%${search}%`,
+          })
+          .orWhere('CAST(employee.staff_id AS TEXT) ILIKE :search', {
+            search: `%${search}%`,
+          })
+          .orWhere('user.mobile ILIKE :search', { search: `%${search}%` })
+          .orWhere('bank_details.pan_number ILIKE :search', {
+            search: `%${search}%`,
+          }),
       );
-    }
-
-    if (name) {
-      // Filter by name
-      query = query.andWhere(
-        '(user.first_name ILIKE :name OR user.last_name ILIKE :name OR user.father_name ILIKE :name)',
-        {
-          name: `%${name}%`,
-        },
-      );
-    }
-
-    if (department) {
-      // Filter by department
-      const departmentId = await AppDataSource.getRepository(Department)
-        .createQueryBuilder('department')
-        .where('department.department ILIKE :department', {
-          department: `%${department}%`,
-        })
-        .select('department.id')
-        .getRawOne();
-
-      if (!departmentId) {
-        return sendError(res, 400, 'Invalid department name');
-      }
-
-      query = query.andWhere('employee.department_id = :departmentId', {
-        departmentId: departmentId.department_id,
-      });
-    }
-
-    if (designation) {
-      // Filter by designation
-      const designationId = await AppDataSource.getRepository(Designation)
-        .createQueryBuilder('designation')
-        .where('designation.designation ILIKE :designation', {
-          designation: `%${designation}%`,
-        })
-        .select('designation.id')
-        .getRawOne();
-
-      if (!designationId) {
-        return sendError(res, 400, 'Invalid designation name');
-      }
-
-      query = query.andWhere('employee.designation_id = :designationId', {
-        designationId: designationId.designation_id,
-      });
     }
 
     if (month) {

@@ -3,6 +3,7 @@ import { Role } from '../../entity/Role';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import AppDataSource from '../../data-source';
 import runTransaction from '../../utils/runTransaction';
+import { Permission } from '../../entity/Permission';
 
 const createRole = async (req: Request, res: Response) => {
   try {
@@ -101,6 +102,24 @@ const deleteRoleById = async (req: Request, res: Response) => {
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
+      const permissionsCount = await queryRunner.manager.findAndCount(
+        Permission,
+        {
+          where: { roleId: +id },
+        },
+      );
+
+      if (permissionsCount) {
+        sendError(
+          res,
+          400,
+          'Please remove all the permission of this Role before deleting it',
+          'Permissions are required to be removed first',
+        );
+        return;
+      }
+
+      // If no permissions are found, proceed with role deletion
       await queryRunner.manager.delete(Role, +id);
       sendResponse(res, 200, 'Role Deleted Successfully!', null);
     });
