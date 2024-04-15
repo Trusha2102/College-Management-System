@@ -7,6 +7,7 @@ import {
   deleteEmployeeById,
   createEmployeeWithUser,
   updateEmployeeWithUser,
+  listRoleDepDes,
 } from '../../controllers/employee/employeeController';
 import permissionProtect from '../../middlewares/permissionMiddleware';
 
@@ -28,9 +29,12 @@ router.delete('/delete/:id', permissionProtect, deleteEmployeeById);
 router.get('/list', permissionProtect, listEmployees);
 
 //Create User and Employee
-router.post('/create/add', createEmployeeWithUser);
+router.post('/create/add', permissionProtect, createEmployeeWithUser);
 
 //Update User with Employee Record
-router.put('/create/update/:id', updateEmployeeWithUser);
+router.put('/create/update/:id', permissionProtect, updateEmployeeWithUser);
+
+//Lists Role,  Designation and Department
+router.get('/role-dep-des/list', permissionProtect, listRoleDepDes);
 
 export default router;
