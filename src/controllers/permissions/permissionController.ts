@@ -43,7 +43,7 @@ const createPermission = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const createdPermissions = [];
       for (const permissionData of permissionsData) {
-        const { moduleId, operation } = permissionData;
+        const { moduleId, operations } = permissionData;
 
         // Check if module exists
         const moduleRepository = AppDataSource.getRepository(Module);
@@ -55,10 +55,10 @@ const createPermission = async (req: Request, res: Response) => {
           return;
         }
 
-        const operations = operation || [''];
+        const operation = operations || [''];
 
         // Create a permission record for each operation
-        for (const op of operations) {
+        for (const op of operation) {
           const permissionRecord = queryRunner.manager.create(Permission, {
             roleId: role?.id,
             moduleId,
