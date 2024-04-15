@@ -13,7 +13,7 @@ import { Session } from './Session';
 import { Section } from './Section';
 // import { Address } from './Address';
 import { ParentDetails } from './ParentDetails';
-import { BankAccount } from './BankAccount';
+// import { BankAccount } from './BankAccount';
 import { Result } from './Result';
 import { FeesPayment } from './FeesPayment';
 import { FeesMaster } from './FeesMaster';
@@ -141,10 +141,10 @@ export class Student {
   })
   parent_details!: ParentDetails;
 
-  @OneToOne(() => BankAccount, (bankAccount) => bankAccount.student, {
-    nullable: true,
-  })
-  bank_details!: BankAccount;
+  // @OneToOne(() => BankAccount, (bankAccount) => bankAccount.student, {
+  //   nullable: true,
+  // })
+  // bank_details!: BankAccount;
 
   @OneToOne(() => Result, (result) => result.student, { nullable: true })
   result!: Result;

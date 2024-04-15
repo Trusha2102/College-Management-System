@@ -7,12 +7,13 @@ import { Student } from '../../entity/Student';
 import { Course } from '../../entity/Course';
 import { Semester } from '../../entity/Semester';
 import { StudentHistory } from '../../entity/StudentHistory';
+import { Session } from '../../entity/Session';
 
 // Create a new result
 export const createResult = async (req: Request, res: Response) => {
   try {
-    const { studentId, courseId, semesterId, result, next_course_status } =
-      req.body;
+    const { results, Promote } = req.body;
+    const { courseId } = Promote; // Extract courseId from Promote
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
@@ -22,129 +23,155 @@ export const createResult = async (req: Request, res: Response) => {
       const resultRepository = queryRunner.manager.getRepository(Result);
       const studentHistoryRepository =
         queryRunner.manager.getRepository(StudentHistory);
+      const sessionRepository = queryRunner.manager.getRepository(Session);
 
-      const student = await studentRepository.findOne({
-        where: { id: +studentId },
-      });
-      if (!student) {
-        sendError(res, 404, 'Student not found');
-        return;
+      const validateExistence = async (
+        entity: any,
+        id: string,
+        name: string,
+      ) => {
+        const record = await entity.findOne({ where: { id: +id } });
+        if (!record) {
+          sendError(res, 400, `${name} not found: ${id}`);
+          return false;
+        }
+        return true;
+      };
+
+      // Validate Promote fields
+      const validatePromote = await Promise.all([
+        validateExistence(
+          sessionRepository,
+          Promote.current_session_id,
+          'Current Session',
+        ),
+        validateExistence(
+          sessionRepository,
+          Promote.promote_session_id,
+          'Promote Session',
+        ),
+        validateExistence(
+          semesterRepository,
+          Promote.current_semester_id,
+          'Current Semester',
+        ),
+        validateExistence(
+          semesterRepository,
+          Promote.promote_semester_id,
+          'Promote Semester',
+        ),
+      ]);
+
+      if (validatePromote.includes(false)) return;
+
+      for (const resultData of results) {
+        const { studentId, result, next_course_status } = resultData;
+
+        const validateResult = await Promise.all([
+          validateExistence(studentRepository, studentId, 'Student'),
+          // Use courseId from Promote
+          validateExistence(courseRepository, courseId, 'Course'),
+        ]);
+
+        if (validateResult.includes(false)) return;
+
+        const newResult = resultRepository.create({
+          student: { id: +studentId },
+          course: { id: +courseId }, // Use courseId from Promote
+          result,
+          current_session_id: Promote.current_session_id,
+          promote_session_id: Promote.promote_session_id,
+          current_semester_id: Promote.current_semester_id,
+          promote_semester_id: Promote.promote_semester_id,
+          current_section_id: Promote.current_section_id,
+          promote_section_id: Promote.promote_section_id,
+        });
+        await resultRepository.save(newResult);
+
+        // Update Student History
+        await studentHistoryRepository
+          .createQueryBuilder()
+          .update(StudentHistory)
+          .set({
+            result: newResult,
+            next_course_status,
+            session: Promote.promote_session_id,
+            semester: Promote.promote_semester_id,
+          })
+          .where('studentId = :studentId', { studentId })
+          .andWhere('courseId = :courseId', { courseId })
+          .execute();
       }
 
-      const course = await courseRepository.findOne({
-        where: { id: +courseId },
-      });
-      if (!course) {
-        sendError(res, 404, 'Course not found');
-        return;
-      }
-
-      const semester = await semesterRepository.findOne({
-        where: { id: +semesterId },
-      });
-      if (!semester) {
-        sendError(res, 404, 'Semester not found');
-        return;
-      }
-
-      const newResult = resultRepository.create({
-        student,
-        course,
-        semester,
-        result,
-      });
-      await resultRepository.save(newResult);
-
-      await studentHistoryRepository
-        .createQueryBuilder()
-        .update(StudentHistory)
-        .set({
-          result: newResult,
-          next_course_status: next_course_status,
-        })
-        .where('studentId = :studentId', { studentId: studentId })
-        .andWhere('courseId = :courseId', { courseId: courseId })
-        .andWhere('semesterId = :semesterId', { semesterId: semesterId })
-        .execute();
-
-      sendResponse(res, 201, 'Result created successfully', newResult);
+      sendResponse(res, 201, 'Results created successfully');
     });
   } catch (error: any) {
-    sendError(res, 500, 'Failed to create result', error.message);
+    sendError(res, 500, 'Failed to create results', error.message);
   }
 };
 
 // Update result by ID
 export const updateResultById = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { studentId, courseId, semesterId, result, next_course_status } =
-      req.body;
-
-    const queryRunner = AppDataSource.createQueryRunner();
-    await runTransaction(queryRunner, async () => {
-      const studentRepository = queryRunner.manager.getRepository(Student);
-      const courseRepository = queryRunner.manager.getRepository(Course);
-      const semesterRepository = queryRunner.manager.getRepository(Semester);
-      const resultRepository = queryRunner.manager.getRepository(Result);
-      const studentHistoryRepository =
-        queryRunner.manager.getRepository(StudentHistory);
-
-      const resultToUpdate = await resultRepository.findOne({
-        where: { id: +id },
-      });
-      if (!resultToUpdate) {
-        sendError(res, 404, 'Result not found');
-        return;
-      }
-
-      const student = await studentRepository.findOne({
-        where: { id: +studentId },
-      });
-      if (!student) {
-        sendError(res, 404, 'Student not found');
-        return;
-      }
-
-      const course = await courseRepository.findOne({
-        where: { id: +courseId },
-      });
-      if (!course) {
-        sendError(res, 404, 'Course not found');
-        return;
-      }
-
-      const semester = await semesterRepository.findOne({
-        where: { id: +semesterId },
-      });
-      if (!semester) {
-        sendError(res, 404, 'Semester not found');
-        return;
-      }
-
-      resultToUpdate.student = student;
-      resultToUpdate.course = course;
-      resultToUpdate.semester = semester;
-      resultToUpdate.result = result;
-
-      await resultRepository.save(resultToUpdate);
-
-      await studentHistoryRepository
-        .createQueryBuilder()
-        .update(StudentHistory)
-        .set({
-          next_course_status: next_course_status,
-        })
-        .where('studentId = :studentId', { studentId: studentId })
-        .andWhere('courseId = :courseId', { courseId: courseId })
-        .andWhere('semesterId = :semesterId', { semesterId: semesterId })
-        .execute();
-
-      sendResponse(res, 200, 'Result updated successfully', resultToUpdate);
-    });
-  } catch (error: any) {
-    sendError(res, 500, 'Failed to update result', error.message);
-  }
+  // try {
+  //   const { id } = req.params;
+  //   const { studentId, courseId, semesterId, result, next_course_status } =
+  //     req.body;
+  //   const queryRunner = AppDataSource.createQueryRunner();
+  //   await runTransaction(queryRunner, async () => {
+  //     const studentRepository = queryRunner.manager.getRepository(Student);
+  //     const courseRepository = queryRunner.manager.getRepository(Course);
+  //     const semesterRepository = queryRunner.manager.getRepository(Semester);
+  //     const resultRepository = queryRunner.manager.getRepository(Result);
+  //     const studentHistoryRepository =
+  //       queryRunner.manager.getRepository(StudentHistory);
+  //     const resultToUpdate = await resultRepository.findOne({
+  //       where: { id: +id },
+  //     });
+  //     if (!resultToUpdate) {
+  //       sendError(res, 404, 'Result not found');
+  //       return;
+  //     }
+  //     const student = await studentRepository.findOne({
+  //       where: { id: +studentId },
+  //     });
+  //     if (!student) {
+  //       sendError(res, 404, 'Student not found');
+  //       return;
+  //     }
+  //     const course = await courseRepository.findOne({
+  //       where: { id: +courseId },
+  //     });
+  //     if (!course) {
+  //       sendError(res, 404, 'Course not found');
+  //       return;
+  //     }
+  //     const semester = await semesterRepository.findOne({
+  //       where: { id: +semesterId },
+  //     });
+  //     if (!semester) {
+  //       sendError(res, 404, 'Semester not found');
+  //       return;
+  //     }
+  //     resultToUpdate.student = student;
+  //     resultToUpdate.course = course;
+  //     resultToUpdate.semester = semester;
+  //     resultToUpdate.result = result;
+  //     await resultRepository.save(resultToUpdate);
+  //     await studentHistoryRepository
+  //       .createQueryBuilder()
+  //       .update(StudentHistory)
+  //       .set({
+  //         next_course_status: next_course_status,
+  //       })
+  //       .where('studentId = :studentId', { studentId: studentId })
+  //       .andWhere('courseId = :courseId', { courseId: courseId })
+  //       .andWhere('semesterId = :semesterId', { semesterId: semesterId })
+  //       .execute();
+  //     sendResponse(res, 200, 'Result updated successfully', resultToUpdate);
+  //   });
+  // } catch (error: any) {
+  //   sendError(res, 500, 'Failed to update result', error.message);
+  // }
 };
 
 // Delete result by ID

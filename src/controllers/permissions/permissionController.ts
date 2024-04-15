@@ -93,7 +93,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
   let errorOccurred = false;
 
   try {
-    const { roleId, permission } = req.body;
+    const { roleId, role: roleName, permission } = req.body;
 
     const roleRepository = AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
@@ -108,6 +108,11 @@ const updatePermissionById = async (req: Request, res: Response) => {
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
+      if (roleName) {
+        role.name = roleName;
+        await roleRepository.save(role);
+      }
+
       for (const perm of permission) {
         const { moduleId, operations } = perm;
 

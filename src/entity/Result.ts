@@ -8,7 +8,6 @@ import {
 } from 'typeorm';
 import { Student } from './Student';
 import { Course } from './Course';
-import { Semester } from './Semester';
 
 @Entity()
 export class Result {
@@ -23,13 +22,26 @@ export class Result {
   @ManyToOne(() => Course, (course) => course.result, { onDelete: 'CASCADE' })
   course!: Course;
 
-  @ManyToOne(() => Semester, (semester) => semester.result, {
-    onDelete: 'CASCADE',
-  })
-  semester!: Semester;
-
   @Column()
   result!: string;
+
+  @Column({ nullable: true })
+  current_session_id!: string;
+
+  @Column({ nullable: true })
+  promote_session_id!: string;
+
+  @Column({ nullable: true })
+  current_semester_id!: string;
+
+  @Column({ nullable: true })
+  current_section_id!: string;
+
+  @Column({ nullable: true })
+  promote_semester_id!: string;
+
+  @Column({ nullable: true })
+  promote_section_id!: string;
 
   @CreateDateColumn({
     name: 'created_at',

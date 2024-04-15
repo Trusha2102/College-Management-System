@@ -6,6 +6,8 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
+  OneToOne,
 } from 'typeorm';
 import { User } from './User';
 import { Designation } from './Designation';
@@ -13,6 +15,7 @@ import { Department } from './Department';
 import { Attendance } from './Attendance';
 import { Payroll } from './Payroll';
 import { StaffLoan } from './StaffLoan';
+import { BankAccount } from './BankAccount';
 
 @Entity()
 export class Employee {
@@ -86,6 +89,10 @@ export class Employee {
 
   @OneToMany(() => StaffLoan, (staffLoan) => staffLoan.employee)
   staff_loan!: StaffLoan[];
+
+  @OneToOne(() => BankAccount)
+  @JoinColumn()
+  bank_details!: BankAccount;
 
   @CreateDateColumn({
     name: 'created_at',

@@ -10,6 +10,7 @@ import runTransaction from '../../utils/runTransaction';
 import bcrypt from 'bcrypt';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
+import { BankAccount } from '../../entity/BankAccount';
 
 const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024); // 2MB limit
 
@@ -113,7 +114,12 @@ export const listEmployees = async (req: Request, res: Response) => {
       .leftJoinAndSelect('employee.user', 'user')
       .leftJoinAndSelect('employee.department', 'department')
       .leftJoinAndSelect('employee.designation', 'designation')
-      .leftJoinAndSelect('employee.payroll', 'payroll');
+      .leftJoinAndSelect('employee.payroll', 'payroll')
+      .leftJoinAndSelect('user.role', 'role')
+      .leftJoinAndSelect('employee.bank_details', 'bank_details');
+
+    // // Select role name
+    query.addSelect('role.name');
 
     if (role) {
       // Filter by role
@@ -393,6 +399,8 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         const departmentRepository =
           queryRunner.manager.getRepository(Department);
         const employeeRepository = queryRunner.manager.getRepository(Employee);
+        const bankAccountRepository =
+          queryRunner.manager.getRepository(BankAccount);
 
         const {
           email,
@@ -482,10 +490,30 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           doj: new Date(doj) || null,
           dol: dol || '',
         });
-
         await employeeRepository.save(newEmployee);
 
-        sendResponse(res, 201, 'Employee created successfully', newEmployee);
+        // Save BankAccount details
+        const bankAccount = new BankAccount();
+        Object.assign(bankAccount, {
+          ...req.body,
+          pan_number: +req.body.pan_number,
+          ifsc: +req.body.ifsc,
+          user: newUser,
+          user_id: newUser.id,
+          employee: newEmployee,
+        });
+        await bankAccountRepository.save(bankAccount);
+
+        const displayEmployee = await employeeRepository.findOne({
+          where: { staff_id: staffId },
+        });
+
+        sendResponse(
+          res,
+          201,
+          'Employee created successfully',
+          displayEmployee,
+        );
       });
     });
   } catch (error: any) {
@@ -565,5 +593,27 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to update employee with user', error.message);
+  }
+};
+
+export const listRoleDepDes = async (req: Request, res: Response) => {
+  try {
+    // Fetch all records from the Role table
+    const roleRepository = AppDataSource.getRepository(Role);
+    const roles = await roleRepository.find();
+
+    // Fetch all records from the Department table
+    const departmentRepository = AppDataSource.getRepository(Department);
+    const departments = await departmentRepository.find();
+
+    // Fetch all records from the Designation table
+    const designationRepository = AppDataSource.getRepository(Designation);
+    const designations = await designationRepository.find();
+
+    // Return the fetched records as a response
+    res.json({ roles, departments, designations });
+  } catch (error) {
+    console.error('Error fetching records:', error);
+    res.status(500).json({ message: 'Failed to fetch records' });
   }
 };
