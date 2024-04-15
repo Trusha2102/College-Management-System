@@ -93,7 +93,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
   let errorOccurred = false;
 
   try {
-    const { roleId, role: roleName, permission } = req.body;
+    const { roleId, role: roleName, permissions } = req.body;
 
     const roleRepository = AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
@@ -113,7 +113,7 @@ const updatePermissionById = async (req: Request, res: Response) => {
         await roleRepository.save(role);
       }
 
-      for (const perm of permission) {
+      for (const perm of permissions) {
         const { moduleId, operations } = perm;
 
         const moduleRepository = AppDataSource.getRepository(Module);
