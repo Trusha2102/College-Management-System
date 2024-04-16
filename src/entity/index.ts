@@ -30,6 +30,7 @@ import { StudentHistory } from './StudentHistory';
 import { Installment } from './Installment';
 import { FeesGroup } from './FeesGroup';
 import { Fine } from './Fine';
+import { Discount } from './Discount';
 
 const Entities = [
   User,
@@ -64,6 +65,7 @@ const Entities = [
   Installment,
   FeesGroup,
   Fine,
+  Discount,
 ];
 
 export default Entities;

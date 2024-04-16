@@ -398,26 +398,41 @@ const updateStudentById = async (req: Request, res: Response) => {
   }
 };
 
-const deleteStudentById = async (req: Request, res: Response) => {
+const deleteStudentsByIds = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const studentRepository = AppDataSource.getRepository(Student);
+    const { id } = req.body;
+    if (!Array.isArray(id) || id.length === 0) {
+      return sendError(res, 400, 'IDs must be provided as an array');
+    }
 
+    const studentRepository = AppDataSource.getRepository(Student);
     const queryRunner = AppDataSource.createQueryRunner();
+    let notFoundCount = 0;
+
     await runTransaction(queryRunner, async () => {
-      const student = await studentRepository.findOne({
-        where: { id: +id },
-      });
-      if (!student) {
-        sendError(res, 404, 'Student not found');
-        return;
+      for (const idOfStudent of id) {
+        const student = await studentRepository.findOne({
+          where: { id: +idOfStudent },
+        });
+        if (!student) {
+          console.warn(
+            `Student with ID ${idOfStudent} not found, skipping deletion.`,
+          );
+          notFoundCount++;
+          continue;
+        }
+        await studentRepository.delete(+idOfStudent);
       }
-      await studentRepository.delete(+id);
-      sendResponse(res, 200, 'Student deleted successfully');
+      sendResponse(
+        res,
+        200,
+        'Students deleted successfully',
+        `${notFoundCount} Students were not found while deleting`,
+      );
     });
   } catch (error: any) {
     console.error(error);
-    sendError(res, 500, 'Failed to delete student', error.message);
+    sendError(res, 500, 'Failed to delete students', error.message);
   }
 };
 
@@ -425,6 +440,6 @@ export {
   createStudent,
   getStudentById,
   updateStudentById,
-  deleteStudentById,
+  deleteStudentsByIds,
   listStudents,
 };

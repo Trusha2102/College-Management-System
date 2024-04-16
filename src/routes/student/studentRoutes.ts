@@ -3,7 +3,7 @@ import {
   createStudent,
   getStudentById,
   updateStudentById,
-  deleteStudentById,
+  deleteStudentsByIds,
   listStudents,
 } from '../../controllers/student/studentController';
 import permissionProtect from '../../middlewares/permissionMiddleware';
@@ -20,7 +20,7 @@ router.get('/view/:id', permissionProtect, getStudentById);
 router.put('/update/:id', permissionProtect, updateStudentById);
 
 // Delete a student by ID
-router.delete('/delete/:id', permissionProtect, deleteStudentById);
+router.delete('/delete', permissionProtect, deleteStudentsByIds);
 
 // List all students
 router.get('/list', permissionProtect, listStudents);
