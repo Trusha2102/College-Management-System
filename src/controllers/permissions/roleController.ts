@@ -69,6 +69,14 @@ const updateRoleById = async (req: Request, res: Response) => {
     const normalizedName = name.trim().toLowerCase();
 
     const roleRepository = AppDataSource.getRepository(Role);
+
+    const role = await roleRepository.findOne({ where: { id: +id } });
+
+    if (!role) {
+      sendError(res, 400, 'Role Not Found', null);
+      return;
+    }
+
     const existingRole = await roleRepository
       .createQueryBuilder('role')
       .where('LOWER(role.name) ILIKE LOWER(:name) AND role.id != :id', {
@@ -101,6 +109,15 @@ const deleteRoleById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const queryRunner = AppDataSource.createQueryRunner();
+
+    const roleRepository = queryRunner.manager.getRepository(Role);
+
+    const role = await roleRepository.findOne({ where: { id: +id } });
+
+    if (!role) {
+      sendError(res, 400, 'Role Not Found', null);
+      return;
+    }
     await runTransaction(queryRunner, async () => {
       const permissionsCount = await queryRunner.manager.findAndCount(
         Permission,
