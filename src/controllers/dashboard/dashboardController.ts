@@ -104,7 +104,7 @@ const getEmployeeCountByDepartment = async (req: Request, res: Response) => {
       .leftJoin('employee.user', 'user')
       .where('user.role_id = :roleId', { roleId })
       .select(
-        'department.department AS department, COUNT(employee.id) AS employeeCount',
+        'department.department AS department, COUNT(employee.id) AS "teacherCount"',
       )
       .groupBy('department.department')
       .getRawMany();
@@ -129,8 +129,8 @@ const countEmployeesInDepartment = async (req: Request, res: Response) => {
       .innerJoin('employee.user', 'user')
       .innerJoin('user.role', 'role')
       .innerJoin('employee.department', 'department')
-      .select('department.department', 'departmentName')
-      .addSelect('COUNT(employee.id)', 'count')
+      .select('department.department', 'department')
+      .addSelect('COUNT(employee.id)', 'staffCount')
       .where('role.name != :studentRoleName', { studentRoleName: 'student' })
       .andWhere('role.name != :teacherRoleName', { teacherRoleName: 'teacher' })
       .groupBy('department.department')
