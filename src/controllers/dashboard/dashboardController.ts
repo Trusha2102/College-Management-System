@@ -14,7 +14,6 @@ const getRecordsCount = async (req: Request, res: Response) => {
     const userRepository = AppDataSource.getRepository(User);
     const roleRepository = AppDataSource.getRepository(Role);
 
-    // Get total number of active students
     const activeStudentsCount = await studentRepository.count({
       where: { is_active: true },
     });
@@ -34,14 +33,12 @@ const getRecordsCount = async (req: Request, res: Response) => {
       return sendError(res, 500, 'Role not found');
     }
 
-    // Get total number of users with role_id as Teacher
     const teacherUsersCount = await userRepository.count({
-      where: { role_id: teacherRole.id },
+      where: { role_id: teacherRole.id, is_active: true },
     });
 
-    // Get total number of users with role_id as Staff (excluding odd records)
     const staffUsersCount = await userRepository.count({
-      where: { role_id: staffRole.id },
+      where: { role_id: staffRole.id, is_active: true },
     });
 
     return sendResponse(res, 200, 'Records count fetched successfully', {

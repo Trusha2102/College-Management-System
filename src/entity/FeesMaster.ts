@@ -29,33 +29,25 @@ export class FeesMaster {
   @JoinTable()
   feesGroups!: FeesGroup[];
 
-  // @Column({ type: 'date' })
-  // due_date!: Date;
-
-  @ManyToOne(() => Fine)
-  @JoinColumn({ name: 'fine_type_id' })
-  fineType?: Fine;
-
-  @OneToMany(() => Fine, (fine) => fine.feesMaster)
-  fines!: Fine[];
+  @ManyToMany(() => Fine)
+  @JoinTable()
+  fineTypes!: Fine[];
 
   @Column({ nullable: true })
-  discount_name?: string;
+  discount_id!: string;
 
   @Column({ nullable: true })
-  discount_amount?: number;
+  discount_amount!: number;
 
   @Column({ nullable: true })
-  net_amount?: number;
+  net_amount!: number;
 
   @OneToMany(() => FeesPayment, (feesPayment) => feesPayment.feesMaster)
   feesPayments!: FeesPayment[];
 
-  @Column({ nullable: true })
-  student_id?: number;
+  @Column({ nullable: true, unique: false, type: 'jsonb' })
+  fineTypeIds!: number[];
 
-  @ManyToMany(() => FeesGroup)
-  @JoinTable()
   @Column('simple-array', { nullable: true })
   fees_group_ids?: number[];
 

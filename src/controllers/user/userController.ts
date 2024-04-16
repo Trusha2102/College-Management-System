@@ -52,9 +52,8 @@ const createUser = async (req: Request, res: Response) => {
       }
 
       let parsedSocialMediaLinks;
-      const marital_status = userData.marital_status === 'true';
       if (social_media_links) {
-        parsedSocialMediaLinks = social_media_links?.split(',');
+        parsedSocialMediaLinks = social_media_links.split(',');
       }
 
       const parsedAddressId = address_id === 'null' ? null : +address_id;
@@ -71,7 +70,7 @@ const createUser = async (req: Request, res: Response) => {
       user.email = userData.email;
       user.password = hashedPassword;
       user.is_active = true;
-      user.marital_status = marital_status;
+      user.marital_status = userData.marital_status === 'true';
       user.gender = userData.gender;
       user.qualification = userData.qualification;
       user.work_experience = userData.work_experience;
@@ -101,6 +100,7 @@ const createUser = async (req: Request, res: Response) => {
       res,
       500,
       'Failed to create user or upload profile picture',
+      error.message,
     );
   }
 };

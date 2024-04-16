@@ -21,7 +21,7 @@ export class Income {
   name!: string;
 
   @Column({ nullable: true })
-  invoice_number!: number;
+  invoice_number!: string;
 
   @Column()
   date!: Date;

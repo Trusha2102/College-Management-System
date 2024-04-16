@@ -28,6 +28,7 @@ import installmentRoutes from './employee/installmentRoutes';
 import feesTypeRoutes from './fees/feesTypeRoutes';
 import feesGroupRoutes from './fees/feesGroupRoutes';
 import discountRoutes from './student/discountRoutes';
+import feesMasterRoutes from './fees/feesMasterRoutes';
 
 const router = express.Router();
 
@@ -60,5 +61,6 @@ router.use('/installment', installmentRoutes);
 router.use('/fees-type', feesTypeRoutes);
 router.use('/fees-group', feesGroupRoutes);
 router.use('/discount', discountRoutes);
+router.use('/fees-master', feesMasterRoutes);
 
 export default router;

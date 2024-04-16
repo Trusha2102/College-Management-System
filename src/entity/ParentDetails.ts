@@ -40,19 +40,10 @@ export class ParentDetails {
   @Column({ nullable: true })
   guardian_relation!: string;
 
-  // @Column()
-  // qualification!: string;
-
-  // @Column()
-  // email!: string;
-
   @ManyToOne(() => Student, (student) => student.parent_details, {
     onDelete: 'CASCADE',
   })
   student!: Student;
-
-  // @Column({ nullable: true })
-  // student_id!: number;
 
   @CreateDateColumn({
     name: 'created_at',

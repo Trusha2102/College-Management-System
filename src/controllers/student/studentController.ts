@@ -411,7 +411,7 @@ const deleteStudentsByIds = async (req: Request, res: Response) => {
 
     await runTransaction(queryRunner, async () => {
       for (const idOfStudent of id) {
-        const student = await studentRepository.findOne({
+        let student = await studentRepository.findOne({
           where: { id: +idOfStudent },
         });
         if (!student) {
@@ -421,7 +421,9 @@ const deleteStudentsByIds = async (req: Request, res: Response) => {
           notFoundCount++;
           continue;
         }
-        await studentRepository.delete(+idOfStudent);
+
+        student.is_active = false;
+        await studentRepository.save(student);
       }
       sendResponse(
         res,

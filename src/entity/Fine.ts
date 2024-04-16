@@ -6,21 +6,21 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { FeesMaster } from './FeesMaster';
+// import { FeesMaster } from './FeesMaster';
 
 @Entity()
 export class Fine {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => FeesMaster, (feesMaster) => feesMaster.fines)
-  feesMaster!: FeesMaster;
+  // @ManyToOne(() => FeesMaster, (feesMaster) => feesMaster.fines)
+  // feesMaster!: FeesMaster;
 
   @Column()
-  fine_value!: number;
+  fine_type!: string;
 
-  @Column()
-  late_fee_frequency?: string;
+  // @Column()
+  // late_fee_frequency?: string;
 
   @CreateDateColumn({
     name: 'created_at',
