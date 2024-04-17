@@ -22,6 +22,13 @@ router.get(
   permissionProtect,
   feesMasterController.getFeesMasterByStudentId,
 );
+
+router.post(
+  '/collect-fees/add',
+  permissionProtect,
+  feesMasterController.collectFees,
+);
+
 // router.get('/list', permissionProtect, feesGroupController.getAllFeesGroups);
 
 export default router;

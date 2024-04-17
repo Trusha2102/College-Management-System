@@ -5,6 +5,7 @@ import runTransaction from '../../utils/runTransaction';
 import AppDataSource from '../../data-source';
 import { Student } from '../../entity/Student';
 import { FeesGroup } from '../../entity/FeesGroup';
+import { FeesPayment } from '../../entity/FeesPayment';
 
 export const feesAllocation = async (req: Request, res: Response) => {
   try {
@@ -148,4 +149,83 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
   }
 };
 
-export const collectFees = async (req: Request, res: Response) => {};
+export const collectFees = async (req: Request, res: Response) => {
+  try {
+    const {
+      student_id,
+      fees_master_id,
+      dos,
+      amount,
+      discount_id,
+      discount_amount,
+      fine_type_id,
+      fine_amount,
+      payment_mode,
+    } = req.body;
+
+    // Create a query runner using AppDataSource
+    const queryRunner = AppDataSource.createQueryRunner();
+
+    // Run the transaction
+    await runTransaction(queryRunner, async () => {
+      const studentRepository = queryRunner.manager.getRepository(Student);
+      const feesMasterRepository =
+        queryRunner.manager.getRepository(FeesMaster);
+      const feesPaymentRepository =
+        queryRunner.manager.getRepository(FeesPayment);
+
+      const student = await studentRepository.findOne({
+        where: { id: student_id },
+      });
+      if (!student) {
+        sendError(res, 400, 'Student not found');
+        return;
+      }
+
+      const feesMaster = await feesMasterRepository.findOne({
+        where: { id: fees_master_id, student_id: student_id },
+      });
+      if (!feesMaster) {
+        sendError(res, 400, 'Fees master not found');
+        return;
+      }
+
+      feesMaster.net_amount -= discount_amount;
+      feesMaster.net_amount += fine_amount;
+
+      const feesPayment = new FeesPayment();
+      feesPayment.payment_id = (Math.random() + 1).toString(36).substring(7);
+      feesPayment.student = student;
+      feesPayment.feesMaster = feesMaster;
+      feesPayment.dos = dos;
+      feesPayment.status = 'Paid';
+      feesPayment.amount = amount;
+      feesPayment.payment_from = student_id;
+      feesPayment.payment_mode = payment_mode;
+
+      // Save the FeesPayment record
+      await feesPaymentRepository.save(feesPayment);
+
+      // Update feesMaster record
+      feesMaster.discount_id = discount_id;
+      feesMaster.discount_amount = discount_amount;
+      feesMaster.fineTypeId = fine_type_id;
+      feesMaster.fine_amount = fine_amount;
+      feesMaster.paid_amount += amount;
+      feesMaster.status =
+        feesMaster.paid_amount < feesMaster.net_amount
+          ? 'Partially Paid'
+          : 'Paid';
+
+      // Save the updated feesMaster record
+      await feesMasterRepository.save(feesMaster);
+    });
+
+    // Send success response
+    return sendResponse(res, 200, 'Fees collected successfully');
+  } catch (error: any) {
+    console.error('Error collecting fees:', error);
+    // Send error response
+    return sendError(res, 500, 'Failed to collect fees', error.message);
+  }
+};
