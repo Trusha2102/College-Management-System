@@ -14,6 +14,9 @@ export class FeesPayment {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ unique: true })
+  payment_id!: string;
+
   @ManyToOne(() => Student, (student) => student.fees_payment)
   student!: Student;
 

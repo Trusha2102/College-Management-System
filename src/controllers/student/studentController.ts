@@ -13,7 +13,7 @@ import { StudentHistory } from '../../entity/StudentHistory';
 import { ParentDetails } from '../../entity/ParentDetails';
 import { Section } from '../../entity/Section';
 
-const upload = configureMulter('./uploads/Student', 5 * 1024 * 1024); // 5MB limit
+const upload = configureMulter('./uploads/Student', 200 * 1024 * 1024); // 200MB limit
 
 const createStudent = async (req: Request, res: Response) => {
   let errorOccurred = false;
@@ -290,7 +290,7 @@ const getStudentById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const student = await AppDataSource.getRepository(Student).findOne({
       where: { id: +id },
-      relations: ['parent_details'],
+      relations: ['parent_details', 'course', 'semester', 'section'],
     });
     if (!student) {
       return sendError(res, 404, 'Student not found');
