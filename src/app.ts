@@ -3,10 +3,8 @@ dotenv.config();
 import express from 'express';
 import bodyParser from 'body-parser';
 import routes from './routes';
-// import routes from './routes';
 import AppDataSource from './data-source';
 import cors from 'cors';
-// const AppDataSource = require('./data-source');
 const PORT = process?.env?.PORT || 3000;
 
 // Create Express app
@@ -30,6 +28,11 @@ app.use('/api', routes);
 
 // For File Upload
 app.use('/uploads', express.static('uploads'));
+
+// Middleware for handling 404 errors
+app.use((req, res, next) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}: https://localhost:${PORT}`);

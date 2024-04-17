@@ -31,6 +31,28 @@ const createStudent = async (req: Request, res: Response) => {
 
       const { body, files } = req;
 
+      // Check if all mandatory fields are present
+      const mandatoryFields = [
+        'admission_no',
+        'course_id',
+        'semester_id',
+        'section_id',
+        'first_name',
+        'gender',
+        'dob',
+        'email',
+      ];
+      const missingFields = mandatoryFields.filter((field) => !(field in body));
+
+      if (missingFields.length > 0) {
+        return sendError(
+          res,
+          400,
+          'Mandatory fields missing',
+          `The following fields are required: ${missingFields.join(', ')}`,
+        );
+      }
+
       const otherDocsFiles =
         (files as { [fieldname: string]: Express.Multer.File[] })[
           'other_docs'
