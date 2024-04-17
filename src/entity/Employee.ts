@@ -46,7 +46,7 @@ export class Employee {
   @Column()
   deduction!: number;
 
-  @Column()
+  @Column({ nullable: true })
   contract_type!: string;
 
   @Column({ type: 'date', nullable: true })
@@ -72,13 +72,13 @@ export class Employee {
   })
   dol!: Date | null;
 
-  @Column()
+  @Column({ nullable: true })
   work_shift!: string;
 
   @Column({ default: true })
   is_active!: boolean;
 
-  @Column()
+  @Column({ nullable: true })
   work_location!: string;
 
   @OneToMany(() => Attendance, (attendance) => attendance.employee)

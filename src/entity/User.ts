@@ -22,19 +22,19 @@ export class User {
   @Column({ length: 255 })
   first_name!: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   last_name!: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   father_name!: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   mother_name!: string;
 
   @Column({ unique: true })
   email!: string;
 
-  @Column()
+  @Column({ nullable: true })
   mobile!: string;
 
   @Column()
@@ -58,13 +58,13 @@ export class User {
   @Column({ type: 'date' })
   dob!: Date;
 
-  @Column()
+  @Column({ nullable: true })
   marital_status!: boolean;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   qualification!: string;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   work_experience!: string;
 
   @Column()

@@ -20,7 +20,7 @@ export class BankAccount {
   @Column()
   bank_name!: string;
 
-  @Column({ nullable: true })
+  @Column()
   pan_number!: string;
 
   @Column()

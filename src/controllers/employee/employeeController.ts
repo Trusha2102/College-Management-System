@@ -92,8 +92,16 @@ export const createEmployee = async (req: Request, res: Response) => {
 // List Employees
 export const listEmployees = async (req: Request, res: Response) => {
   try {
-    const { role, search, page, limit, month, year, staff_loan_search } =
-      req.query;
+    const {
+      role,
+      search,
+      page,
+      limit,
+      month,
+      year,
+      staff_loan_search,
+      department,
+    } = req.query;
 
     const pageNumber: number = parseInt(page as string, 10) || 1;
     const itemsPerPage: number = parseInt(limit as string, 10) || 10;
@@ -158,6 +166,13 @@ export const listEmployees = async (req: Request, res: Response) => {
     if (year) {
       // Filter by year
       query = query.andWhere('payroll.year ILIKE :year', { year });
+    }
+
+    if (department) {
+      // Filter by department using LIKE operator
+      query = query.andWhere('department.department ILIKE :department', {
+        department: `%${department}%`,
+      });
     }
 
     if (staff_loan_search && staff_loan_search === 'true') {
@@ -250,7 +265,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
         });
         if (!user) {
           sendError(res, 404, 'User not found');
-          return; // Return here to exit the callback
+          return;
         }
         employee.user = user;
       }
@@ -261,7 +276,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
         });
         if (!designation) {
           sendError(res, 404, 'Designation not found');
-          return; // Return here to exit the callback
+          return;
         }
         employee.designation = designation;
         employee.designation_id = designationId;
@@ -273,7 +288,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
         });
         if (!department) {
           sendError(res, 404, 'Department not found');
-          return; // Return here to exit the callback
+          return;
         }
         employee.department = department;
         employee.department_id = departmentId;
@@ -343,6 +358,35 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
       if (req.file) {
         profilePicturePath = req.file.path;
       }
+
+      // Mandatory fields
+      const mandatoryFields = [
+        'staffId',
+        'role_id',
+        'first_name',
+        'email',
+        'gender',
+        'dob',
+        'pan_number',
+        'password',
+        'mobile',
+        'designationId',
+        'salary',
+        'deduction',
+        'aadhar_card',
+        'bank_name',
+        'ifsc',
+        'branch',
+        'account_no',
+      ];
+
+      for (const field of mandatoryFields) {
+        if (!req.body[field]) {
+          sendError(res, 400, `${field} is required and cannot be null`);
+          return;
+        }
+      }
+
       const queryRunner = AppDataSource.createQueryRunner();
 
       await runTransaction(queryRunner, async () => {
@@ -361,8 +405,6 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           password,
           role_id,
           social_media_links,
-          address_id,
-          bank_details_id,
           dob,
           marital_status,
           staffId,
@@ -402,7 +444,7 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         const user = new User();
 
         Object.assign(user, {
-          ...req.body,
+          ...req?.body,
           password: hashedPassword,
           is_active: true,
           marital_status: marital_status === 'true',
@@ -411,8 +453,6 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           social_media_links: social_media_links
             ? social_media_links.split(',')
             : null,
-          address_id: address_id === 'null' ? 0 : +address_id,
-          bank_details_id: bank_details_id === 'null' ? 0 : +bank_details_id,
         });
 
         const newUser = await userRepository.save(user);
@@ -441,8 +481,8 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           department,
           department_id: departmentId,
           ...req.body,
-          doj: new Date(doj) || null,
-          dol: dol || '',
+          doj: doj || null,
+          dol: dol || null,
         });
         await employeeRepository.save(newEmployee);
 
@@ -511,6 +551,42 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
 
         if (!employee) {
           sendError(res, 404, 'Employee not found');
+          return;
+        }
+
+        // Prevent specified fields from becoming null
+        const nonNullableFields = [
+          'staffId',
+          'role_id',
+          'first_name',
+          'email',
+          'gender',
+          'dob',
+          'pan_number',
+          'password',
+          'mobile',
+          'designationId',
+          'salary',
+          'deduction',
+          'aadhar_card',
+          'bank_name',
+          'ifsc',
+          'branch',
+          'account_no',
+        ];
+
+        const errors: string[] = [];
+
+        for (const field of nonNullableFields) {
+          if (req.body[field] === null || req.body[field] === undefined) {
+            // Use type assertion here
+            req.body[field] = employee[field as keyof Employee];
+            errors.push(`${field} cannot be null`);
+          }
+        }
+
+        if (errors.length > 0) {
+          sendError(res, 400, 'Fields cannot be null', errors.join(', '));
           return;
         }
 
