@@ -8,6 +8,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToMany,
 } from 'typeorm';
 import { Session } from './Session';
 import { Section } from './Section';
@@ -152,9 +153,8 @@ export class Student {
   @OneToMany(() => FeesPayment, (feesPayment) => feesPayment.student)
   fees_payment!: FeesPayment[];
 
-  @OneToOne(() => FeesMaster, (feesMaster) => feesMaster.student)
-  @JoinColumn()
-  feesMaster?: FeesMaster;
+  @OneToMany(() => FeesMaster, (feesMaster) => feesMaster.student)
+  feesMaster!: FeesMaster[];
 
   @CreateDateColumn({
     name: 'created_at',

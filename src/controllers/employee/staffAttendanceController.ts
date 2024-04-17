@@ -40,6 +40,7 @@ export const createAttendance = async (req: Request, res: Response) => {
 // Get all attendances
 export const getAllAttendances = async (req: Request, res: Response) => {
   try {
+    console.log('THE STAFF ATTENDANCE GET CONTROLLER WAS CALLED');
     const { date, employeeId } = req.query;
     const attendanceRepository = AppDataSource.getRepository(Attendance);
     let query = attendanceRepository.createQueryBuilder('attendance');

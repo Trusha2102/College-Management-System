@@ -38,7 +38,7 @@ export class FeesPayment {
   @Column()
   payment_mode!: string;
 
-  @Column()
+  @Column({ nullable: true })
   payment_proof!: string;
 
   @Column({ nullable: true })

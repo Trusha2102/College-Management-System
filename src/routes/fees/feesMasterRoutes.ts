@@ -16,11 +16,11 @@ router.post('/add', permissionProtect, feesMasterController.feesAllocation);
 //   permissionProtect,
 //   feesGroupController.deleteFeesGroupById,
 // );
-// router.get(
-//   '/view/:id',
-//   permissionProtect,
-//   feesGroupController.getFeesGroupById,
-// );
+router.get(
+  '/list/:student_id',
+  permissionProtect,
+  feesMasterController.getFeesMasterByStudentId,
+);
 // router.get('/list', permissionProtect, feesGroupController.getAllFeesGroups);
 
 export default router;

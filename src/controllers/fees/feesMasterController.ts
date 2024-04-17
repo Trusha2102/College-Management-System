@@ -17,20 +17,18 @@ export const feesAllocation = async (req: Request, res: Response) => {
     ) {
       return sendError(res, 400, 'Invalid payload');
     }
-
     const queryRunner = AppDataSource.createQueryRunner();
 
     const errors: string[] = [];
 
+    // Run the transaction
     await runTransaction(queryRunner, async () => {
       const studentRepository = queryRunner.manager.getRepository(Student);
       const feesMasterRepository =
         queryRunner.manager.getRepository(FeesMaster);
       const feesGroupRepository = queryRunner.manager.getRepository(FeesGroup);
 
-      // Iterate through each student_id in the student_ids array
       for (const student_id of student_ids) {
-        // Check if the provided student_id exists
         const existingStudent = await studentRepository.findOne({
           where: { id: student_id },
         });
@@ -39,26 +37,13 @@ export const feesAllocation = async (req: Request, res: Response) => {
           continue;
         }
 
-        // Check if a record with the same student_id already exists
-        const existingRecord = await feesMasterRepository.findOne({
-          where: { student: { id: student_id } },
-        });
-        if (existingRecord) {
-          errors.push(
-            `Record for student with id ${student_id} already exists`,
-          );
-          continue;
-        }
-
-        // Iterate through each fees_group_id in the fees_group_ids array
         for (const fees_group_id of fees_group_ids) {
-          // Fetch the FeesGroup entity based on the provided fees_group_id
           const feesGroup = await feesGroupRepository.findOne({
             where: { id: fees_group_id },
           });
           if (!feesGroup) {
             errors.push(`Fees group with id ${fees_group_id} not found`);
-            continue; // Continue to the next fees group
+            continue;
           }
 
           // Retrieve fees type data from the FeesGroup
@@ -68,12 +53,11 @@ export const feesAllocation = async (req: Request, res: Response) => {
             errors.push(
               `Fees type data for fees group with id ${fees_group_id} not found`,
             );
-            continue; // Continue to the next fees group
+            continue;
           }
 
           let netAmount = 0;
           try {
-            // Parse fees type data to calculate net amount
             const feesData = JSON.parse(feesTypeData);
             if (Array.isArray(feesData)) {
               feesData.forEach((fee: any) => {
@@ -87,25 +71,23 @@ export const feesAllocation = async (req: Request, res: Response) => {
             errors.push(
               `Error parsing fees type data for fees group with id ${fees_group_id}`,
             );
-            continue; // Continue to the next fees group
+            continue;
           }
 
-          // Create a new FeesMaster entity
           const feesMaster = new FeesMaster();
           feesMaster.student = existingStudent;
+          feesMaster.student_id = existingStudent.id;
           feesMaster.fees_group_ids = [fees_group_id];
+          feesMaster.feesGroups = [feesGroup];
           feesMaster.net_amount = netAmount;
 
-          // Save the FeesMaster entity
           await feesMasterRepository.save(feesMaster);
         }
       }
     });
 
-    // Release the query runner after the transaction completes
     await queryRunner.release();
 
-    // Check if there are any errors
     if (errors.length > 0) {
       return sendError(
         res,
@@ -115,10 +97,53 @@ export const feesAllocation = async (req: Request, res: Response) => {
       );
     }
 
-    // Send success response if no errors
     return sendResponse(res, 201, 'Fees master records created successfully');
   } catch (error) {
     console.error('Error creating fees master records:', error);
     return sendError(res, 500, 'Failed to create fees master records', error);
+  }
+};
+
+export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
+  try {
+    const { student_id } = req.params;
+
+    if (!student_id) {
+      return res.status(400).json({ error: 'Student ID is required' });
+    }
+
+    const studentRepository = AppDataSource.getRepository(Student);
+
+    const studentRecord = await studentRepository.findOne({
+      where: { id: +student_id },
+    });
+
+    if (!studentRecord) {
+      return sendError(res, 400, `Student with ID ${student_id} not found`);
+    }
+
+    const feesMasterRepository = AppDataSource.getRepository(FeesMaster);
+    const feesMasters = await feesMasterRepository
+      .createQueryBuilder('feesMaster')
+      .leftJoinAndSelect('feesMaster.feesGroups', 'feesGroup')
+      .leftJoinAndSelect('feesMaster.feesPayments', 'feesPayment')
+      .leftJoinAndSelect('feesMaster.student', 'student')
+      .where('feesMaster.student_id = :studentId', {
+        studentId: parseInt(student_id),
+      })
+      .getMany();
+
+    if (feesMasters.length === 0) {
+      return res
+        .status(404)
+        .json({ error: 'No records found for the specified student ID' });
+    }
+
+    return res.status(200).json({ feesMasters });
+  } catch (error) {
+    console.error('Error fetching fees master records:', error);
+    return res
+      .status(500)
+      .json({ error: 'Failed to fetch fees master records' });
   }
 };

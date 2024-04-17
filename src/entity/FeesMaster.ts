@@ -21,9 +21,12 @@ export class FeesMaster {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @OneToOne(() => Student, (student) => student.feesMaster)
+  @ManyToOne(() => Student, (student) => student.feesMaster)
   @JoinColumn({ name: 'student_id' })
   student!: Student;
+
+  @Column({ nullable: true })
+  student_id!: number;
 
   @ManyToMany(() => FeesGroup)
   @JoinTable()
@@ -42,11 +45,20 @@ export class FeesMaster {
   @Column({ nullable: true })
   net_amount!: number;
 
+  @Column({ nullable: true })
+  paid_amount!: number;
+
+  @Column({ default: 'Unpaid' })
+  status!: string;
+
   @OneToMany(() => FeesPayment, (feesPayment) => feesPayment.feesMaster)
   feesPayments!: FeesPayment[];
 
-  @Column({ nullable: true, unique: false, type: 'jsonb' })
-  fineTypeIds!: number[];
+  @Column({ nullable: true, unique: false })
+  fineTypeId!: number;
+
+  @Column({ nullable: true })
+  fine_amount!: number;
 
   @Column('simple-array', { nullable: true })
   fees_group_ids?: number[];
