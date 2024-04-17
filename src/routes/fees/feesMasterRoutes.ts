@@ -16,6 +16,7 @@ router.post('/add', permissionProtect, feesMasterController.feesAllocation);
 //   permissionProtect,
 //   feesGroupController.deleteFeesGroupById,
 // );
+
 router.get(
   '/list/:student_id',
   permissionProtect,

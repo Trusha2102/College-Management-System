@@ -45,7 +45,7 @@ export class FeesMaster {
   @Column({ nullable: true })
   net_amount!: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: 0 })
   paid_amount!: number;
 
   @Column({ default: 'Unpaid' })

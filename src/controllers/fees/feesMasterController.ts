@@ -147,3 +147,5 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
       .json({ error: 'Failed to fetch fees master records' });
   }
 };
+
+export const collectFees = async (req: Request, res: Response) => {};

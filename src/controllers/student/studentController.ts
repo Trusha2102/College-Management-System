@@ -11,6 +11,7 @@ import { Semester } from '../../entity/Semester';
 import { Course } from '../../entity/Course';
 import { StudentHistory } from '../../entity/StudentHistory';
 import { ParentDetails } from '../../entity/ParentDetails';
+import { Section } from '../../entity/Section';
 
 const upload = configureMulter('./uploads/Student', 5 * 1024 * 1024); // 5MB limit
 
@@ -53,6 +54,7 @@ const createStudent = async (req: Request, res: Response) => {
         const courseRepository = queryRunner.manager.getRepository(Course);
         const semesterRepository = queryRunner.manager.getRepository(Semester);
         const sessionRepository = queryRunner.manager.getRepository(Session);
+        const sectionRepository = queryRunner.manager.getRepository(Section);
         const parentDetailsRepository =
           queryRunner.manager.getRepository(ParentDetails);
 
@@ -77,6 +79,16 @@ const createStudent = async (req: Request, res: Response) => {
 
         if (!semester) {
           sendError(res, 400, 'Invalid semester ID', 'Semester not found');
+          errorOccurred = true;
+          return;
+        }
+
+        const section = await sectionRepository.findOne({
+          where: { id: req.body.section_id },
+        });
+
+        if (!section) {
+          sendError(res, 400, 'Invalid section ID', 'Section not found');
           errorOccurred = true;
           return;
         }
@@ -141,6 +153,10 @@ const createStudent = async (req: Request, res: Response) => {
           other_docs: otherDocs,
           password: hashedPassword,
           is_active: true,
+          course: course,
+          semester: semester,
+          session: session,
+          section: section,
         });
 
         await studentRepository.save(student);
@@ -155,7 +171,7 @@ const createStudent = async (req: Request, res: Response) => {
           where: {
             admission_no: req.body.admission_no,
           },
-          relations: ['parent_details'],
+          relations: ['parent_details', 'course', 'semester', 'section'],
         });
 
         if (newStudent) {
@@ -202,7 +218,9 @@ const listStudents = async (req: Request, res: Response) => {
     // Create the base query
     let query = studentRepository
       .createQueryBuilder('student')
-      .leftJoinAndSelect('student.section', 'section');
+      .leftJoinAndSelect('student.section', 'section')
+      .leftJoinAndSelect('student.course', 'course')
+      .leftJoinAndSelect('student.semester', 'semester');
 
     // Apply filters if provided
     if (name) {
@@ -226,13 +244,13 @@ const listStudents = async (req: Request, res: Response) => {
     }
 
     if (course_id) {
-      query = query.andWhere('student.course_id = :course_id', {
+      query = query.andWhere('course.id = :course_id', {
         course_id,
       });
     }
 
     if (semester_id) {
-      query = query.andWhere('student.semester_id = :semester_id', {
+      query = query.andWhere('semester.id = :semester_id', {
         semester_id,
       });
     }
