@@ -28,6 +28,9 @@ export class FeesGroup {
   @Column({ nullable: true, name: 'fees_type_data' })
   feesTypeData?: string;
 
+  @Column({ nullable: true })
+  due_date!: Date;
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',

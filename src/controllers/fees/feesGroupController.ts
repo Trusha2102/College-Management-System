@@ -10,23 +10,20 @@ export const createFeesGroup = async (req: Request, res: Response) => {
   try {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      const { name, description, feesTypeData } = req.body;
+      const { name, description, feesTypeData, due_date } = req.body;
 
-      // Check if feesTypeData is an array
       if (!Array.isArray(feesTypeData)) {
         throw new Error('feesTypeData should be an array');
       }
 
-      // Create a new FeesGroup entity
       const feesGroup = new FeesGroup();
       feesGroup.name = name;
       feesGroup.description = description;
+      feesGroup.due_date = due_date;
 
-      // Save the FeesGroup entity
       const feesGroupRepository = queryRunner.manager.getRepository(FeesGroup);
       const newFeesGroup = await feesGroupRepository.save(feesGroup);
 
-      // Check if all fees_type_ids exist
       const feesTypeRepository = queryRunner.manager.getRepository(FeesType);
       const missingFeesTypes: number[] = [];
 
@@ -39,17 +36,14 @@ export const createFeesGroup = async (req: Request, res: Response) => {
         }
       }
 
-      // Throw error for any fees_type_id not found
       if (missingFeesTypes.length > 0) {
         throw new Error(
           `Fees Type(s) with ID(s) ${missingFeesTypes.join(', ')} not found`,
         );
       }
 
-      // Save feesTypeData array as a string
       feesGroup.feesTypeData = JSON.stringify(feesTypeData);
 
-      // Update the FeesGroup entity with the feesTypeData
       await feesGroupRepository.save(newFeesGroup);
 
       sendResponse(res, 201, 'Fees Group created successfully', newFeesGroup);

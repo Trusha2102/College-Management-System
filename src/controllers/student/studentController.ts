@@ -238,6 +238,7 @@ const listStudents = async (req: Request, res: Response) => {
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.section', 'section')
       .leftJoinAndSelect('student.course', 'course')
+      .leftJoinAndSelect('student.parent_details', 'parent_details')
       .leftJoinAndSelect('student.semester', 'semester');
 
     // Apply search filter if provided

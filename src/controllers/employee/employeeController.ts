@@ -389,6 +389,17 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         }
       }
 
+      const mobileRegex = /^\d{10}$/;
+      if (!mobileRegex.test(req.body.mobile)) {
+        sendError(
+          res,
+          400,
+          'Invalid mobile number format',
+          'Mobile Number should contain 10 digits',
+        );
+        return;
+      }
+
       const queryRunner = AppDataSource.createQueryRunner();
 
       await runTransaction(queryRunner, async () => {
@@ -596,6 +607,17 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
 
         if (errors.length > 0) {
           sendError(res, 400, 'Fields cannot be null', errors.join(', '));
+          return;
+        }
+
+        const mobileRegex = /^\d{10}$/;
+        if (!mobileRegex.test(req.body.mobile)) {
+          sendError(
+            res,
+            400,
+            'Invalid mobile number format',
+            'Mobile Number should contain 10 digits',
+          );
           return;
         }
 
