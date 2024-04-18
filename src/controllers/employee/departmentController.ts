@@ -3,17 +3,38 @@ import { Department } from '../../entity/Department';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { ILike } from 'typeorm';
 
 //Create Department
 export const createDepartment = async (req: Request, res: Response) => {
   const { department } = req.body;
+
+  // Check if department field is empty
+  if (!department) {
+    return sendError(res, 400, 'Department name cannot be empty');
+  }
+
   const queryRunner = AppDataSource.createQueryRunner();
 
   try {
     await runTransaction(queryRunner, async () => {
       const departmentRepository =
         queryRunner.manager.getRepository(Department);
+
+      // Check if department name already exists (case-insensitive)
+      const existingDepartment = await departmentRepository.findOne({
+        where: { department: ILike(department) },
+      });
+
+      if (existingDepartment) {
+        sendError(res, 400, 'Department name already exists');
+        return;
+      }
+
+      // Create new department entity
       const newDepartment = departmentRepository.create({ department });
+
+      // Save the new department
       await departmentRepository.save(newDepartment);
 
       sendResponse(res, 201, 'Department created successfully', newDepartment);

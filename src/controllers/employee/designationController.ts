@@ -3,15 +3,38 @@ import { Designation } from '../../entity/Designation';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { ILike } from 'typeorm';
 
 // Create Designation with Transaction and QueryRunner
 export const createDesignation = async (req: Request, res: Response) => {
+  const { designation } = req.body;
+
+  // Check if designation field is empty
+  if (!designation) {
+    return sendError(res, 400, 'Designation name cannot be empty');
+  }
+
   const queryRunner = AppDataSource.createQueryRunner();
+
   try {
     await runTransaction(queryRunner, async () => {
       const designationRepository =
         queryRunner.manager.getRepository(Designation);
+
+      // Check if designation name already exists (case-insensitive)
+      const existingDesignation = await designationRepository.findOne({
+        where: { designation: ILike(designation) },
+      });
+
+      if (existingDesignation) {
+        sendError(res, 400, 'Designation name already exists');
+        return;
+      }
+
+      // Create new designation entity
       const newDesignation = designationRepository.create(req.body);
+
+      // Save the new designation
       await designationRepository.save(newDesignation);
 
       sendResponse(

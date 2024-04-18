@@ -220,12 +220,10 @@ const createStudent = async (req: Request, res: Response) => {
 const listStudents = async (req: Request, res: Response) => {
   try {
     let {
-      name,
-      section_name,
+      search,
+      section,
       course_id,
       semester_id,
-      enrollment_no,
-      roll_no,
       page = 1,
       limit = 10,
     } = req.query;
@@ -242,24 +240,19 @@ const listStudents = async (req: Request, res: Response) => {
       .leftJoinAndSelect('student.course', 'course')
       .leftJoinAndSelect('student.semester', 'semester');
 
-    // Apply filters if provided
-    if (name) {
+    // Apply search filter if provided
+    if (search) {
       query = query.andWhere(
-        '(student.first_name LIKE :name OR student.last_name LIKE :name OR student.middle_name LIKE :name)',
+        '(student.first_name ILIKE :search OR student.last_name ILIKE :search OR student.middle_name ILIKE :search OR student.mobile ILIKE :search OR student.admission_no ILIKE :search OR student.enrollment_no ILIKE :search)',
         {
-          name: `%${name}%`,
+          search: `%${search}%`,
         },
       );
     }
-    if (section_name) {
-      query = query.andWhere('section.section LIKE :section_name', {
-        section_name: `%${section_name}%`,
-      });
-    }
 
-    if (enrollment_no) {
-      query = query.andWhere('student.enrollment_no = :enrollment_no', {
-        enrollment_no,
+    if (section) {
+      query = query.andWhere('section.section LIKE :section', {
+        section: `%${section}%`,
       });
     }
 
@@ -273,10 +266,6 @@ const listStudents = async (req: Request, res: Response) => {
       query = query.andWhere('semester.id = :semester_id', {
         semester_id,
       });
-    }
-
-    if (roll_no) {
-      query = query.andWhere('student.roll_no = :roll_no', { roll_no });
     }
 
     // Apply pagination

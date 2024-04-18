@@ -3,6 +3,7 @@ import AppDataSource from '../../data-source';
 import { Attendance } from '../../entity/Attendance';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { Employee } from '../../entity/Employee';
 
 // Create attendance
 export const createAttendance = async (req: Request, res: Response) => {
@@ -11,20 +12,57 @@ export const createAttendance = async (req: Request, res: Response) => {
 
     const queryRunner = AppDataSource.createQueryRunner();
     const attendanceRepository = queryRunner.manager.getRepository(Attendance);
+    const employeeRepository = queryRunner.manager.getRepository(Employee);
+
+    const errors: string[] = [];
 
     await runTransaction(queryRunner, async () => {
-      // Loop through each attendance record in the array
       for (const attendanceData of attendanceRecords) {
-        // Create a new instance of Attendance for each record
+        const employee = await employeeRepository.findOne({
+          where: { id: attendanceData.employee_id },
+        });
+
+        if (!employee) {
+          errors.push(
+            `Employee Not Found for ID: ${attendanceData.employee_id}`,
+          );
+          continue;
+        }
+
+        const formattedDate = new Date(attendanceData.date).toISOString();
+
+        const existingRecord = await attendanceRepository.findOne({
+          where: {
+            employee: { id: attendanceData.employee_id },
+            date: new Date(formattedDate),
+          },
+        });
+
+        if (existingRecord) {
+          errors.push(
+            `Attendance record already exists for Employee ID ${attendanceData.employee_id} on ${formattedDate}`,
+          );
+          continue;
+        }
+
         const attendanceInstance = new Attendance();
-        attendanceInstance.employee = attendanceData.employee_id;
-        attendanceInstance.date = attendanceData.date;
+        attendanceInstance.employee = employee;
+        attendanceInstance.date = new Date(formattedDate);
         attendanceInstance.attendance = attendanceData.attendance;
 
         // Save the attendance record
         await attendanceRepository.save(attendanceInstance);
       }
     });
+
+    if (errors.length > 0) {
+      return sendError(
+        res,
+        400,
+        'Errors occurred while creating attendance',
+        errors.join('; '),
+      );
+    }
 
     sendResponse(
       res,
