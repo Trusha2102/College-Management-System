@@ -61,8 +61,7 @@ const createStudent = async (req: Request, res: Response) => {
         name: file.originalname,
         path: file.path,
       }));
-      const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
+      const otherDocsJsonString = JSON.stringify(otherDocs);
       // let student: Student;
       // let parentDetails: ParentDetails;
       let student;
@@ -172,8 +171,7 @@ const createStudent = async (req: Request, res: Response) => {
             (files as { [fieldname: string]: Express.Multer.File[] })[
               'profile_picture'
             ]?.[0]?.path || '',
-          other_docs: otherDocs,
-          password: hashedPassword,
+          other_docs: otherDocsJsonString,
           is_active: true,
           course: course,
           semester: semester,
@@ -347,6 +345,9 @@ const updateStudentById = async (req: Request, res: Response) => {
         path: file.path,
       }));
 
+      // Convert otherDocs to JSON string
+      const otherDocsString = JSON.stringify(otherDocs);
+
       const queryRunner = AppDataSource.createQueryRunner();
 
       let updatedStudent: Student | undefined;
@@ -408,7 +409,7 @@ const updateStudentById = async (req: Request, res: Response) => {
             (files as { [fieldname: string]: Express.Multer.File[] })[
               'profile_picture'
             ]?.[0]?.path || student.profile_picture,
-          other_docs: otherDocs || student.other_docs,
+          other_docs: otherDocsString || student.other_docs, // Save as JSON string
         };
 
         // Merge the updated data with existing data

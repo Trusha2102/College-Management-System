@@ -367,10 +367,12 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         'email',
         'gender',
         'dob',
+        'doj',
         'pan_number',
         'password',
         'mobile',
         'designationId',
+        'departmentId',
         'salary',
         'deduction',
         'aadhar_card',
@@ -543,6 +545,11 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
       await runTransaction(queryRunner, async () => {
         const userRepository = queryRunner.manager.getRepository(User);
         const employeeRepository = queryRunner.manager.getRepository(Employee);
+        const roleRepository = queryRunner.manager.getRepository(Role);
+        const designationRepository =
+          queryRunner.manager.getRepository(Designation);
+        const departmentRepository =
+          queryRunner.manager.getRepository(Department);
 
         const employee = await employeeRepository.findOne({
           where: { id: +id },
@@ -562,9 +569,11 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           'email',
           'gender',
           'dob',
+          'doj',
           'pan_number',
           'password',
           'mobile',
+          'departmentId',
           'designationId',
           'salary',
           'deduction',
@@ -590,6 +599,60 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           return;
         }
 
+        const { email, role_id, staffId, designationId, departmentId } =
+          req.body;
+
+        // Check if email is already in use
+        const existingUserWithEmail = await userRepository.findOne({
+          where: { email: email },
+        });
+        if (
+          existingUserWithEmail &&
+          existingUserWithEmail.id !== employee.user.id
+        ) {
+          sendError(res, 400, 'Email already exists in another record');
+          return;
+        }
+
+        // Check if role_id exists in Role table
+        const role = await roleRepository.findOne({ where: { id: role_id } });
+        if (!role) {
+          sendError(res, 404, 'Role not found');
+          return;
+        }
+
+        // Check if staffId is unique
+        const existingEmployeeWithStaffId = await employeeRepository.findOne({
+          where: {
+            staff_id: staffId,
+          },
+        });
+        if (
+          existingEmployeeWithStaffId &&
+          existingEmployeeWithStaffId.id !== +id
+        ) {
+          sendError(res, 400, 'StaffId already exists in another record');
+          return;
+        }
+
+        // Check if designationId exists in Designation table
+        const designation = await designationRepository.findOne({
+          where: { id: +designationId },
+        });
+        if (!designation) {
+          sendError(res, 404, 'Designation not found');
+          return;
+        }
+
+        // Check if departmentId exists in Department table
+        const department = await departmentRepository.findOne({
+          where: { id: +departmentId },
+        });
+        if (!department) {
+          sendError(res, 404, 'Department not found');
+          return;
+        }
+
         // Update user and employee records
         Object.assign(employee.user, {
           ...req.body,
@@ -601,13 +664,11 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           social_media_links: req.body.social_media_links
             ? req.body.social_media_links.split(',')
             : null,
-          address_id: req.body.address_id === 'null' ? 0 : +req.body.address_id,
-          bank_details_id:
-            req.body.bank_details_id === 'null' ? 0 : +req.body.bank_details_id,
         });
 
         Object.assign(employee, {
           ...req.body,
+          staff_id: +staffId,
           designation_id: req.body.designationId,
           department_id: req.body.departmentId,
           doj: new Date(req.body.doj) || null,

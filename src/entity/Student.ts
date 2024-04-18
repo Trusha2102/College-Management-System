@@ -12,9 +12,7 @@ import {
 } from 'typeorm';
 import { Session } from './Session';
 import { Section } from './Section';
-// import { Address } from './Address';
 import { ParentDetails } from './ParentDetails';
-// import { BankAccount } from './BankAccount';
 import { Result } from './Result';
 import { FeesPayment } from './FeesPayment';
 import { FeesMaster } from './FeesMaster';
@@ -122,14 +120,13 @@ export class Student {
   @Column()
   profile_picture!: string;
 
-  @Column()
+  @Column({
+    nullable: true,
+  })
   other_docs!: string;
 
-  @Column()
-  password!: string;
-
-  // @OneToOne(() => Address, (address) => address.student, { nullable: true })
-  // address!: Address;
+  // @Column('jsonb', { array: true, nullable: true })
+  // other_docs!: JSON[];
 
   @Column({ nullable: true })
   permanent_address!: string;
@@ -141,11 +138,6 @@ export class Student {
     nullable: true,
   })
   parent_details!: ParentDetails;
-
-  // @OneToOne(() => BankAccount, (bankAccount) => bankAccount.student, {
-  //   nullable: true,
-  // })
-  // bank_details!: BankAccount;
 
   @OneToOne(() => Result, (result) => result.student, { nullable: true })
   result!: Result;
