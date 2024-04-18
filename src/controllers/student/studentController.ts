@@ -241,6 +241,8 @@ const listStudents = async (req: Request, res: Response) => {
       .leftJoinAndSelect('student.parent_details', 'parent_details')
       .leftJoinAndSelect('student.semester', 'semester');
 
+    query = query.andWhere('student.is_active = true');
+
     // Apply search filter if provided
     if (search) {
       query = query.andWhere(
@@ -460,7 +462,7 @@ const deleteStudentsByIds = async (req: Request, res: Response) => {
         res,
         200,
         'Students deleted successfully',
-        `${notFoundCount} Students were not found while deleting`,
+        `${notFoundCount} students were not found while deleting`,
       );
     });
   } catch (error: any) {

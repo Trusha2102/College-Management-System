@@ -229,3 +229,54 @@ export const collectFees = async (req: Request, res: Response) => {
     return sendError(res, 500, 'Failed to collect fees', error.message);
   }
 };
+
+export const searchFeeDues = async (req: Request, res: Response) => {
+  try {
+    const currentDate = new Date();
+
+    const feesMasterRepository = AppDataSource.getRepository(FeesMaster);
+
+    const { feesGroup, section, course, semester } = req.query;
+
+    // Build the base query
+    let query = feesMasterRepository
+      .createQueryBuilder('feesMaster')
+      .innerJoinAndSelect('feesMaster.feesGroups', 'feesGroup')
+      .innerJoinAndSelect('feesMaster.student', 'student')
+      .innerJoinAndSelect('student.course', 'course')
+      .innerJoinAndSelect('student.semester', 'semester')
+      .innerJoinAndSelect('student.section', 'section')
+      .where('feesMaster.status IN (:...statuses)', {
+        statuses: ['Partially Paid', 'Unpaid'],
+      })
+      .andWhere('feesGroup.due_date <= :currentDate', { currentDate });
+
+    // Add optional search conditions
+    if (feesGroup) {
+      query = query.andWhere('feesGroup.name LIKE :feesGroupName', {
+        feesGroupName: `%${feesGroup}%`,
+      });
+    }
+    if (section) {
+      query = query.andWhere('section.name LIKE :sectionName', {
+        sectionName: `%${section}%`,
+      });
+    }
+    if (course) {
+      query = query.andWhere('course.name LIKE :courseName', {
+        courseName: `%${course}%`,
+      });
+    }
+    if (semester) {
+      query = query.andWhere('semester.name LIKE :semesterName', {
+        semesterName: `%${semester}%`,
+      });
+    }
+
+    const feesMasters = await query.getMany();
+
+    sendResponse(res, 200, 'FeesMaster records found', feesMasters);
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to get FeesMaster records', error.message);
+  }
+};

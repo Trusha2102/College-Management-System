@@ -29,6 +29,12 @@ router.post(
   feesMasterController.collectFees,
 );
 
+router.get(
+  '/fee-dues/list',
+  permissionProtect,
+  feesMasterController.searchFeeDues,
+);
+
 // router.get('/list', permissionProtect, feesGroupController.getAllFeesGroups);
 
 export default router;
