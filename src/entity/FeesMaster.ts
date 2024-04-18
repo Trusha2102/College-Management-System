@@ -28,7 +28,7 @@ export class FeesMaster {
   @Column({ nullable: true })
   student_id!: number;
 
-  @ManyToMany(() => FeesGroup)
+  @ManyToMany(() => FeesGroup, (feesGroup) => feesGroup.feesMaster)
   @JoinTable()
   feesGroups!: FeesGroup[];
 

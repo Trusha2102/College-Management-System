@@ -253,23 +253,23 @@ export const searchFeeDues = async (req: Request, res: Response) => {
 
     // Add optional search conditions
     if (feesGroup) {
-      query = query.andWhere('feesGroup.name LIKE :feesGroupName', {
-        feesGroupName: `%${feesGroup}%`,
+      query = query.andWhere('feesGroup.name ILIKE :feesGroup', {
+        feesGroup: `%${feesGroup}%`,
       });
     }
     if (section) {
-      query = query.andWhere('section.name LIKE :sectionName', {
-        sectionName: `%${section}%`,
+      query = query.andWhere('section.section ILIKE :section', {
+        section: `%${section}%`,
       });
     }
     if (course) {
-      query = query.andWhere('course.name LIKE :courseName', {
-        courseName: `%${course}%`,
+      query = query.andWhere('course.name ILIKE :course', {
+        course: `%${course}%`,
       });
     }
     if (semester) {
-      query = query.andWhere('semester.name LIKE :semesterName', {
-        semesterName: `%${semester}%`,
+      query = query.andWhere('semester.semester ILIKE :semester', {
+        semester: `%${semester}%`,
       });
     }
 

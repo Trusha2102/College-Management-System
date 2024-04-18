@@ -126,7 +126,7 @@ const deleteRoleById = async (req: Request, res: Response) => {
         },
       );
 
-      if (permissionsCount) {
+      if (permissionsCount[1] > 0) {
         sendError(
           res,
           400,

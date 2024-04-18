@@ -5,13 +5,20 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { FeesType } from './FeesType';
+import { FeesMaster } from './FeesMaster';
 
 @Entity()
 export class FeesGroup {
   @PrimaryGeneratedColumn()
   id!: number;
+
+  @ManyToMany(() => FeesMaster, (feesMaster) => feesMaster.feesGroups)
+  @JoinTable()
+  feesMaster!: FeesMaster[];
 
   @Column()
   name!: string;

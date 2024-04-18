@@ -1,8 +1,7 @@
-import { Request, Response, query } from 'express';
+import { Request, Response } from 'express';
 import AppDataSource from '../../data-source';
 import configureMulter from '../../utils/multerConfig';
 import { Student } from '../../entity/Student';
-import bcrypt from 'bcrypt';
 import { sendError, sendResponse } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { Equal, Not } from 'typeorm';
@@ -37,6 +36,7 @@ const createStudent = async (req: Request, res: Response) => {
         'course_id',
         'semester_id',
         'section_id',
+        'session_id',
         'first_name',
         'gender',
         'dob',
@@ -177,6 +177,7 @@ const createStudent = async (req: Request, res: Response) => {
           semester: semester,
           session: session,
           section: section,
+          studentSessionId: session.id,
         });
 
         await studentRepository.save(student);
@@ -221,6 +222,7 @@ const listStudents = async (req: Request, res: Response) => {
   try {
     let {
       search,
+      session_id,
       section,
       course_id,
       semester_id,
@@ -237,6 +239,7 @@ const listStudents = async (req: Request, res: Response) => {
     let query = studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.section', 'section')
+      .leftJoinAndSelect('student.student_session', 'student_session')
       .leftJoinAndSelect('student.course', 'course')
       .leftJoinAndSelect('student.parent_details', 'parent_details')
       .leftJoinAndSelect('student.semester', 'semester');
@@ -249,6 +252,15 @@ const listStudents = async (req: Request, res: Response) => {
         '(student.first_name ILIKE :search OR student.last_name ILIKE :search OR student.middle_name ILIKE :search OR student.mobile ILIKE :search OR student.admission_no ILIKE :search OR student.enrollment_no ILIKE :search)',
         {
           search: `%${search}%`,
+        },
+      );
+    }
+
+    if (session_id) {
+      query = query.andWhere(
+        'CAST(student.student_session_id AS TEXT) LIKE :student_session_id',
+        {
+          student_session_id: `%${session_id}%`,
         },
       );
     }
@@ -346,6 +358,7 @@ const updateStudentById = async (req: Request, res: Response) => {
 
       await runTransaction(queryRunner, async () => {
         const studentRepository = queryRunner.manager.getRepository(Student);
+        const sessionRepository = queryRunner.manager.getRepository(Session);
         const parentDetailsRepository =
           queryRunner.manager.getRepository(ParentDetails);
         const student = await studentRepository.findOne({
@@ -394,14 +407,25 @@ const updateStudentById = async (req: Request, res: Response) => {
           }
         }
 
+        if (req.body.session_id) {
+          const sessionExists = await sessionRepository.findOne({
+            where: { id: req.body.session_id },
+          });
+
+          if (!sessionExists) {
+            sendError(res, 400, 'Academic session does not exists');
+          }
+        }
+
         // Merge the updated data with existing data
         const updatedData: any = {
           ...req.body,
+          studentSessionId: req.body?.session_id,
           profile_picture:
             (files as { [fieldname: string]: Express.Multer.File[] })[
               'profile_picture'
             ]?.[0]?.path || student.profile_picture,
-          other_docs: otherDocsString || student.other_docs, // Save as JSON string
+          other_docs: otherDocsString || student.other_docs,
         };
 
         // Merge the updated data with existing data
