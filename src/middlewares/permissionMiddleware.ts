@@ -32,11 +32,12 @@ const permissionProtect = async (
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }
     console.log(decoded.user.role_id, 'This is user role id');
-    const roleRepository = AppDataSource.getRepository(Role);
+    const roleRepository = await AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
       where: { id: decoded.user.role_id },
     });
     if (!role) {
+      console.log('role Not found');
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }
 
