@@ -41,7 +41,9 @@ const permissionProtect = async (
     const casbin = await casbinService.getEnforcer();
 
     const parts = req.baseUrl.split('/');
+    console.log('🚀 ~ parts:', parts);
     const module = parts[parts.length - 1];
+    console.log('🚀 ~ module:', module);
 
     // Parse the req.url for action keywords
     let action = '';
@@ -55,7 +57,10 @@ const permissionProtect = async (
       action = 'read';
     }
 
+    console.log('🚀 ~ action:', action);
+
     const status = await casbin.enforce(role.name, module, action);
+    console.log('🚀 ~ status:', status);
     if (!status) {
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }

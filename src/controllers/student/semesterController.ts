@@ -10,18 +10,23 @@ import { ILike } from 'typeorm';
 export const createSemester = async (req: Request, res: Response) => {
   try {
     const { semester, courseId } = req.body;
+    const queryRunner = AppDataSource.createQueryRunner();
+
+    const semesterRepository = queryRunner.manager.getRepository(Semester);
 
     const trimmedSemesterName = semester.trim();
     if (!trimmedSemesterName) {
       return sendError(res, 400, 'Semester is required');
     }
 
-    const existingSemester = await AppDataSource.manager.findOne(Semester, {
+    const existingSemester = await semesterRepository.findOne({
       where: {
         semester: ILike(trimmedSemesterName),
-        course: courseId,
+        course: { id: courseId },
       },
     });
+    console.log('🚀 ~ createSemester ~ existingSemester:', existingSemester);
+
     if (existingSemester) {
       return sendError(
         res,
@@ -30,7 +35,6 @@ export const createSemester = async (req: Request, res: Response) => {
       );
     }
 
-    const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const courseRepository = queryRunner.manager.getRepository(Course);
       const course = await courseRepository.findOne({

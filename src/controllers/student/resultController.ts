@@ -13,7 +13,7 @@ import { Session } from '../../entity/Session';
 export const createResult = async (req: Request, res: Response) => {
   try {
     const { results, Promote } = req.body;
-    const { courseId } = Promote; // Extract courseId from Promote
+    const { courseId } = Promote;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
@@ -69,7 +69,6 @@ export const createResult = async (req: Request, res: Response) => {
 
         const validateResult = await Promise.all([
           validateExistence(studentRepository, studentId, 'Student'),
-          // Use courseId from Promote
           validateExistence(courseRepository, courseId, 'Course'),
         ]);
 
@@ -77,14 +76,13 @@ export const createResult = async (req: Request, res: Response) => {
 
         const newResult = resultRepository.create({
           student: { id: +studentId },
-          course: { id: +courseId }, // Use courseId from Promote
+          course: { id: +courseId },
           result,
+          next_course_status,
           current_session_id: Promote.current_session_id,
           promote_session_id: Promote.promote_session_id,
           current_semester_id: Promote.current_semester_id,
           promote_semester_id: Promote.promote_semester_id,
-          current_section_id: Promote.current_section_id,
-          promote_section_id: Promote.promote_section_id,
         });
         await resultRepository.save(newResult);
 

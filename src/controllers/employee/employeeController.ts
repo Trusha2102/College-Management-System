@@ -120,7 +120,6 @@ export const listEmployees = async (req: Request, res: Response) => {
     query.addSelect('role.name');
 
     if (role) {
-      // Filter by role
       const roleId = await AppDataSource.getRepository(Role)
         .createQueryBuilder('role')
         .where('role.name ILIKE :role', { role: `%${role}%` })
@@ -453,6 +452,7 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           ...req?.body,
           password: hashedPassword,
           is_active: true,
+          role: role,
           marital_status: marital_status === 'true',
           dob: new Date(dob),
           profile_picture: profilePicturePath,
@@ -574,7 +574,6 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           'email',
           'gender',
           'doj',
-          'password',
           'mobile',
           'departmentId',
           'designationId',
@@ -665,10 +664,8 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
         // Update user and employee records
         Object.assign(employee.user, {
           ...req.body,
-          password: req.body.password
-            ? await bcrypt.hash(req.body.password, 10)
-            : employee.user.password,
           dob: new Date(req.body.dob),
+          role: role,
           profile_picture: profilePicturePath || employee.user.profile_picture,
           social_media_links: req.body.social_media_links
             ? req.body.social_media_links.split(',')

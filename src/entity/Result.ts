@@ -35,13 +35,10 @@ export class Result {
   current_semester_id!: string;
 
   @Column({ nullable: true })
-  current_section_id!: string;
-
-  @Column({ nullable: true })
   promote_semester_id!: string;
 
   @Column({ nullable: true })
-  promote_section_id!: string;
+  next_course_status!: string;
 
   @CreateDateColumn({
     name: 'created_at',

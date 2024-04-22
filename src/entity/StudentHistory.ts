@@ -36,8 +36,8 @@ export class StudentHistory {
   @ManyToOne(() => FeesPayment)
   payment!: FeesPayment;
 
-  @Column({ enum: ['continue', 'leave'], nullable: true })
-  next_course_status!: 'continue' | 'leave';
+  @Column({ nullable: true })
+  next_course_status!: string;
 
   @CreateDateColumn({
     name: 'created_at',
