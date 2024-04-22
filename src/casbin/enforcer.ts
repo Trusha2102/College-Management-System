@@ -6,14 +6,6 @@ export class CasbinService {
   private enforcer: Enforcer | null = null;
 
   public async getEnforcer(): Promise<Enforcer> {
-    await this.init();
-    if (!this.enforcer) {
-      throw new Error('Failed to initialize Casbin enforcer');
-    }
-    return this.enforcer;
-  }
-
-  private async init(): Promise<void> {
     const databaseParams: TypeORMAdapterOptions = {
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -27,5 +19,6 @@ export class CasbinService {
     const filePath = path.join(__dirname, '../../src/casbin/casbinModel.conf');
     this.enforcer = await newEnforcer(filePath, a);
     await this.enforcer.loadPolicy();
+    return this.enforcer;
   }
 }
