@@ -1,14 +1,9 @@
 import { Enforcer, newEnforcer } from 'casbin';
 import TypeORMAdapter, { TypeORMAdapterOptions } from 'typeorm-adapter';
 import path from 'path';
-console.log({
-  type: 'postgres',
-  host: process.env.DB_HOST,
-  port: +(process?.env?.DB_PORT || 5432),
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 export class CasbinService {
   // private enforcer: Enforcer | null = null;
 

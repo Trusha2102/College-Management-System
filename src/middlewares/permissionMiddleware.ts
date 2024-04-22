@@ -31,13 +31,11 @@ const permissionProtect = async (
     if (!decoded || !decoded?.user) {
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }
-    console.log(decoded.user.role_id, 'This is user role id');
     const roleRepository = await AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
       where: { id: decoded.user.role_id },
     });
     if (!role) {
-      console.log('role Not found');
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }
 
@@ -56,10 +54,9 @@ const permissionProtect = async (
       action = 'read';
     }
 
-    console.log(role.name, module, action);
     const casbin = await casbinService.getEnforcer();
     const status = await casbin.enforce(role.name, module, action);
-    console.log('🚀 ~ status:', status);
+
     if (!status) {
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }
