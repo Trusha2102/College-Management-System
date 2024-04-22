@@ -13,6 +13,25 @@ import { Session } from '../../entity/Session';
 export const createResult = async (req: Request, res: Response) => {
   try {
     const { results, Promote } = req.body;
+
+    // Check if all mandatory fields exist in the request body
+    const mandatoryFields = [
+      'current_session_id',
+      'promote_session_id',
+      'current_semester_id',
+      'promote_semester_id',
+      'courseId',
+    ];
+    for (const field of mandatoryFields) {
+      if (!(field in Promote)) {
+        return sendError(
+          res,
+          400,
+          `Mandatory field '${field}' not found in the request body`,
+        );
+      }
+    }
+
     const { courseId } = Promote;
 
     const queryRunner = AppDataSource.createQueryRunner();

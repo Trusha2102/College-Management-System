@@ -360,18 +360,18 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
 
       // Mandatory fields
       const mandatoryFields = [
+        'first_name',
+        'last_name',
+        'gender',
         'staffId',
         'role_id',
-        'first_name',
-        'email',
-        'gender',
-        'doj',
-        'password',
-        'mobile',
         'designationId',
         'departmentId',
         'salary',
         'deduction',
+        'email',
+        'password',
+        'mobile',
       ];
 
       for (const field of mandatoryFields) {
@@ -427,15 +427,15 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         }
 
         // Check if staffId and email already exists
-        const existingEmployee = await employeeRepository.findOne({
-          where: {
-            staff_id: staffId,
-          },
-        });
-        if (existingEmployee) {
-          sendError(res, 400, 'StaffId already exists');
-          return;
-        }
+        // const existingEmployee = await employeeRepository.findOne({
+        //   where: {
+        //     staff_id: staffId,
+        //   },
+        // });
+        // if (existingEmployee) {
+        //   sendError(res, 400, 'StaffId already exists');
+        //   return;
+        // }
 
         const existingUser = await userRepository.findOne({
           where: { email: email },
@@ -453,8 +453,8 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           password: hashedPassword,
           is_active: true,
           role: role,
+          dob: req.body?.dob || null,
           marital_status: marital_status === 'true',
-          dob: new Date(dob),
           profile_picture: profilePicturePath,
           social_media_links: social_media_links
             ? social_media_links.split(',')
@@ -566,33 +566,42 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           return;
         }
 
-        // Prevent specified fields from becoming null
+        // Prevent specified fields from becoming null or empty string
         const nonNullableFields = [
+          'first_name',
+          'last_name',
+          'gender',
           'staffId',
           'role_id',
-          'first_name',
-          'email',
-          'gender',
-          'doj',
-          'mobile',
-          'departmentId',
           'designationId',
+          'departmentId',
           'salary',
           'deduction',
+          'email',
+          'mobile',
         ];
 
         const errors: string[] = [];
 
         for (const field of nonNullableFields) {
-          if (req.body[field] === null || req.body[field] === undefined) {
+          if (
+            req.body[field] === null ||
+            req.body[field] === undefined ||
+            req.body[field] === ''
+          ) {
             // Use type assertion here
             req.body[field] = employee[field as keyof Employee];
-            errors.push(`${field} cannot be null`);
+            errors.push(`${field} cannot be null or empty`);
           }
         }
 
         if (errors.length > 0) {
-          sendError(res, 400, 'Fields cannot be null', errors.join(', '));
+          sendError(
+            res,
+            400,
+            'Fields cannot be null or empty',
+            errors.join(', '),
+          );
           return;
         }
 
@@ -630,18 +639,18 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
         }
 
         // Check if staffId is unique
-        const existingEmployeeWithStaffId = await employeeRepository.findOne({
-          where: {
-            staff_id: staffId,
-          },
-        });
-        if (
-          existingEmployeeWithStaffId &&
-          existingEmployeeWithStaffId.id !== +id
-        ) {
-          sendError(res, 400, 'StaffId already exists in another record');
-          return;
-        }
+        // const existingEmployeeWithStaffId = await employeeRepository.findOne({
+        //   where: {
+        //     staff_id: staffId,
+        //   },
+        // });
+        // if (
+        //   existingEmployeeWithStaffId &&
+        //   existingEmployeeWithStaffId.id !== +id
+        // ) {
+        //   sendError(res, 400, 'StaffId already exists in another record');
+        //   return;
+        // }
 
         // Check if designationId exists in Designation table
         const designation = await designationRepository.findOne({
@@ -674,7 +683,7 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
 
         Object.assign(employee, {
           ...req.body,
-          staff_id: +staffId,
+          staff_id: staffId,
           designation_id: req.body.designationId,
           department_id: req.body.departmentId,
           doj: new Date(req.body.doj) || null,

@@ -25,7 +25,7 @@ export class Employee {
   @ManyToOne(() => User, (user) => user.id)
   user!: User;
 
-  @Column({ unique: true, nullable: true })
+  @Column({ nullable: true })
   staff_id!: string;
 
   @ManyToOne(() => Designation, (designation) => designation.id)

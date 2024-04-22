@@ -55,7 +55,7 @@ export class User {
   @Column()
   gender!: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   dob!: Date;
 
   @Column({ nullable: true })
