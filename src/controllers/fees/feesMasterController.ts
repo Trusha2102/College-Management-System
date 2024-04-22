@@ -78,7 +78,7 @@ export const feesAllocation = async (req: Request, res: Response) => {
           const feesMaster = new FeesMaster();
           feesMaster.student = existingStudent;
           feesMaster.student_id = existingStudent.id;
-          feesMaster.fees_group_ids = [fees_group_id];
+          feesMaster.fees_group_id = fees_group_id;
           feesMaster.feesGroups = [feesGroup];
           feesMaster.net_amount = netAmount;
 

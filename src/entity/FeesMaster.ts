@@ -60,8 +60,8 @@ export class FeesMaster {
   @Column({ nullable: true })
   fine_amount!: number;
 
-  @Column('simple-array', { nullable: true })
-  fees_group_ids?: number[];
+  @Column({ nullable: true })
+  fees_group_id!: number;
 
   @CreateDateColumn({
     name: 'created_at',

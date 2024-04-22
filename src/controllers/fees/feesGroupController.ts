@@ -4,6 +4,7 @@ import { FeesGroup } from '../../entity/FeesGroup';
 import { FeesType } from '../../entity/FeesType';
 import runTransaction from '../../utils/runTransaction';
 import { sendResponse, sendError } from '../../utils/commonResponse';
+import { FeesMaster } from '../../entity/FeesMaster';
 
 // Create a new Fees Group
 export const createFeesGroup = async (req: Request, res: Response) => {
@@ -134,13 +135,37 @@ export const deleteFeesGroupById = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const feesGroupRepository = queryRunner.manager.getRepository(FeesGroup);
-      const feesGroup = await feesGroupRepository.findOne({
-        where: { id: req.body.id },
-      });
+      const feesMasterRepository =
+        queryRunner.manager.getRepository(FeesMaster);
+
+      const { id } = req.body;
+
+      // Check if the FeesGroup exists
+      const feesGroup = await feesGroupRepository.findOne({ where: { id } });
       if (!feesGroup) {
         sendResponse(res, 404, 'Fees Group not found');
         return;
       }
+
+      // Check if the FeesGroup's id is present in any FeesMaster's fees_group_ids
+      const feesMastersWithFeesGroup = await feesMasterRepository.find({
+        where: { fees_group_id: id },
+      });
+      console.log(
+        '🚀 ~ awaitrunTransaction ~ feesMastersWithFeesGroup:',
+        feesMastersWithFeesGroup,
+      );
+
+      if (feesMastersWithFeesGroup.length > 0) {
+        sendError(
+          res,
+          400,
+          'Fees Group cannot be deleted because it is associated with Fees Masters',
+        );
+        return;
+      }
+
+      // Remove the FeesGroup
       await feesGroupRepository.remove(feesGroup);
       sendResponse(res, 200, 'Fees Group deleted successfully');
     });
