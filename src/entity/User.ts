@@ -67,7 +67,7 @@ export class User {
   @Column({ length: 255, nullable: true })
   work_experience!: string;
 
-  @Column()
+  @Column({ nullable: true })
   aadhar_card!: string;
 
   // @ManyToOne(() => Address, (address: { user: any }) => address.user, {

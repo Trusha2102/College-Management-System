@@ -17,19 +17,19 @@ export class BankAccount {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column()
+  @Column({ nullable: true })
   bank_name!: string;
 
-  @Column()
+  @Column({ nullable: true })
   pan_number!: string;
 
-  @Column()
+  @Column({ nullable: true })
   ifsc!: string;
 
-  @Column()
+  @Column({ nullable: true })
   branch!: string;
 
-  @Column()
+  @Column({ nullable: true })
   account_no!: string;
 
   // @ManyToOne(() => Student, (student) => student.bank_details, {

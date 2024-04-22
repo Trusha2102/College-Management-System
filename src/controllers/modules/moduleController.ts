@@ -67,9 +67,18 @@ const deleteModuleById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const queryRunner = AppDataSource.createQueryRunner();
+    const moduleRepository = queryRunner.manager.getRepository(Module);
+
+    const module = await moduleRepository.findOne({ where: { id: +id } });
+
+    if (!module) {
+      sendError(res, 404, 'Module Not Found');
+      return;
+    }
     await runTransaction(queryRunner, async () => {
-      await queryRunner.manager.delete(Module, id);
-      res.status(200).end();
+      await moduleRepository.delete(id);
+
+      sendResponse(res, 200, 'Module Deleted Successfully', null);
     });
   } catch (error) {
     console.error(error);

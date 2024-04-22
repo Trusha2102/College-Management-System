@@ -366,20 +366,13 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         'first_name',
         'email',
         'gender',
-        'dob',
         'doj',
-        'pan_number',
         'password',
         'mobile',
         'designationId',
         'departmentId',
         'salary',
         'deduction',
-        'aadhar_card',
-        'bank_name',
-        'ifsc',
-        'branch',
-        'account_no',
       ];
 
       for (const field of mandatoryFields) {
@@ -513,6 +506,7 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
 
         const displayEmployee = await employeeRepository.findOne({
           where: { staff_id: staffId },
+          relations: ['user', 'designation', 'department'],
         });
 
         sendResponse(
@@ -564,7 +558,7 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
 
         const employee = await employeeRepository.findOne({
           where: { id: +id },
-          relations: ['user'],
+          relations: ['user', 'designation', 'department'],
         });
 
         if (!employee) {
@@ -579,20 +573,13 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           'first_name',
           'email',
           'gender',
-          'dob',
           'doj',
-          'pan_number',
           'password',
           'mobile',
           'departmentId',
           'designationId',
           'salary',
           'deduction',
-          'aadhar_card',
-          'bank_name',
-          'ifsc',
-          'branch',
-          'account_no',
         ];
 
         const errors: string[] = [];
