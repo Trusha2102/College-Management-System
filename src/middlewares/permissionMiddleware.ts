@@ -58,6 +58,7 @@ const permissionProtect = async (
 
     console.log(role.name, module, action);
     const casbin = await casbinService.getEnforcer();
+    console.log(await casbin.getPolicy());
     const status = await casbin.enforce(role.name, module, action);
     console.log('🚀 ~ status:', status);
     if (!status) {

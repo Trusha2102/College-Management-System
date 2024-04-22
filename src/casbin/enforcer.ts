@@ -21,7 +21,6 @@ export class CasbinService {
       __dirname,
       '../../src/casbin/casbinModel.conf',
     );
-    console.log('FilePath:', filePath);
     this.enforcer = await newEnforcer(filePath, a);
     await this.enforcer.loadPolicy();
     return this.enforcer;
