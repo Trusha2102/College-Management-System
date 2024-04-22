@@ -66,6 +66,7 @@ const permissionProtect = async (
 
     next();
   } catch (err) {
+    console.log('Casbin Error:::::', err);
     next(sendError(res, 500, 'Internal server error'));
   }
 };
