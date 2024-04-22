@@ -4,6 +4,7 @@ import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike } from 'typeorm';
+import { Employee } from '../../entity/Employee';
 
 // Create Designation with Transaction and QueryRunner
 export const createDesignation = async (req: Request, res: Response) => {
@@ -149,13 +150,31 @@ export const deleteDesignationById = async (req: Request, res: Response) => {
       const { id } = req.params;
       const designationRepository =
         queryRunner.manager.getRepository(Designation);
+      const employeeRepository = queryRunner.manager.getRepository(Employee);
+
+      // Check if any employee record references the designation
+      const designationHasEmployees = await employeeRepository.findOne({
+        where: { designation: { id: +id } },
+      });
+
+      if (designationHasEmployees) {
+        sendError(
+          res,
+          400,
+          'Cannot delete designation as it is assigned to employees',
+        );
+        return; // Return to exit the function early
+      }
+
       const designation = await designationRepository.findOne({
         where: { id: +id },
       });
+
       if (!designation) {
         sendError(res, 404, 'Designation not found');
         return; // Ensure to return here to exit the function early
       }
+
       await designationRepository.remove(designation);
 
       sendResponse(res, 200, 'Designation deleted successfully');

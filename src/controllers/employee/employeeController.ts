@@ -118,6 +118,7 @@ export const listEmployees = async (req: Request, res: Response) => {
 
     // // Select role name
     query.addSelect('role.name');
+    query = query.where('employee.is_active = :isActive', { isActive: true });
 
     if (role) {
       const roleId = await AppDataSource.getRepository(Role)
@@ -358,26 +359,24 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         profilePicturePath = req.file.path;
       }
 
+      const errors: string[] = [];
+
       // Mandatory fields
       const mandatoryFields = [
         'first_name',
         'last_name',
         'gender',
         'staffId',
-        'role_id',
-        'designationId',
-        'departmentId',
-        'salary',
-        'deduction',
         'email',
         'password',
         'mobile',
+        'role_id',
+        'designationId',
       ];
 
       for (const field of mandatoryFields) {
         if (!req.body[field]) {
-          sendError(res, 400, `${field} is required and cannot be null`);
-          return;
+          errors.push(`${field} is required and cannot be null`);
         }
       }
 
@@ -389,6 +388,11 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           'Invalid mobile number format',
           'Mobile Number should contain 10 digits',
         );
+        return;
+      }
+
+      if (errors.length > 0) {
+        sendError(res, 400, 'Validation errors', errors.join(', '));
         return;
       }
 
@@ -496,8 +500,6 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
         const bankAccount = new BankAccount();
         Object.assign(bankAccount, {
           ...req.body,
-          pan_number: +req.body.pan_number,
-          ifsc: +req.body.ifsc,
           user: newUser,
           user_id: newUser.id,
           employee: newEmployee,

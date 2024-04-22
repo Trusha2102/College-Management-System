@@ -25,7 +25,6 @@ export const createSemester = async (req: Request, res: Response) => {
         course: { id: courseId },
       },
     });
-    console.log('🚀 ~ createSemester ~ existingSemester:', existingSemester);
 
     if (existingSemester) {
       return sendError(

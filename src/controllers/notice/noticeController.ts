@@ -71,6 +71,31 @@ const createNotice = async (req: Request, res: Response) => {
         return sendError(res, 500, 'Failed to upload attachment');
       }
 
+      const errors: string[] = [];
+
+      const mandatoryFields = [
+        'title',
+        'publishOn',
+        'noticeDate',
+        'message',
+        'messageTo',
+      ];
+
+      for (const field of mandatoryFields) {
+        if (
+          req.body[field] === null ||
+          req.body[field] === undefined ||
+          req.body[field] === ''
+        ) {
+          errors.push(`${field} cannot be null or empty`);
+        }
+      }
+
+      if (errors.length > 0) {
+        sendError(res, 400, 'Validation errors', errors.join(', '));
+        return;
+      }
+
       await runTransaction(queryRunner, async () => {
         const { messageTo } = req.body;
         const attachment = req.file ? req.file.path : undefined;

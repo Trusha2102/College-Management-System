@@ -3,6 +3,7 @@ import runTransaction from '../../utils/runTransaction';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import { FeesType } from '../../entity/FeesType';
+import { FeesGroup } from '../../entity/FeesGroup';
 
 // Create FeesType
 export const createFeesType = async (req: Request, res: Response) => {
@@ -42,14 +43,43 @@ export const updateFeesType = async (req: Request, res: Response) => {
 // Delete FeesType by ID
 export const deleteFeesType = async (req: Request, res: Response) => {
   try {
-    await runTransaction(AppDataSource.createQueryRunner(), async () => {
-      const feesTypeRepository = AppDataSource.getRepository(FeesType);
+    const queryRunner = AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
+      const feesTypeRepository = queryRunner.manager.getRepository(FeesType);
+      const feesGroupRepository = queryRunner.manager.getRepository(FeesGroup);
       const { id } = req.params;
-      const deleteResult = await feesTypeRepository.delete(id);
-      if (deleteResult.affected === 0) {
+
+      // Check if any related fees groups exist
+      const relatedFeesGroups = await feesGroupRepository.find();
+      const hasRelatedFeesGroups = relatedFeesGroups.some((feesGroup) => {
+        try {
+          const feesTypeData = JSON.parse(feesGroup.feesTypeData || '[]');
+          return feesTypeData.some(
+            (feesTypeDataItem: any) => feesTypeDataItem.fees_type_id === +id,
+          );
+        } catch (error) {
+          sendError(res, 400, 'Error parsing feesTypeData', error);
+          return false;
+        }
+      });
+
+      if (hasRelatedFeesGroups) {
+        sendError(
+          res,
+          400,
+          'FeesType cannot be deleted because it has references in FeesGroup',
+        );
+        return;
+      }
+
+      const feesType = await feesTypeRepository.findOne({ where: { id: +id } });
+      if (!feesType) {
         sendError(res, 404, 'FeesType not found');
         return;
       }
+
+      await feesTypeRepository.delete(id);
+
       sendResponse(res, 200, 'FeesType deleted successfully');
     });
   } catch (error: any) {

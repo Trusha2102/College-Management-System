@@ -32,14 +32,6 @@ export class BankAccount {
   @Column({ nullable: true })
   account_no!: string;
 
-  // @ManyToOne(() => Student, (student) => student.bank_details, {
-  //   nullable: true,
-  // })
-  // student!: Student;
-
-  // @Column({ nullable: true, unique: true })
-  // student_id!: number;
-
   @ManyToOne(() => User, (user) => user.bank_details, { nullable: true })
   user!: User;
 

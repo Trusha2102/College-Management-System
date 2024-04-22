@@ -3,6 +3,7 @@ import AppDataSource from '../../data-source';
 import { Module } from '../../entity/Module';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { Permission } from '../../entity/Permission';
 
 const createModule = async (req: Request, res: Response) => {
   try {
@@ -68,6 +69,7 @@ const deleteModuleById = async (req: Request, res: Response) => {
 
     const queryRunner = AppDataSource.createQueryRunner();
     const moduleRepository = queryRunner.manager.getRepository(Module);
+    const permissionRepository = queryRunner.manager.getRepository(Permission);
 
     const module = await moduleRepository.findOne({ where: { id: +id } });
 
@@ -75,6 +77,21 @@ const deleteModuleById = async (req: Request, res: Response) => {
       sendError(res, 404, 'Module Not Found');
       return;
     }
+
+    // Check if any permission record references the module
+    const moduleHasPermissions = await permissionRepository.findOne({
+      where: { moduleId: +id },
+    });
+
+    if (moduleHasPermissions) {
+      sendError(
+        res,
+        400,
+        'Cannot delete module as it is associated with permissions',
+      );
+      return;
+    }
+
     await runTransaction(queryRunner, async () => {
       await moduleRepository.delete(id);
 

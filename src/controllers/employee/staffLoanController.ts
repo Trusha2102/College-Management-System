@@ -4,11 +4,22 @@ import { StaffLoan } from '../../entity/StaffLoan';
 import runTransaction from '../../utils/runTransaction';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import { Installment } from '../../entity/Installment';
+import { Employee } from '../../entity/Employee';
 
 // Create StaffLoan and Installment
 export const createStaffLoan = async (req: Request, res: Response) => {
   try {
     const queryRunner = AppDataSource.createQueryRunner();
+
+    const employeeRepository = queryRunner.manager.getRepository(Employee);
+    const employee = await employeeRepository.findOne({
+      where: { id: +req.body.employee_id },
+    });
+    if (!employee) {
+      sendError(res, 404, 'Employee not found');
+      return;
+    }
+
     await runTransaction(queryRunner, async () => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
       const newStaffLoan = staffLoanRepository.create({
@@ -146,13 +157,33 @@ export const deleteStaffLoanById = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
+      const installmentRepository =
+        queryRunner.manager.getRepository(Installment);
+
+      // Check if the staffLoanId exists in the Installment table
+      const installmentWithStaffLoan = await installmentRepository.findOne({
+        where: { staff_loan: { id: +id } },
+      });
+
+      if (installmentWithStaffLoan) {
+        sendError(
+          res,
+          400,
+          'Cannot delete StaffLoan because it has associated Installments',
+        );
+        return;
+      }
+
+      // If not found, proceed with deleting the StaffLoan
       const staffLoanToDelete = await staffLoanRepository.findOne({
         where: { id: +id },
       });
+
       if (!staffLoanToDelete) {
         sendError(res, 404, 'StaffLoan not found');
         return;
       }
+
       await staffLoanRepository.remove(staffLoanToDelete);
       sendResponse(res, 200, 'StaffLoan deleted successfully');
     });

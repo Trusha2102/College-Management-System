@@ -4,6 +4,7 @@ import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike } from 'typeorm';
+import { Employee } from '../../entity/Employee';
 
 //Create Department
 export const createDepartment = async (req: Request, res: Response) => {
@@ -142,7 +143,6 @@ export const updateDepartment = async (req: Request, res: Response) => {
 };
 
 export const deleteDepartmentById = async (req: Request, res: Response) => {
-  console.log('THE DEPARTMENT DELETE API WAS CALLED');
   const { id } = req.params;
   const queryRunner = AppDataSource.createQueryRunner();
 
@@ -150,6 +150,22 @@ export const deleteDepartmentById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const departmentRepository =
         queryRunner.manager.getRepository(Department);
+      const employeeRepository = queryRunner.manager.getRepository(Employee);
+
+      // Check if any employee record references the department
+      const departmentHasEmployees = await employeeRepository.findOne({
+        where: { department: { id: +id } },
+      });
+
+      if (departmentHasEmployees) {
+        sendError(
+          res,
+          400,
+          'Cannot delete department as it has associated employees',
+        );
+        return;
+      }
+
       const department = await departmentRepository.findOne({
         where: { id: +id },
       });

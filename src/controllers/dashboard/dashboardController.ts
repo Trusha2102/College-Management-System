@@ -23,13 +23,13 @@ const getRecordsCount = async (req: Request, res: Response) => {
       where: { name: 'teacher' },
     });
 
-    const staffRole = await roleRepository.findOne({
+    const staffRoles = await roleRepository.find({
       where: {
-        name: Not(In(['student', 'teacher'])),
+        name: Not(In(['teacher'])),
       },
     });
 
-    if (!teacherRole || !staffRole) {
+    if (!teacherRole || !staffRoles) {
       return sendError(res, 500, 'Role not found');
     }
 
@@ -37,14 +37,18 @@ const getRecordsCount = async (req: Request, res: Response) => {
       where: { role_id: teacherRole.id, is_active: true },
     });
 
-    const staffUsersCount = await userRepository.count({
-      where: { role_id: staffRole.id, is_active: true },
-    });
+    let totalStaffUsersCount = 0;
+    for (const staffRole of staffRoles) {
+      const staffUsersCount = await userRepository.count({
+        where: { role_id: staffRole.id, is_active: true },
+      });
+      totalStaffUsersCount += staffUsersCount;
+    }
 
     return sendResponse(res, 200, 'Records count fetched successfully', {
       activeStudentsCount,
       teacherUsersCount,
-      staffUsersCount,
+      totalStaffUsersCount,
     });
   } catch (error) {
     console.error(error);
