@@ -31,6 +31,7 @@ const permissionProtect = async (
     if (!decoded || !decoded?.user) {
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }
+    console.log(decoded.user.role_id, 'This is user role id');
     const roleRepository = AppDataSource.getRepository(Role);
     const role = await roleRepository.findOne({
       where: { id: decoded.user.role_id },
@@ -38,12 +39,9 @@ const permissionProtect = async (
     if (!role) {
       return next(sendError(res, 401, 'Not authorized to access this route'));
     }
-    const casbin = await casbinService.getEnforcer();
 
     const parts = req.baseUrl.split('/');
-    console.log('🚀 ~ parts:', parts);
     const module = parts[parts.length - 1];
-    console.log('🚀 ~ module:', module);
 
     // Parse the req.url for action keywords
     let action = '';
@@ -57,8 +55,8 @@ const permissionProtect = async (
       action = 'read';
     }
 
-    console.log('🚀 ~ action:', action);
-
+    console.log(role.name, module, action);
+    const casbin = await casbinService.getEnforcer();
     const status = await casbin.enforce(role.name, module, action);
     console.log('🚀 ~ status:', status);
     if (!status) {
