@@ -24,7 +24,7 @@ export class Session {
   @OneToMany(() => Course, (course) => course.session)
   courses!: Course[];
 
-  @OneToMany(() => Student, (student) => student.student_session)
+  @OneToMany(() => Student, (student) => student.session)
   students!: Student[];
 
   @CreateDateColumn({

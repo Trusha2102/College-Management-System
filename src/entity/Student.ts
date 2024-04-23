@@ -33,11 +33,15 @@ export class Student {
   @Column({ default: true })
   is_active!: boolean;
 
+  // @ManyToOne(() => Session, (session) => session.students)
+  // student_session!: Session;
+
   @ManyToOne(() => Session, (session) => session.students)
-  student_session!: Session;
+  @JoinColumn({ name: 'session_id' })
+  session!: Session;
 
   @Column()
-  student_session_id!: number;
+  session_id!: number;
 
   @Column()
   roll_no!: number;

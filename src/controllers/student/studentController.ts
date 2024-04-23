@@ -177,7 +177,6 @@ const createStudent = async (req: Request, res: Response) => {
           semester: semester,
           session: session,
           section: section,
-          studentSessionId: session.id,
         });
 
         await studentRepository.save(student);
@@ -239,7 +238,7 @@ const listStudents = async (req: Request, res: Response) => {
     let query = studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.section', 'section')
-      .leftJoinAndSelect('student.student_session', 'student_session')
+      .leftJoinAndSelect('student.session', 'session')
       .leftJoinAndSelect('student.course', 'course')
       .leftJoinAndSelect('student.parent_details', 'parent_details')
       .leftJoinAndSelect('student.semester', 'semester');
@@ -258,9 +257,9 @@ const listStudents = async (req: Request, res: Response) => {
 
     if (session_id) {
       query = query.andWhere(
-        'CAST(student.student_session_id AS TEXT) LIKE :student_session_id',
+        'CAST(student.session_id AS TEXT) LIKE :session_id',
         {
-          student_session_id: `%${session_id}%`,
+          session_id: `%${session_id}%`,
         },
       );
     }
@@ -314,7 +313,7 @@ const getStudentById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const student = await AppDataSource.getRepository(Student).findOne({
       where: { id: +id },
-      relations: ['parent_details', 'course', 'semester', 'section'],
+      relations: ['parent_details', 'course', 'semester', 'section', 'session'],
     });
     if (!student) {
       return sendError(res, 404, 'Student not found');
@@ -337,7 +336,8 @@ const updateStudentById = async (req: Request, res: Response) => {
         return sendError(res, 500, 'Failed to upload files', err.message);
       }
       const { id } = req.params;
-      const { body, files } = req;
+      const { body, files }: { body: any; files?: any } = req;
+
       // Process other_docs files
       //@ts-ignore
       const otherDocsFiles = files?.other_docs || [];
@@ -404,24 +404,26 @@ const updateStudentById = async (req: Request, res: Response) => {
           }
         }
 
+        let sessionExists;
         if (req.body.session_id) {
-          const sessionExists = await sessionRepository.findOne({
-            where: { id: req.body.session_id },
+          sessionExists = await sessionRepository.findOne({
+            where: { id: +req.body.session_id },
           });
 
           if (!sessionExists) {
             sendError(res, 400, 'Academic session does not exists');
+            return;
           }
         }
 
         // Merge the updated data with existing data
         const updatedData: any = {
           ...req.body,
-          studentSessionId: req.body?.session_id,
+          studentSessionId: +req.body?.session_id,
+          session_id: +req.body?.session_id,
+          session: sessionExists,
           profile_picture:
-            (files as { [fieldname: string]: Express.Multer.File[] })[
-              'profile_picture'
-            ]?.[0]?.path || student.profile_picture,
+            files?.profile_picture || student.profile_picture || [],
           other_docs: otherDocsString || student.other_docs,
         };
 
