@@ -338,12 +338,9 @@ const updateStudentById = async (req: Request, res: Response) => {
       }
       const { id } = req.params;
       const { body, files } = req;
-
       // Process other_docs files
-      const otherDocsFiles =
-        (files as { [fieldname: string]: Express.Multer.File[] })[
-          'other_docs'
-        ] || [];
+      //@ts-ignore
+      const otherDocsFiles = files?.other_docs || [];
       const otherDocs = otherDocsFiles.map((file: any) => ({
         name: file.originalname,
         path: file.path,

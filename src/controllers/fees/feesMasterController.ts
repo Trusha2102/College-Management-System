@@ -6,6 +6,7 @@ import AppDataSource from '../../data-source';
 import { Student } from '../../entity/Student';
 import { FeesGroup } from '../../entity/FeesGroup';
 import { FeesPayment } from '../../entity/FeesPayment';
+import { BankPayment } from '../../entity/BankPayment';
 
 export const feesAllocation = async (req: Request, res: Response) => {
   try {
@@ -158,7 +159,6 @@ export const collectFees = async (req: Request, res: Response) => {
       amount,
       discount_id,
       discount_amount,
-      fine_type_id,
       fine_amount,
       payment_mode,
     } = req.body;
@@ -173,6 +173,8 @@ export const collectFees = async (req: Request, res: Response) => {
         queryRunner.manager.getRepository(FeesMaster);
       const feesPaymentRepository =
         queryRunner.manager.getRepository(FeesPayment);
+      const bankPaymentRepository =
+        queryRunner.manager.getRepository(BankPayment);
 
       const student = await studentRepository.findOne({
         where: { id: student_id },
@@ -190,8 +192,13 @@ export const collectFees = async (req: Request, res: Response) => {
         return;
       }
 
-      feesMaster.net_amount -= discount_amount;
-      feesMaster.net_amount += fine_amount;
+      if (discount_amount) {
+        feesMaster.net_amount -= discount_amount;
+      }
+
+      if (fine_amount) {
+        feesMaster.net_amount += fine_amount;
+      }
 
       const feesPayment = new FeesPayment();
       feesPayment.payment_id = (Math.random() + 1).toString(36).substring(7);
@@ -203,30 +210,35 @@ export const collectFees = async (req: Request, res: Response) => {
       feesPayment.payment_from = student_id;
       feesPayment.payment_mode = payment_mode;
 
-      // Save the FeesPayment record
       await feesPaymentRepository.save(feesPayment);
 
-      // Update feesMaster record
-      feesMaster.discount_id = discount_id;
-      feesMaster.discount_amount = discount_amount;
-      feesMaster.fineTypeId = fine_type_id;
-      feesMaster.fine_amount = fine_amount;
+      if (payment_mode === 'Bank Transfer') {
+        const bankPayment = new BankPayment();
+        bankPayment.feesPayment = feesPayment;
+        bankPayment.status_date = dos;
+
+        await bankPaymentRepository.save(bankPayment);
+      }
+
+      feesMaster.discount_id = discount_id || null;
+      feesMaster.discount_amount = discount_amount || null;
+      // feesMaster.fineTypeId = fine_type_id ;
+      feesMaster.fine_amount = fine_amount || null;
       feesMaster.paid_amount += amount;
       feesMaster.status =
         feesMaster.paid_amount < feesMaster.net_amount
           ? 'Partially Paid'
           : 'Paid';
 
-      // Save the updated feesMaster record
       await feesMasterRepository.save(feesMaster);
-    });
 
-    // Send success response
-    return sendResponse(res, 200, 'Fees collected successfully');
+      sendResponse(res, 200, 'Fees collected successfully');
+    });
   } catch (error: any) {
     console.error('Error collecting fees:', error);
-    // Send error response
-    return sendError(res, 500, 'Failed to collect fees', error.message);
+    if (!res.headersSent) {
+      sendError(res, 500, 'Failed to collect fees', error.message);
+    }
   }
 };
 

@@ -138,23 +138,19 @@ export const deleteFeesGroupById = async (req: Request, res: Response) => {
       const feesMasterRepository =
         queryRunner.manager.getRepository(FeesMaster);
 
-      const { id } = req.body;
+      const { id } = req.params;
 
-      // Check if the FeesGroup exists
-      const feesGroup = await feesGroupRepository.findOne({ where: { id } });
+      const feesGroup = await feesGroupRepository.findOne({
+        where: { id: +id },
+      });
       if (!feesGroup) {
         sendResponse(res, 404, 'Fees Group not found');
         return;
       }
 
-      // Check if the FeesGroup's id is present in any FeesMaster's fees_group_ids
       const feesMastersWithFeesGroup = await feesMasterRepository.find({
-        where: { fees_group_id: id },
+        where: { fees_group_id: +id },
       });
-      console.log(
-        '🚀 ~ awaitrunTransaction ~ feesMastersWithFeesGroup:',
-        feesMastersWithFeesGroup,
-      );
 
       if (feesMastersWithFeesGroup.length > 0) {
         sendError(
@@ -165,7 +161,6 @@ export const deleteFeesGroupById = async (req: Request, res: Response) => {
         return;
       }
 
-      // Remove the FeesGroup
       await feesGroupRepository.remove(feesGroup);
       sendResponse(res, 200, 'Fees Group deleted successfully');
     });

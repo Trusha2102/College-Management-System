@@ -18,7 +18,6 @@ import incomeHeadRoutes from './income_expense/incomeHeadRoutes';
 import incomeRoutes from './income_expense/incomeRoutes';
 import expenseHeadRoutes from './income_expense/expenseHeadRoutes';
 import expenseRoutes from './income_expense/expenseRoutes';
-// import addressRoutes from './student/addressRoutes';
 import parentDetailsRoutes from './student/parentsDetailsRoutes';
 import resultRoutes from './student/resultRoutes';
 import payrollRoutes from './employee/payrollRoutes';
@@ -31,6 +30,8 @@ import discountRoutes from './student/discountRoutes';
 import feesMasterRoutes from './fees/feesMasterRoutes';
 import feesPaymentRoutes from './fees/feesPaymentRoutes';
 import communicationRoutes from './communication/sendSmsRoutes';
+import fineRoutes from './fees/fineRoutes';
+import bankPaymentRoutes from './fees/bankPaymentRoutes';
 
 const router = express.Router();
 
@@ -53,7 +54,6 @@ router.use('/income-head', incomeHeadRoutes);
 router.use('/income', incomeRoutes);
 router.use('/expense-head', expenseHeadRoutes);
 router.use('/expense', expenseRoutes);
-// router.use('/address', addressRoutes);
 router.use('/parents-details', parentDetailsRoutes);
 router.use('/result', resultRoutes);
 router.use('/payroll', payrollRoutes);
@@ -66,5 +66,7 @@ router.use('/discount', discountRoutes);
 router.use('/fees-master', feesMasterRoutes);
 router.use('/payment', feesPaymentRoutes);
 router.use('/communication', communicationRoutes);
+router.use('/fine', fineRoutes);
+router.use('/bank-payment', bankPaymentRoutes);
 
 export default router;

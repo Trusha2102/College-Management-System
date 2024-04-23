@@ -6,14 +6,24 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { FeesPayment } from './FeesPayment';
 
 @Entity()
-export class Fine {
+export class BankPayment {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column()
-  fine_type!: string;
+  @ManyToOne(() => FeesPayment, { eager: true })
+  feesPayment!: FeesPayment;
+
+  @Column({ default: 'Pending' })
+  status!: string;
+
+  @Column({ nullable: true })
+  status_date!: Date;
+
+  @Column({ type: 'text', nullable: true })
+  comment!: string;
 
   @CreateDateColumn({
     name: 'created_at',

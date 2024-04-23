@@ -31,6 +31,7 @@ import { Installment } from './Installment';
 import { FeesGroup } from './FeesGroup';
 import { Fine } from './Fine';
 import { Discount } from './Discount';
+import { BankPayment } from './BankPayment';
 
 const Entities = [
   User,
@@ -39,7 +40,6 @@ const Entities = [
   Role,
   Permission,
   Module,
-  // Address,
   Student,
   Session,
   Course,
@@ -66,6 +66,7 @@ const Entities = [
   FeesGroup,
   Fine,
   Discount,
+  BankPayment,
 ];
 
 export default Entities;
