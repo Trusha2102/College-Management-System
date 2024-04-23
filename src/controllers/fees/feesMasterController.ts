@@ -222,7 +222,6 @@ export const collectFees = async (req: Request, res: Response) => {
 
       feesMaster.discount_id = discount_id || null;
       feesMaster.discount_amount = discount_amount || null;
-      // feesMaster.fineTypeId = fine_type_id ;
       feesMaster.fine_amount = fine_amount || null;
       feesMaster.paid_amount += amount;
       feesMaster.status =

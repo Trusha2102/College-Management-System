@@ -11,6 +11,7 @@ import { Course } from '../../entity/Course';
 import { StudentHistory } from '../../entity/StudentHistory';
 import { ParentDetails } from '../../entity/ParentDetails';
 import { Section } from '../../entity/Section';
+import { FeesMaster } from '../../entity/FeesMaster';
 
 const upload = configureMulter('./uploads/Student', 200 * 1024 * 1024); // 200MB limit
 
@@ -53,20 +54,19 @@ const createStudent = async (req: Request, res: Response) => {
         );
       }
 
-      const otherDocsFiles =
-        (files as { [fieldname: string]: Express.Multer.File[] })[
-          'other_docs'
-        ] || [];
-      const otherDocs = otherDocsFiles.map((file) => ({
+      //@ts-ignore
+      const otherDocsFiles = files?.other_docs || [];
+      const otherDocs = otherDocsFiles.map((file: any) => ({
         name: file.originalname,
         path: file.path,
       }));
       const otherDocsJsonString = JSON.stringify(otherDocs);
-      // let student: Student;
-      // let parentDetails: ParentDetails;
+
       let student;
       let parentDetails;
       let newStudent;
+      let newFeesMaster;
+
       const queryRunner = AppDataSource.createQueryRunner();
       await runTransaction(queryRunner, async () => {
         const studentRepository = queryRunner.manager.getRepository(Student);
@@ -78,6 +78,8 @@ const createStudent = async (req: Request, res: Response) => {
         const sectionRepository = queryRunner.manager.getRepository(Section);
         const parentDetailsRepository =
           queryRunner.manager.getRepository(ParentDetails);
+        const feesMasterRepository =
+          queryRunner.manager.getRepository(FeesMaster);
 
         const existingStudent = await studentRepository.findOne({
           where: { email: body.email },
@@ -167,10 +169,8 @@ const createStudent = async (req: Request, res: Response) => {
 
         student = studentRepository.create({
           ...body,
-          profile_picture:
-            (files as { [fieldname: string]: Express.Multer.File[] })[
-              'profile_picture'
-            ]?.[0]?.path || '',
+          //@ts-ignore
+          profile_picture: files?.profile_picture || '',
           other_docs: otherDocsJsonString,
           is_active: true,
           course: course,
@@ -203,6 +203,10 @@ const createStudent = async (req: Request, res: Response) => {
           });
           await studentHistoryRepository.save(studentHistory);
         }
+
+        // await feesMasterRepository.create({
+        //   // student: newStudent,
+        // })
       });
 
       if (!errorOccurred) {
