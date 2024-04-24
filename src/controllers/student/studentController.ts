@@ -207,9 +207,9 @@ const createStudent = async (req: Request, res: Response) => {
           await studentHistoryRepository.save(studentHistory);
         }
 
-        const feesGroup = await feesGroupRepository.findOne(
-          req.body.fees_group_id,
-        );
+        const feesGroup = await feesGroupRepository.findOne({
+          where: { id: req.body.fees_group_id },
+        });
         if (!feesGroup) {
           sendError(res, 400, 'Fees group not found');
           errorOccurred = true;
@@ -217,31 +217,34 @@ const createStudent = async (req: Request, res: Response) => {
         }
 
         let netAmount = 0;
-        // try {
-        //   const feesTypeData = JSON.parse(feesGroup.feesTypeData);
-        //   if (Array.isArray(feesTypeData)) {
-        //     feesTypeData.forEach((fee: any) => {
-        //       if (fee.amount) {
-        //         netAmount += fee.amount;
-        //       }
-        //     });
-        //   }
-        // } catch (error) {
-        //   console.error('Error parsing fees type data:', error);
-        //   sendError(res, 500, 'Failed to parse fees type data');
-        //   errorOccurred = true;
-        //   return;
-        // }
+        try {
+          const feesTypeData = feesGroup.feesTypeData
+            ? JSON.parse(feesGroup.feesTypeData)
+            : null;
+          if (Array.isArray(feesTypeData)) {
+            feesTypeData.forEach((fee: any) => {
+              if (fee.amount) {
+                netAmount += fee.amount;
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing fees type data:', error);
+          sendError(res, 500, 'Failed to parse fees type data');
+          errorOccurred = true;
+          return;
+        }
 
-        // newFeesMaster = feesMasterRepository.create({
-        //   // student: newStudent,
-        //   student_id: newStudent?.id,
-        //   fees_group_id: req.body.fees_group_id,
-        //   feesGroups: feesGroup,
-        //   net_amount: netAmount,
-        // });
+        newFeesMaster = feesMasterRepository.create({
+          //@ts-ignore
+          student: newStudent,
+          student_id: newStudent?.id,
+          fees_group_id: req.body.fees_group_id,
+          feesGroups: feesGroup,
+          net_amount: netAmount,
+        });
 
-        // await feesMasterRepository.save(newFeesMaster);
+        await feesMasterRepository.save(newFeesMaster);
       });
 
       if (!errorOccurred) {
