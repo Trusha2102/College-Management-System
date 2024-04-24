@@ -80,9 +80,13 @@ export const viewBankPaymentById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const bankPaymentRepository = AppDataSource.getRepository(BankPayment);
 
-    // Find the BankPayment record by ID
     const bankPayment = await bankPaymentRepository.findOne({
       where: { id: +id },
+      relations: [
+        'feesPayment',
+        'feesPayment.student',
+        'feesPayment.feesMaster',
+      ],
     });
 
     if (!bankPayment) {

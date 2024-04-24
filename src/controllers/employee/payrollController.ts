@@ -105,6 +105,7 @@ export const createPayroll = async (req: Request, res: Response) => {
         installment_amount: deduction,
         status: 'Pending',
         action_by: 0,
+        type: 'Deduction',
       });
       await staffLoanRepository.save(newStaffLoan);
 
@@ -219,5 +220,65 @@ export const deletePayrollById = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to delete payroll', error.message);
+  }
+};
+
+// Get all the Staff Deduction History
+export const staffDeduction = async (req: Request, res: Response) => {
+  try {
+    const { search, role, page, limit } = req.query;
+
+    const staffLoanRepository = AppDataSource.getRepository(StaffLoan);
+    const queryBuilder = staffLoanRepository.createQueryBuilder('staffLoan');
+
+    queryBuilder.andWhere('staffLoan.type = :type', { type: 'Deduction' });
+
+    queryBuilder
+      .leftJoinAndSelect('staffLoan.employee', 'employee')
+      .leftJoinAndSelect('employee.user', 'user')
+      .leftJoinAndSelect('employee.designation', 'designation')
+      .leftJoinAndSelect('user.role', 'employeeRole');
+
+    if (search) {
+      queryBuilder.andWhere((qb) => {
+        qb.where('employee.staff_id ILIKE :search', { search: `%${search}%` })
+          .orWhere('user.first_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('user.last_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('user.father_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('designation.designation ILIKE :search', {
+            search: `%${search}%`,
+          });
+      });
+    }
+
+    if (role) {
+      queryBuilder.andWhere('employeeRole.name ILIKE :role', {
+        role: `%${role}%`,
+      });
+    }
+
+    const totalCount = await queryBuilder.getCount();
+
+    let deductions: StaffLoan[];
+
+    if (page && limit) {
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      deductions = await queryBuilder.skip(skip).take(limitNumber).getMany();
+    } else {
+      deductions = await queryBuilder.getMany();
+    }
+
+    const totalNoOfRecords = deductions.length;
+
+    sendResponse(res, 200, 'Deductions fetched successfully', {
+      deductions,
+      totalCount,
+      totalNoOfRecords,
+    });
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to fetch deductions', error.message);
   }
 };

@@ -12,7 +12,7 @@ router.get('/list', userController.getAllUsers);
 //   userController.getAllDeletedUsers,
 // );
 router.get('/view/:id', permissionProtect, userController.getUserById);
-router.put('/update/:id', userController.updateUserById);
+router.put('/update/:id', permissionProtect, userController.updateUserById);
 router.delete('/delete/:id', permissionProtect, userController.deleteUserById);
 
 export default router;

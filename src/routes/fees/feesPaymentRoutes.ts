@@ -16,6 +16,11 @@ router.get(
   permissionProtect,
   feesPaymentController.getFeesPaymentByPaymentId,
 );
-// router.get('/list', permissionProtect, feesTypeController.getAllFeesTypes);
+
+router.get(
+  '/list',
+  permissionProtect,
+  feesPaymentController.getPaymentByStudentId,
+);
 
 export default router;

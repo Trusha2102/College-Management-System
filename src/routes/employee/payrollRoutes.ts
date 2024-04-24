@@ -17,5 +17,10 @@ router.delete(
   permissionProtect,
   payrollController.deletePayrollById,
 );
+router.get(
+  '/staff-deduction/list',
+  permissionProtect,
+  payrollController.staffDeduction,
+);
 
 export default router;

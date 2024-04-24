@@ -199,9 +199,9 @@ const updateUserById = async (req: Request, res: Response) => {
 
       const marital_status = userData.marital_status === 'true';
       const parsedSocialMediaLinks = social_media_links.split(',');
-      const parsedAddressId = address_id === 'null' ? null : +address_id;
-      const parsedBankAccountId =
-        bank_details_id === 'null' ? null : +bank_details_id;
+      // const parsedAddressId = address_id === 'null' ? null : +address_id;
+      // const parsedBankAccountId =
+      //   bank_details_id === 'null' ? null : +bank_details_id;
 
       const user = await AppDataSource.manager.findOne(User, {
         where: { id: +userId },
@@ -225,23 +225,19 @@ const updateUserById = async (req: Request, res: Response) => {
       user.role_id = role_id;
       user.mobile = userData.mobile || user.mobile;
       user.dob = new Date(userData.dob) || user.dob;
-      // Only update profile_picture if a new file is uploaded
       if (req.file) {
         user.profile_picture = req.file.path;
       }
       user.social_media_links =
         parsedSocialMediaLinks || user.social_media_links;
-      user.address_id = parsedAddressId || user.address_id;
-      user.bank_details_id = parsedBankAccountId || user.bank_details_id;
 
       const queryRunner = AppDataSource.createQueryRunner();
       await runTransaction(queryRunner, async () => {
         await queryRunner.manager.save(user);
       });
 
-      sendResponse(res, 200, 'User', {
+      sendResponse(res, 200, 'User updated successfully', {
         user,
-        message: 'User updated successfully',
       });
     });
   } catch (error) {

@@ -207,44 +207,53 @@ const createStudent = async (req: Request, res: Response) => {
           await studentHistoryRepository.save(studentHistory);
         }
 
-        const feesGroup = await feesGroupRepository.findOne({
-          where: { id: req.body.fees_group_id },
-        });
-        if (!feesGroup) {
-          sendError(res, 400, 'Fees group not found');
-          errorOccurred = true;
-          return;
-        }
+        // Handling multiple fees_group_id
+        const feesGroupIds = Array.isArray(req.body.fees_group_id)
+          ? req.body.fees_group_id
+          : req.body.fees_group_id
+              .split(',')
+              .map((id: string) => parseInt(id.trim(), 10));
 
-        let netAmount = 0;
-        try {
-          const feesTypeData = feesGroup.feesTypeData
-            ? JSON.parse(feesGroup.feesTypeData)
-            : null;
-          if (Array.isArray(feesTypeData)) {
-            feesTypeData.forEach((fee: any) => {
-              if (fee.amount) {
-                netAmount += fee.amount;
-              }
-            });
+        for (const feesGroupId of feesGroupIds) {
+          const feesGroup = await feesGroupRepository.findOne({
+            where: { id: feesGroupId },
+          });
+          if (!feesGroup) {
+            sendError(res, 400, `Fees group with ID ${feesGroupId} not found`);
+            errorOccurred = true;
+            return;
           }
-        } catch (error) {
-          console.error('Error parsing fees type data:', error);
-          sendError(res, 500, 'Failed to parse fees type data');
-          errorOccurred = true;
-          return;
+
+          let netAmount = 0;
+          try {
+            const feesTypeData = feesGroup.feesTypeData
+              ? JSON.parse(feesGroup.feesTypeData)
+              : null;
+            if (Array.isArray(feesTypeData)) {
+              feesTypeData.forEach((fee: any) => {
+                if (fee.amount) {
+                  netAmount += fee.amount;
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Error parsing fees type data:', error);
+            sendError(res, 500, 'Failed to parse fees type data');
+            errorOccurred = true;
+            return;
+          }
+
+          newFeesMaster = feesMasterRepository.create({
+            //@ts-ignore
+            student: newStudent,
+            student_id: newStudent?.id,
+            fees_group_id: feesGroupId,
+            feesGroups: feesGroup,
+            net_amount: netAmount,
+          });
+
+          await feesMasterRepository.save(newFeesMaster);
         }
-
-        newFeesMaster = feesMasterRepository.create({
-          //@ts-ignore
-          student: newStudent,
-          student_id: newStudent?.id,
-          fees_group_id: req.body.fees_group_id,
-          feesGroups: feesGroup,
-          net_amount: netAmount,
-        });
-
-        await feesMasterRepository.save(newFeesMaster);
       });
 
       if (!errorOccurred) {
@@ -283,6 +292,7 @@ const listStudents = async (req: Request, res: Response) => {
       .leftJoinAndSelect('student.session', 'session')
       .leftJoinAndSelect('student.course', 'course')
       .leftJoinAndSelect('student.parent_details', 'parent_details')
+      .leftJoinAndSelect('student.feesMaster', 'feesMaster')
       .leftJoinAndSelect('student.semester', 'semester');
 
     query = query.andWhere('student.is_active = true');
@@ -355,7 +365,14 @@ const getStudentById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const student = await AppDataSource.getRepository(Student).findOne({
       where: { id: +id },
-      relations: ['parent_details', 'course', 'semester', 'section', 'session'],
+      relations: [
+        'parent_details',
+        'course',
+        'semester',
+        'section',
+        'session',
+        'feesMaster',
+      ],
     });
     if (!student) {
       return sendError(res, 404, 'Student not found');
@@ -380,7 +397,6 @@ const updateStudentById = async (req: Request, res: Response) => {
       const { id } = req.params;
       const { body, files }: { body: any; files?: any } = req;
 
-      // Process other_docs files
       //@ts-ignore
       const otherDocsFiles = files?.other_docs || [];
       const otherDocs = otherDocsFiles.map((file: any) => ({
@@ -388,7 +404,6 @@ const updateStudentById = async (req: Request, res: Response) => {
         path: file.path,
       }));
 
-      // Convert otherDocs to JSON string
       const otherDocsString = JSON.stringify(otherDocs);
 
       const queryRunner = AppDataSource.createQueryRunner();
@@ -398,6 +413,10 @@ const updateStudentById = async (req: Request, res: Response) => {
       await runTransaction(queryRunner, async () => {
         const studentRepository = queryRunner.manager.getRepository(Student);
         const sessionRepository = queryRunner.manager.getRepository(Session);
+        const feesMasterRepository =
+          queryRunner.manager.getRepository(FeesMaster);
+        const feesGroupRepository =
+          queryRunner.manager.getRepository(FeesGroup);
         const parentDetailsRepository =
           queryRunner.manager.getRepository(ParentDetails);
         const student = await studentRepository.findOne({
@@ -458,7 +477,6 @@ const updateStudentById = async (req: Request, res: Response) => {
           }
         }
 
-        // Merge the updated data with existing data
         const updatedData: any = {
           ...req.body,
           studentSessionId: +req.body?.session_id,
@@ -469,7 +487,6 @@ const updateStudentById = async (req: Request, res: Response) => {
           other_docs: otherDocsString || student.other_docs,
         };
 
-        // Merge the updated data with existing data
         studentRepository.merge(student, updatedData);
 
         updatedStudent = await studentRepository.save(student);
@@ -479,10 +496,94 @@ const updateStudentById = async (req: Request, res: Response) => {
           parentDetailsRepository.merge(parentDetails, body);
           await parentDetailsRepository.save(parentDetails);
         }
+
+        // Handling fees_group_id update
+        const feesGroupIdsToUpdate = Array.isArray(req.body.fees_group_id)
+          ? req.body.fees_group_id
+          : req.body.fees_group_id
+              .split(',')
+              .map((id: string) => parseInt(id.trim(), 10));
+
+        if (feesGroupIdsToUpdate.length > 0) {
+          const existingFeesMaster = await feesMasterRepository.find({
+            where: { student_id: updatedStudent.id },
+          });
+
+          const existingFeesGroupIds = existingFeesMaster.map(
+            (feesMaster) => feesMaster.fees_group_id,
+          );
+
+          // Delete records where fees_group_id is not in the update list
+          const feesGroupIdsToDelete = existingFeesGroupIds.filter(
+            (feesGroupId) => !feesGroupIdsToUpdate.includes(feesGroupId),
+          );
+
+          if (feesGroupIdsToDelete.length > 0) {
+            // Create an array to store promises for each delete operation
+            const deletePromises = feesGroupIdsToDelete.map(
+              async (feesGroupId) => {
+                const deleted = await feesMasterRepository
+                  .createQueryBuilder()
+                  .delete()
+                  .from(FeesMaster)
+                  .where('student_id = :studentId', { studentId: id })
+                  .andWhere('fees_group_id = :feesGroupId', { feesGroupId })
+                  .execute();
+                return deleted;
+              },
+            );
+
+            // Execute all delete operations asynchronously
+            await Promise.all(deletePromises);
+          }
+
+          for (const feesGroupId of feesGroupIdsToUpdate) {
+            if (!existingFeesGroupIds.includes(feesGroupId)) {
+              const feesGroup = await feesGroupRepository.findOne({
+                where: { id: feesGroupId },
+              });
+
+              if (!feesGroup) {
+                sendError(
+                  res,
+                  404,
+                  `Fees group with ID ${feesGroupId} not found`,
+                );
+                return;
+              }
+
+              let netAmount = 0;
+              try {
+                const feesTypeData = feesGroup.feesTypeData
+                  ? JSON.parse(feesGroup.feesTypeData)
+                  : null;
+                if (Array.isArray(feesTypeData)) {
+                  feesTypeData.forEach((fee: any) => {
+                    if (fee.amount) {
+                      netAmount += fee.amount;
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('Error parsing fees type data:', error);
+                sendError(res, 500, 'Failed to parse fees type data');
+                return;
+              }
+
+              const newFeesMaster = feesMasterRepository.create({
+                student: updatedStudent,
+                student_id: updatedStudent.id,
+                fees_group_id: feesGroupId,
+                net_amount: netAmount,
+              });
+
+              await feesMasterRepository.save(newFeesMaster);
+            }
+          }
+        }
       });
 
       if (updatedStudent) {
-        // Include parent details in the response
         const responseStudent = {
           ...updatedStudent,
           parent_details: updatedStudent.parent_details,

@@ -141,7 +141,22 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
         .json({ error: 'No records found for the specified student ID' });
     }
 
-    return res.status(200).json({ feesMasters });
+    const feesMastersWithFineAmounts = feesMasters.map((feesMaster) => {
+      const fineAmounts = feesMaster.feesGroups.flatMap((feesGroup) => {
+        const currentDate = new Date();
+        const dueDate = new Date(feesGroup.due_date);
+        if (dueDate <= currentDate && feesGroup.feesTypeData) {
+          const feesTypeData = JSON.parse(feesGroup.feesTypeData);
+          return feesTypeData
+            .filter((item: any) => new Date(item.due_date) <= currentDate)
+            .map((item: any) => item.fine_amount);
+        }
+        return [];
+      });
+      return { feesMaster, fineAmounts };
+    });
+
+    return res.status(200).json({ feesMastersWithFineAmounts });
   } catch (error) {
     console.error('Error fetching fees master records:', error);
     return res

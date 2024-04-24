@@ -115,8 +115,21 @@ export const updateFeesGroupById = async (req: Request, res: Response) => {
         sendResponse(res, 404, 'Fees Group not found');
         return;
       }
+
       feesGroupRepository.merge(feesGroup, req.body);
+
+      if ('feesTypeData' in req.body) {
+        const feesTypeData = req.body.feesTypeData;
+
+        if (!Array.isArray(feesTypeData)) {
+          throw new Error('feesTypeData should be an array');
+        }
+
+        feesGroup.feesTypeData = JSON.stringify(feesTypeData);
+      }
+
       const updatedFeesGroup = await feesGroupRepository.save(feesGroup);
+
       sendResponse(
         res,
         200,

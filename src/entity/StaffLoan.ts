@@ -32,6 +32,9 @@ export class StaffLoan {
   status!: String;
 
   @Column({ nullable: true })
+  type!: string;
+
+  @Column({ nullable: true })
   action_by!: number;
 
   @Column({ nullable: true })

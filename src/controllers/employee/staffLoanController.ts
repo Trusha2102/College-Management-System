@@ -24,6 +24,7 @@ export const createStaffLoan = async (req: Request, res: Response) => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
       const newStaffLoan = staffLoanRepository.create({
         ...req.body,
+        type: 'Staff Loan',
         employee: req.body.employee_id,
       });
       const savedStaffLoan = await staffLoanRepository.save(newStaffLoan);
