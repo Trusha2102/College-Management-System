@@ -17,8 +17,8 @@ export class FeesType {
   @Column()
   description!: string;
 
-  @Column()
-  due_date!: Date;
+  // @Column({ nullable: true })
+  // due_date!: Date;
 
   // @Column()
   // amount!: number;

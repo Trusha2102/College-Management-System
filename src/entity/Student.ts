@@ -43,8 +43,8 @@ export class Student {
   @Column()
   session_id!: number;
 
-  @Column()
-  roll_no!: number;
+  // @Column({ nullable: true })
+  // roll_no!: number;
 
   @Column()
   category!: string;
