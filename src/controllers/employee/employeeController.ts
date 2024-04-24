@@ -640,20 +640,6 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           return;
         }
 
-        // Check if staffId is unique
-        // const existingEmployeeWithStaffId = await employeeRepository.findOne({
-        //   where: {
-        //     staff_id: staffId,
-        //   },
-        // });
-        // if (
-        //   existingEmployeeWithStaffId &&
-        //   existingEmployeeWithStaffId.id !== +id
-        // ) {
-        //   sendError(res, 400, 'StaffId already exists in another record');
-        //   return;
-        // }
-
         // Check if designationId exists in Designation table
         const designation = await designationRepository.findOne({
           where: { id: +designationId },
@@ -672,12 +658,15 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
           return;
         }
 
+        let dob = employee.user.dob;
+        if (req.body?.dob) {
+          dob = new Date(req.body.dob);
+        }
+
         // Update user and employee records
         Object.assign(employee.user, {
           ...req.body,
-          dob: req.body.dob
-            ? new Date(req.body.dob)
-            : null || employee.user.dob,
+          dob: dob,
           role: role,
           profile_picture: profilePicturePath || employee.user.profile_picture,
           social_media_links: req.body.social_media_links
