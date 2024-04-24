@@ -70,11 +70,6 @@ export class User {
   @Column({ nullable: true })
   aadhar_card!: string;
 
-  // @ManyToOne(() => Address, (address: { user: any }) => address.user, {
-  //   nullable: true,
-  // })
-  // address!: Address;
-
   @Column({ nullable: true })
   permanent_address!: string;
 

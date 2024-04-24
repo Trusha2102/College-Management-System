@@ -675,7 +675,9 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
         // Update user and employee records
         Object.assign(employee.user, {
           ...req.body,
-          dob: new Date(req.body.dob),
+          dob: req.body.dob
+            ? new Date(req.body.dob)
+            : null || employee.user.dob,
           role: role,
           profile_picture: profilePicturePath || employee.user.profile_picture,
           social_media_links: req.body.social_media_links
@@ -686,10 +688,10 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
         Object.assign(employee, {
           ...req.body,
           staff_id: staffId,
-          designation_id: req.body.designationId,
-          department_id: req.body.departmentId,
-          doj: new Date(req.body.doj) || null,
-          dol: req.body.dol || '',
+          designation_id: req.body?.designationId,
+          department_id: req.body?.departmentId,
+          doj: req.body?.doj || employee.doj || null,
+          dol: req.body?.dol || employee.dol || null,
         });
 
         await userRepository.save(employee.user);
