@@ -1,10 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { sendResponse, sendError } from '../utils/commonResponse';
-import { User } from '../entity/User';
 import { Role } from '../entity/Role';
 import AppDataSource from '../data-source';
 import * as jwt from 'jsonwebtoken';
-import { routeAction } from '../utils/routeActions';
 import { CasbinService } from '../casbin/enforcer';
 const casbinService = new CasbinService();
 

@@ -17,7 +17,7 @@ export class Permission {
   @ManyToOne(() => Role, (role) => role.permissions)
   role!: Role;
 
-  @Column()
+  @Column({ nullable: true })
   roleId!: number;
 
   @ManyToOne(() => Module, (module) => module.permissions)
