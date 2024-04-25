@@ -53,7 +53,7 @@ export const deleteFeesType = async (req: Request, res: Response) => {
       const relatedFeesGroups = await feesGroupRepository.find();
       const hasRelatedFeesGroups = relatedFeesGroups.some((feesGroup) => {
         try {
-          const feesTypeData = JSON.parse(feesGroup.feesTypeData || '[]');
+          const feesTypeData = feesGroup.feesTypeData || '[]';
           return feesTypeData.some(
             (feesTypeDataItem: any) => feesTypeDataItem.fees_type_id === +id,
           );

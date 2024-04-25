@@ -60,7 +60,7 @@ export const feesAllocation = async (req: Request, res: Response) => {
 
           let netAmount = 0;
           try {
-            const feesData = JSON.parse(feesTypeData);
+            const feesData = feesTypeData;
             if (Array.isArray(feesData)) {
               feesData.forEach((fee: any) => {
                 if (fee.amount) {
@@ -146,7 +146,7 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
         const currentDate = new Date();
         const dueDate = new Date(feesGroup.due_date);
         if (dueDate <= currentDate && feesGroup.feesTypeData) {
-          const feesTypeData = JSON.parse(feesGroup.feesTypeData);
+          const feesTypeData = feesGroup.feesTypeData;
           return feesTypeData
             .filter((item: any) => new Date(item.due_date) <= currentDate)
             .map((item: any) => item.fine_amount);
@@ -167,16 +167,7 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
 
 export const collectFees = async (req: Request, res: Response) => {
   try {
-    const {
-      student_id,
-      fees_master_id,
-      dos,
-      amount,
-      discount_id,
-      discount_amount,
-      fine_amount,
-      payment_mode,
-    } = req.body;
+    const { student_id, dos, payment_mode, payment } = req.body;
 
     // Create a query runner using AppDataSource
     const queryRunner = AppDataSource.createQueryRunner();
@@ -199,52 +190,70 @@ export const collectFees = async (req: Request, res: Response) => {
         return;
       }
 
-      const feesMaster = await feesMasterRepository.findOne({
-        where: { id: fees_master_id, student_id: student_id },
-      });
-      if (!feesMaster) {
-        sendError(res, 400, 'Fees master not found');
-        return;
+      // Iterate over each payment object
+      for (const paymentData of payment) {
+        const {
+          fees_master_id,
+          amount,
+          discount_id,
+          discount_amount,
+          fine_amount,
+        } = paymentData;
+
+        const feesMaster = await feesMasterRepository.findOne({
+          where: { id: fees_master_id, student_id: student_id },
+        });
+        if (!feesMaster) {
+          sendError(
+            res,
+            400,
+            `Fees master with ID ${fees_master_id} not found`,
+          );
+          return;
+        }
+
+        // Apply discount amount and fine amount
+        if (discount_amount) {
+          feesMaster.net_amount -= discount_amount;
+        }
+        if (fine_amount) {
+          feesMaster.net_amount += fine_amount;
+        }
+
+        // Create a fees payment record
+        const feesPayment = new FeesPayment();
+        feesPayment.payment_id = (Math.random() + 1).toString(36).substring(7);
+        feesPayment.student = student;
+        feesPayment.feesMaster = feesMaster;
+        feesPayment.dos = dos;
+        feesPayment.status = 'Paid';
+        feesPayment.amount = amount;
+        feesPayment.payment_from = student_id;
+        feesPayment.payment_mode = payment_mode;
+
+        await feesPaymentRepository.save(feesPayment);
+
+        // If payment mode is Bank Transfer, create bank payment record
+        if (payment_mode === 'Bank Transfer') {
+          const bankPayment = new BankPayment();
+          bankPayment.feesPayment = feesPayment;
+          bankPayment.status_date = dos;
+
+          await bankPaymentRepository.save(bankPayment);
+        }
+
+        // Update fees master record
+        feesMaster.discount_id = discount_id || null;
+        feesMaster.discount_amount = discount_amount || null;
+        feesMaster.fine_amount = fine_amount || null;
+        feesMaster.paid_amount += amount;
+        feesMaster.status =
+          feesMaster.paid_amount < feesMaster.net_amount
+            ? 'Partially Paid'
+            : 'Paid';
+
+        await feesMasterRepository.save(feesMaster);
       }
-
-      if (discount_amount) {
-        feesMaster.net_amount -= discount_amount;
-      }
-
-      if (fine_amount) {
-        feesMaster.net_amount += fine_amount;
-      }
-
-      const feesPayment = new FeesPayment();
-      feesPayment.payment_id = (Math.random() + 1).toString(36).substring(7);
-      feesPayment.student = student;
-      feesPayment.feesMaster = feesMaster;
-      feesPayment.dos = dos;
-      feesPayment.status = 'Paid';
-      feesPayment.amount = amount;
-      feesPayment.payment_from = student_id;
-      feesPayment.payment_mode = payment_mode;
-
-      await feesPaymentRepository.save(feesPayment);
-
-      if (payment_mode === 'Bank Transfer') {
-        const bankPayment = new BankPayment();
-        bankPayment.feesPayment = feesPayment;
-        bankPayment.status_date = dos;
-
-        await bankPaymentRepository.save(bankPayment);
-      }
-
-      feesMaster.discount_id = discount_id || null;
-      feesMaster.discount_amount = discount_amount || null;
-      feesMaster.fine_amount = fine_amount || null;
-      feesMaster.paid_amount += amount;
-      feesMaster.status =
-        feesMaster.paid_amount < feesMaster.net_amount
-          ? 'Partially Paid'
-          : 'Paid';
-
-      await feesMasterRepository.save(feesMaster);
 
       sendResponse(res, 200, 'Fees collected successfully');
     });

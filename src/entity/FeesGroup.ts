@@ -32,8 +32,22 @@ export class FeesGroup {
   // @Column('simple-array', { nullable: true, name: 'fees_type_data' })
   // feesTypeData?: string[];
 
-  @Column({ nullable: true, name: 'fees_type_data' })
-  feesTypeData?: string;
+  // @Column({ nullable: true, name: 'fees_type_data' })
+  // feesTypeData?: string;
+
+  @Column({
+    type: 'jsonb',
+    array: false,
+    name: 'fees_type_data',
+    default: () => "'[]'",
+    nullable: false,
+  })
+  public feesTypeData!: Array<{
+    fees_type_id: number;
+    due_date: Date;
+    amount: number;
+    fine_amount: number;
+  }>;
 
   @Column({ nullable: true })
   due_date!: Date;

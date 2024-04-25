@@ -43,7 +43,7 @@ export const createFeesGroup = async (req: Request, res: Response) => {
         );
       }
 
-      feesGroup.feesTypeData = JSON.stringify(feesTypeData);
+      feesGroup.feesTypeData = feesTypeData;
 
       await feesGroupRepository.save(newFeesGroup);
 
@@ -125,7 +125,7 @@ export const updateFeesGroupById = async (req: Request, res: Response) => {
           throw new Error('feesTypeData should be an array');
         }
 
-        feesGroup.feesTypeData = JSON.stringify(feesTypeData);
+        feesGroup.feesTypeData = feesTypeData;
       }
 
       const updatedFeesGroup = await feesGroupRepository.save(feesGroup);

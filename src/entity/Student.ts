@@ -125,9 +125,12 @@ export class Student {
   profile_picture!: string;
 
   @Column({
-    nullable: true,
+    type: 'jsonb',
+    array: false,
+    default: () => "'[]'",
+    nullable: false,
   })
-  other_docs!: string;
+  public other_docs!: Array<{ name: string; path: string }>;
 
   // @Column('jsonb', { array: true, nullable: true })
   // other_docs!: JSON[];

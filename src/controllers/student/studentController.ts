@@ -56,12 +56,21 @@ const createStudent = async (req: Request, res: Response) => {
       }
 
       //@ts-ignore
-      const otherDocsFiles = files?.other_docs || [];
+      const otherDocsFiles =
+        files && 'other_docs' in files ? files.other_docs : [];
       const otherDocs = otherDocsFiles.map((file: any) => ({
         name: file.originalname,
         path: file.path,
       }));
-      const otherDocsJsonString = JSON.stringify(otherDocs);
+
+      let profilePictureString = '';
+      if (
+        files &&
+        'profile_picture' in files &&
+        files.profile_picture.length > 0
+      ) {
+        profilePictureString = files.profile_picture[0].path;
+      }
 
       let student;
       let parentDetails;
@@ -173,8 +182,8 @@ const createStudent = async (req: Request, res: Response) => {
         student = studentRepository.create({
           ...body,
           //@ts-ignore
-          profile_picture: files?.profile_picture || '',
-          other_docs: otherDocsJsonString,
+          profile_picture: profilePictureString,
+          other_docs: otherDocs,
           is_active: true,
           course: course,
           semester: semester,
@@ -226,9 +235,7 @@ const createStudent = async (req: Request, res: Response) => {
 
           let netAmount = 0;
           try {
-            const feesTypeData = feesGroup.feesTypeData
-              ? JSON.parse(feesGroup.feesTypeData)
-              : null;
+            const feesTypeData = feesGroup.feesTypeData;
             if (Array.isArray(feesTypeData)) {
               feesTypeData.forEach((fee: any) => {
                 if (fee.amount) {
@@ -398,13 +405,21 @@ const updateStudentById = async (req: Request, res: Response) => {
       const { body, files }: { body: any; files?: any } = req;
 
       //@ts-ignore
-      const otherDocsFiles = files?.other_docs || [];
+      const otherDocsFiles =
+        files && 'other_docs' in files ? files.other_docs : [];
       const otherDocs = otherDocsFiles.map((file: any) => ({
         name: file.originalname,
         path: file.path,
       }));
 
-      const otherDocsString = JSON.stringify(otherDocs);
+      let profilePictureString: any;
+      if (
+        files &&
+        'profile_picture' in files &&
+        files.profile_picture.length > 0
+      ) {
+        profilePictureString = files.profile_picture[0].path;
+      }
 
       const queryRunner = AppDataSource.createQueryRunner();
 
@@ -482,9 +497,8 @@ const updateStudentById = async (req: Request, res: Response) => {
           studentSessionId: +req.body?.session_id,
           session_id: +req.body?.session_id,
           session: sessionExists,
-          profile_picture:
-            files?.profile_picture || student.profile_picture || [],
-          other_docs: otherDocsString || student.other_docs,
+          profile_picture: profilePictureString || student.profile_picture,
+          other_docs: otherDocs || student.other_docs,
         };
 
         studentRepository.merge(student, updatedData);
@@ -554,9 +568,7 @@ const updateStudentById = async (req: Request, res: Response) => {
 
               let netAmount = 0;
               try {
-                const feesTypeData = feesGroup.feesTypeData
-                  ? JSON.parse(feesGroup.feesTypeData)
-                  : null;
+                const feesTypeData = feesGroup.feesTypeData;
                 if (Array.isArray(feesTypeData)) {
                   feesTypeData.forEach((fee: any) => {
                     if (fee.amount) {
