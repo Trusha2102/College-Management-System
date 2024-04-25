@@ -1,4 +1,3 @@
-// src/entities/Semester.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -10,6 +9,7 @@ import {
 } from 'typeorm';
 import { Course } from './Course';
 import { Student } from './Student';
+import { Section } from './Section'; // Import Section entity
 
 @Entity()
 export class Semester {
@@ -26,6 +26,9 @@ export class Semester {
 
   @OneToMany(() => Student, (student) => student.semester)
   students!: Student[];
+
+  @OneToMany(() => Section, (section) => section.semester)
+  section!: Section[];
 
   @CreateDateColumn({
     name: 'created_at',

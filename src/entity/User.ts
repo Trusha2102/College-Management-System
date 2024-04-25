@@ -9,7 +9,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from './Role';
-// import { Address } from './Address';
 import { BankAccount } from './BankAccount';
 import { Employee } from './Employee';
 import { ActivityLog } from './ActivityLog';
@@ -75,9 +74,6 @@ export class User {
 
   @Column({ nullable: true })
   current_address!: string;
-
-  @Column({ nullable: true })
-  address_id!: number;
 
   @ManyToOne(
     () => BankAccount,

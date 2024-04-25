@@ -81,7 +81,6 @@ const createUser = async (req: Request, res: Response) => {
       user.dob = new Date(userData.dob);
       user.profile_picture = profilePicturePath;
       user.social_media_links = parsedSocialMediaLinks || null;
-      user.address_id = parsedAddressId as number;
       user.bank_details_id = parsedBankAccountId as number;
 
       const queryRunner = AppDataSource.createQueryRunner();
@@ -152,9 +151,18 @@ const getAllDeletedUsers = async (req: Request, res: Response) => {
 const getUserById = async (req: Request, res: Response) => {
   try {
     const userId = req.params.id;
-    const user = await AppDataSource.manager.findOneOrFail(User, {
+
+    const userRepository = AppDataSource.getRepository(User);
+
+    const user = await userRepository.findOne({
       where: { id: +userId, is_active: true },
     });
+
+    if (!user) {
+      sendError(res, 400, 'User Not Found', null);
+      return;
+    }
+
     sendResponse(res, 200, 'User', user);
   } catch (error) {
     console.error(error);
@@ -175,33 +183,9 @@ const updateUserById = async (req: Request, res: Response) => {
       }
 
       const userId = req.params.id;
-      const {
-        role_id,
-        social_media_links,
-        address_id,
-        bank_details_id,
-        ...userData
-      } = req.body;
-
-      const role = await AppDataSource.manager.findOne(Role, {
-        where: { id: +role_id },
-      });
-      if (!role) {
-        return sendError(res, 404, 'Role not found');
-      }
-
-      const existingUser = await AppDataSource.manager.findOne(User, {
-        where: { email: userData.email },
-      });
-      if (existingUser && existingUser.id !== +userId) {
-        return sendError(res, 400, 'Email address already exists');
-      }
+      const userData = req.body;
 
       const marital_status = userData.marital_status === 'true';
-      const parsedSocialMediaLinks = social_media_links.split(',');
-      // const parsedAddressId = address_id === 'null' ? null : +address_id;
-      // const parsedBankAccountId =
-      //   bank_details_id === 'null' ? null : +bank_details_id;
 
       const user = await AppDataSource.manager.findOne(User, {
         where: { id: +userId },
@@ -210,31 +194,15 @@ const updateUserById = async (req: Request, res: Response) => {
         return sendError(res, 404, 'User not found');
       }
 
-      user.first_name = userData.first_name || user.first_name;
-      user.last_name = userData.last_name || user.last_name;
-      user.father_name = userData.father_name || user.father_name;
-      user.mother_name = userData.mother_name || user.mother_name;
-      user.email = userData.email || user.email;
-      user.is_active = userData.is_active === 'true';
+      Object.assign(user, userData);
+
       user.marital_status = marital_status;
-      user.gender = userData.gender || user.gender;
-      user.qualification = userData.qualification || user.qualification;
-      user.work_experience = userData.work_experience || user.work_experience;
-      user.aadhar_card = userData.aadhar_card || user.aadhar_card;
-      user.role = role;
-      user.role_id = role_id;
-      user.mobile = userData.mobile || user.mobile;
-      user.dob = new Date(userData.dob) || user.dob;
+
       if (req.file) {
         user.profile_picture = req.file.path;
       }
-      user.social_media_links =
-        parsedSocialMediaLinks || user.social_media_links;
 
-      const queryRunner = AppDataSource.createQueryRunner();
-      await runTransaction(queryRunner, async () => {
-        await queryRunner.manager.save(user);
-      });
+      await AppDataSource.manager.update(User, userId, user);
 
       sendResponse(res, 200, 'User updated successfully', {
         user,

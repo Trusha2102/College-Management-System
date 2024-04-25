@@ -4,20 +4,34 @@ import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike } from 'typeorm';
+import { Semester } from '../../entity/Semester';
 
 export const createSection = async (req: Request, res: Response) => {
   try {
-    const { section } = req.body;
+    const { section, semester_id } = req.body;
+    const queryRunner = AppDataSource.createQueryRunner();
+
+    const semesterRepository = queryRunner.manager.getRepository(Semester);
+
+    // Await the semester retrieval
+    const semester = await semesterRepository.findOne({
+      where: { id: semester_id },
+    });
+
+    if (!semester) {
+      sendError(res, 400, 'Semester Not Found');
+      return;
+    }
 
     const trimmedSectionName = section.trim();
 
-    const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const sectionRepository = queryRunner.manager.getRepository(Section);
 
       const existingSection = await sectionRepository.findOne({
         where: {
           section: ILike(trimmedSectionName),
+          semester: semester,
         },
       });
 
@@ -28,7 +42,9 @@ export const createSection = async (req: Request, res: Response) => {
 
       const newSection = sectionRepository.create({
         section: trimmedSectionName,
+        semester: semester,
       });
+
       await sectionRepository.save(newSection);
       sendResponse(res, 201, 'Section created successfully', newSection);
     });
@@ -64,6 +80,7 @@ export const listSections = async (req: Request, res: Response) => {
       order: { createdAt: 'DESC' },
       skip: offset,
       take: limitNumber,
+      relations: ['semester'],
     });
 
     const totalNoOfRecords = sections.length;
@@ -97,9 +114,22 @@ export const getSectionById = async (req: Request, res: Response) => {
 export const updateSectionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { section } = req.body;
+    const { section, semester_id } = req.body;
 
     const queryRunner = AppDataSource.createQueryRunner();
+
+    const semesterRepository = queryRunner.manager.getRepository(Semester);
+
+    // Await the semester retrieval
+    const semester = await semesterRepository.findOne({
+      where: { id: semester_id },
+    });
+
+    if (!semester) {
+      sendError(res, 400, 'Semester Not Found');
+      return;
+    }
+
     await runTransaction(queryRunner, async () => {
       const sectionRepository = queryRunner.manager.getRepository(Section);
 
@@ -116,15 +146,21 @@ export const updateSectionById = async (req: Request, res: Response) => {
       const existingSection = await sectionRepository.findOne({
         where: {
           section: ILike(trimmedSectionName),
+          semester: semester,
         },
       });
 
-      if (existingSection) {
-        sendError(res, 400, 'A section with a similar name already exists');
+      if (existingSection && existingSection.id !== updatedSection.id) {
+        sendError(
+          res,
+          400,
+          'A section with a similar name already exists in this semester',
+        );
         return;
       }
 
       updatedSection.section = section;
+      updatedSection.semester = semester;
       await sectionRepository.save(updatedSection);
       sendResponse(res, 200, 'Section updated successfully', updatedSection);
     });

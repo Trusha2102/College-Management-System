@@ -3,10 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToMany,
+  ManyToOne, // Import ManyToOne decorator
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Student } from './Student';
+import { Semester } from './Semester'; // Import Semester entity
 
 @Entity()
 export class Section {
@@ -15,6 +17,9 @@ export class Section {
 
   @Column()
   section!: string;
+
+  @ManyToOne(() => Semester, (semester) => semester.section)
+  semester!: Semester;
 
   @OneToMany(() => Student, (student) => student.section)
   students!: Student[];
