@@ -412,15 +412,6 @@ const updateStudentById = async (req: Request, res: Response) => {
         path: file.path,
       }));
 
-      let profilePictureString: any;
-      if (
-        files &&
-        'profile_picture' in files &&
-        files.profile_picture.length > 0
-      ) {
-        profilePictureString = files.profile_picture[0].path;
-      }
-
       const queryRunner = AppDataSource.createQueryRunner();
 
       let updatedStudent: Student | undefined;
@@ -441,6 +432,13 @@ const updateStudentById = async (req: Request, res: Response) => {
         if (!student) {
           sendError(res, 404, 'Student not found');
           return;
+        }
+
+        let profilePictureString: any = student.profile_picture;
+        if (files?.profile_picture) {
+          profilePictureString = files.profile_picture[0].path;
+        } else if (files?.profile_picture === undefined) {
+          profilePictureString = null;
         }
 
         // Check for duplicate email, enrollment number, and admission number
@@ -497,7 +495,7 @@ const updateStudentById = async (req: Request, res: Response) => {
           studentSessionId: +req.body?.session_id,
           session_id: +req.body?.session_id,
           session: sessionExists,
-          profile_picture: profilePictureString || student.profile_picture,
+          profile_picture: profilePictureString,
           other_docs: otherDocs || student.other_docs,
         };
 

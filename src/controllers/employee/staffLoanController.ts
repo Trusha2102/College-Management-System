@@ -211,19 +211,35 @@ export const getStaffLoanById = async (req: Request, res: Response) => {
 // Get all StaffLoans
 export const getAllStaffLoans = async (req: Request, res: Response) => {
   try {
-    const { page, limit } = req.query;
+    const { page, limit, search } = req.query;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
       let query = staffLoanRepository
         .createQueryBuilder('staffLoan')
+        .leftJoinAndSelect('staffLoan.employee', 'employee')
+        .leftJoinAndSelect('employee.user', 'user')
+        .leftJoinAndSelect('user.role', 'role')
+        .leftJoinAndSelect('employee.designation', 'designation')
         .orderBy('staffLoan.createdAt', 'DESC');
 
-      // Count total number of records
+      if (search) {
+        query = query
+          .where('staffLoan.employee.staff_id LIKE :search', {
+            search: `%${search}%`,
+          })
+          .orWhere('user.first_name LIKE :search', { search: `%${search}%` })
+          .orWhere('user.last_name LIKE :search', { search: `%${search}%` })
+          .orWhere('user.father_name LIKE :search', { search: `%${search}%` })
+          .orWhere('designation.designation LIKE :search', {
+            search: `%${search}%`,
+          })
+          .orWhere('role.name LIKE :search', { search: `%${search}%` });
+      }
+
       const totalCount = await query.getCount();
 
-      // Apply pagination if page and limit are provided
       if (page && limit) {
         const pageNumber = parseInt(page as string, 10);
         const limitNumber = parseInt(limit as string, 10);
@@ -232,7 +248,6 @@ export const getAllStaffLoans = async (req: Request, res: Response) => {
         query = query.skip(skip).take(limitNumber);
       }
 
-      // Fetch staff loans
       const staffLoans = await query.getMany();
 
       sendResponse(res, 200, 'Success', {

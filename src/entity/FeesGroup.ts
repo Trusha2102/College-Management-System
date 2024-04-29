@@ -43,6 +43,7 @@ export class FeesGroup {
     nullable: false,
   })
   public feesTypeData!: Array<{
+    name: string;
     fees_type_id: number;
     due_date: Date;
     amount: number;

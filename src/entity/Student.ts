@@ -121,7 +121,7 @@ export class Student {
   @Column()
   admission_date!: Date;
 
-  @Column()
+  @Column({ nullable: true })
   profile_picture!: string;
 
   @Column({

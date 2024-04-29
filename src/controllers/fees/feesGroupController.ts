@@ -71,6 +71,9 @@ export const getAllFeesGroups = async (req: Request, res: Response) => {
       {
         skip: offset,
         take,
+        order: {
+          createdAt: 'DESC',
+        },
       },
     );
 
