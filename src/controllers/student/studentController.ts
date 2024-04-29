@@ -437,7 +437,7 @@ const updateStudentById = async (req: Request, res: Response) => {
         let profilePictureString: any = student.profile_picture;
         if (files?.profile_picture) {
           profilePictureString = files.profile_picture[0].path;
-        } else if (files?.profile_picture === undefined) {
+        } else if (files?.profile_picture == null) {
           profilePictureString = null;
         }
 
