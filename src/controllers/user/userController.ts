@@ -194,13 +194,18 @@ const updateUserById = async (req: Request, res: Response) => {
         return sendError(res, 404, 'User not found');
       }
 
+      let profilePictureString: any = user.profile_picture;
+      if (req.file) {
+        profilePictureString = req.file.path;
+      } else if (req.file === null) {
+        profilePictureString = null;
+      }
+
       Object.assign(user, userData);
 
       user.marital_status = marital_status;
 
-      if (req.file) {
-        user.profile_picture = req.file.path;
-      }
+      user.profile_picture = profilePictureString;
 
       await AppDataSource.manager.update(User, userId, user);
 
