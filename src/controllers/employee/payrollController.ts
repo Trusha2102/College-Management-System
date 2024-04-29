@@ -10,13 +10,22 @@ import { Installment } from '../../entity/Installment';
 // Get all payrolls
 export const getAllPayrolls = async (req: Request, res: Response) => {
   try {
-    const { month, year, name, role_id, is_deduction_collected, page, limit } =
-      req.query;
+    const {
+      month,
+      year,
+      department,
+      name,
+      role_id,
+      is_deduction_collected,
+      page,
+      limit,
+    } = req.query;
 
     const payrollRepository = AppDataSource.getRepository(Payroll);
     const queryBuilder = payrollRepository
       .createQueryBuilder('payroll')
       .leftJoinAndSelect('payroll.employee', 'employee')
+      .leftJoinAndSelect('employee.department', 'department')
       .leftJoin('employee.user', 'user');
 
     if (month) {
@@ -33,6 +42,12 @@ export const getAllPayrolls = async (req: Request, res: Response) => {
         { name: `%${name}%` },
       );
     }
+    if (department) {
+      queryBuilder.andWhere('department.department ILIKE :department', {
+        department: `%${department}%`,
+      });
+    }
+
     if (role_id) {
       queryBuilder.andWhere('user.role_id = :role_id', { role_id });
     }
