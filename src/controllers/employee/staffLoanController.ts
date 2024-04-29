@@ -211,7 +211,7 @@ export const getStaffLoanById = async (req: Request, res: Response) => {
 // Get all StaffLoans
 export const getAllStaffLoans = async (req: Request, res: Response) => {
   try {
-    const { page, limit, search } = req.query;
+    const { page, limit, search, role } = req.query;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
@@ -226,33 +226,45 @@ export const getAllStaffLoans = async (req: Request, res: Response) => {
 
       if (search) {
         query = query
-          .where('staffLoan.employee.staff_id LIKE :search', {
+          .where('employee.staff_id ILIKE :search', {
             search: `%${search}%`,
           })
-          .orWhere('user.first_name LIKE :search', { search: `%${search}%` })
-          .orWhere('user.last_name LIKE :search', { search: `%${search}%` })
-          .orWhere('user.father_name LIKE :search', { search: `%${search}%` })
-          .orWhere('designation.designation LIKE :search', {
+          .orWhere('user.first_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('user.last_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('user.father_name ILIKE :search', { search: `%${search}%` })
+          .orWhere('designation.designation ILIKE :search', {
             search: `%${search}%`,
-          })
-          .orWhere('role.name LIKE :search', { search: `%${search}%` });
+          });
+      }
+
+      if (role) {
+        query = query.andWhere('role.name ILIKE :role', {
+          role: `%${role}%`,
+        });
       }
 
       const totalCount = await query.getCount();
 
+      let totalNoOfRecords = 0;
       if (page && limit) {
         const pageNumber = parseInt(page as string, 10);
         const limitNumber = parseInt(limit as string, 10);
         const skip = (pageNumber - 1) * limitNumber;
 
-        query = query.skip(skip).take(limitNumber);
+        const staffLoans = await query.skip(skip).take(limitNumber).getMany();
+
+        totalNoOfRecords = staffLoans.length;
+      } else {
+        totalNoOfRecords = totalCount;
       }
 
+      query = query.skip(0).take(totalNoOfRecords);
       const staffLoans = await query.getMany();
 
       sendResponse(res, 200, 'Success', {
         staffLoans,
-        totalRecords: totalCount,
+        totalCount,
+        totalNoOfRecords,
       });
     });
   } catch (error: any) {
