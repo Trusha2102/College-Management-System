@@ -93,8 +93,11 @@ export const getAllFeesGroups = async (req: Request, res: Response) => {
 // Get Fees Group by ID
 export const getFeesGroupById = async (req: Request, res: Response) => {
   try {
-    const feesGroup = await AppDataSource.manager.findOne(FeesGroup, {
-      where: { id: req.body.id },
+    const { id } = req.params;
+
+    const feesGroupRepository = AppDataSource.getRepository(FeesGroup);
+    const feesGroup = await feesGroupRepository.findOne({
+      where: { id: +id },
     });
     if (!feesGroup) {
       return sendResponse(res, 404, 'Fees Group not found');
