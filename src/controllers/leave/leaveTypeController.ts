@@ -3,14 +3,39 @@ import AppDataSource from '../../data-source';
 import { LeaveType } from '../../entity/LeaveType';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { Employee } from '../../entity/Employee';
+import { LeaveDetail } from '../../entity/LeaveDetails';
 
 // Create a LeaveType
 export const createLeaveType = async (req: Request, res: Response) => {
   try {
-    await runTransaction(AppDataSource.createQueryRunner(), async () => {
+    const queryRunner = await AppDataSource.createQueryRunner();
+    await runTransaction(queryRunner, async () => {
       const leaveTypeRepository = AppDataSource.getRepository(LeaveType);
+
       const newLeaveType = leaveTypeRepository.create(req.body);
       const createdLeaveType = await leaveTypeRepository.save(newLeaveType);
+      //@ts-ignore
+      const leaveTypeId = createdLeaveType?.id;
+
+      const employeeRepository = AppDataSource.getRepository(Employee);
+      const activeEmployees = await employeeRepository.find({
+        where: { is_active: true },
+      });
+      const leaveDetailRepository = AppDataSource.getRepository(LeaveDetail);
+
+      const leaveDetailsPromises = activeEmployees.map(async (employee) => {
+        const newLeaveDetail = leaveDetailRepository.create({
+          leaveType: { id: leaveTypeId },
+          employee: { id: employee.id },
+          totalLeaves: req.body.no_of_days,
+          availableLeaves: req.body.no_of_days,
+        });
+        return leaveDetailRepository.save(newLeaveDetail);
+      });
+
+      await Promise.all(leaveDetailsPromises);
+
       sendResponse(
         res,
         201,

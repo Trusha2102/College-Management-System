@@ -33,6 +33,8 @@ import { Fine } from './Fine';
 import { Discount } from './Discount';
 import { BankPayment } from './BankPayment';
 import { LeaveType } from './LeaveType';
+import { LeaveDetail } from './LeaveDetails';
+import { Leave } from './Leave';
 
 const Entities = [
   User,
@@ -69,6 +71,8 @@ const Entities = [
   Discount,
   BankPayment,
   LeaveType,
+  LeaveDetail,
+  Leave,
 ];
 
 export default Entities;
