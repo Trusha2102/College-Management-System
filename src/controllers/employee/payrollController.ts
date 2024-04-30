@@ -371,41 +371,20 @@ export const getEmployeePayrollDetails = async (
           })
           .getRawMany();
 
-        let presentCount = 0;
-        let lateCount = 0;
-        let absentCount = 0;
-        let halfDayCount = 0;
-        let holidayCount = 0;
-
-        attendanceRecords.forEach((record) => {
-          switch (record.attendance_attendance) {
-            case 'Present':
-              presentCount++;
-              break;
-            case 'Late':
-              lateCount++;
-              break;
-            case 'Absent':
-              absentCount++;
-              break;
-            case 'Half Day':
-              halfDayCount++;
-              break;
-            case 'Holiday':
-              holidayCount++;
-              break;
-            default:
-              break;
-          }
-        });
-
-        const attendance = {
-          Present: presentCount,
-          Late: lateCount,
-          Absent: absentCount,
-          HalfDay: halfDayCount,
-          Holiday: holidayCount,
-        };
+        const attendance = attendanceRecords.reduce(
+          (counts, record) => {
+            const attendanceType = record.attendance_attendance;
+            counts[attendanceType] = (counts[attendanceType] || 0) + 1;
+            return counts;
+          },
+          {
+            Present: 0,
+            Late: 0,
+            Absent: 0,
+            'Half Day': 0,
+            Holiday: 0,
+          },
+        );
 
         return { month: m, attendance };
       }),
