@@ -23,7 +23,9 @@ const createModule = async (req: Request, res: Response) => {
 
 const getAllModules = async (req: Request, res: Response) => {
   try {
-    const modules = await AppDataSource.manager.find(Module);
+    const modules = await AppDataSource.manager.find(Module, {
+      order: { name: 'ASC' },
+    });
     sendResponse(res, 200, 'Modules', modules);
   } catch (error) {
     console.error(error);

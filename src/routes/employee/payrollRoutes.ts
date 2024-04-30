@@ -22,5 +22,10 @@ router.get(
   permissionProtect,
   payrollController.staffDeduction,
 );
+router.get(
+  '/employee-payroll/list',
+  permissionProtect,
+  payrollController.getEmployeePayrollDetails,
+);
 
 export default router;

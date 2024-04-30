@@ -6,6 +6,8 @@ import { Payroll } from '../../entity/Payroll';
 import { Employee } from '../../entity/Employee';
 import { StaffLoan } from '../../entity/StaffLoan';
 import { Installment } from '../../entity/Installment';
+import { Attendance } from '../../entity/Attendance';
+import { Like } from 'typeorm';
 
 // Get all payrolls
 export const getAllPayrolls = async (req: Request, res: Response) => {
@@ -118,7 +120,7 @@ export const createPayroll = async (req: Request, res: Response) => {
         loan_amount: deduction,
         no_of_installments: 1,
         installment_amount: deduction,
-        status: 'Pending',
+        status: 'Generated',
         action_by: 0,
         type: 'Deduction',
       });
@@ -173,20 +175,15 @@ export const updatePayrollById = async (req: Request, res: Response) => {
       return sendError(res, 404, 'Employee not found');
     }
 
-    // Update payroll fields with those from req.body
     Object.assign(payrollToUpdate, req.body);
 
-    // Update the employee field with the new employee
     payrollToUpdate.employee = employee;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      // Save the updated payroll
       await payrollRepository.save(payrollToUpdate);
 
-      // Check if deduction is collected
       if (req.body.is_deduction_collected) {
-        // Update StaffLoan
         const staffLoanRepository =
           queryRunner.manager.getRepository(StaffLoan);
         const staffLoan = await staffLoanRepository.findOne({
@@ -198,7 +195,6 @@ export const updatePayrollById = async (req: Request, res: Response) => {
           await staffLoanRepository.save(staffLoan);
         }
 
-        // Update Installment
         const installmentRepository =
           queryRunner.manager.getRepository(Installment);
         const installment = await installmentRepository.findOne({
@@ -296,4 +292,155 @@ export const staffDeduction = async (req: Request, res: Response) => {
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch deductions', error.message);
   }
+};
+
+export const getEmployeePayrollDetails = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const { employee_id, month, year } = req.query;
+
+    if (!employee_id || !month || !year) {
+      return sendError(res, 400, 'Employee ID, Month & Year Required');
+    }
+
+    let staffLoan;
+    let employee;
+    if (employee_id) {
+      employee = await AppDataSource.getRepository(Employee).findOne({
+        where: { id: +employee_id },
+        relations: ['department', 'designation', 'user', 'user.role'],
+      });
+
+      if (!employee) {
+        return sendError(res, 404, 'Employee not found');
+      }
+      staffLoan = await AppDataSource.getRepository(StaffLoan).findOne({
+        where: { employee: { id: +employee_id }, type: 'Staff Loan' },
+      });
+    }
+
+    const staffLoanExists = !!staffLoan;
+
+    let installmentAmount = 0;
+    if (staffLoan) {
+      if (staffLoanExists) {
+        const installmentRepository = AppDataSource.getRepository(Installment);
+        const installment = await installmentRepository.findOne({
+          where: {
+            staff_loan: { id: +staffLoan.id },
+            month: month as string,
+            year: year as string,
+          },
+        });
+
+        if (installment) {
+          installmentAmount = installment.amount;
+        }
+      }
+    }
+
+    const monthString = month as string;
+    const months = [
+      monthString,
+      getPreviousMonth(monthString),
+      getPreviousMonth(getPreviousMonth(monthString)),
+    ].reverse();
+
+    const attendanceData = await Promise.all(
+      months.map(async (m) => {
+        const startDate = new Date(`${m} 1, ${year}`);
+        const endDate = new Date(
+          startDate.getFullYear(),
+          startDate.getMonth() + 1,
+          0,
+        );
+
+        const attendanceRecords = await AppDataSource.getRepository(Attendance)
+          .createQueryBuilder('attendance')
+          .select('attendance.attendance')
+          .where('attendance.employeeId = :employeeId', {
+            employeeId: employee_id,
+          })
+          .andWhere('attendance.date >= :startDate', {
+            startDate: startDate.toISOString().split('T')[0],
+          })
+          .andWhere('attendance.date <= :endDate', {
+            endDate: endDate.toISOString().split('T')[0],
+          })
+          .getRawMany();
+
+        let presentCount = 0;
+        let lateCount = 0;
+        let absentCount = 0;
+        let halfDayCount = 0;
+        let holidayCount = 0;
+
+        attendanceRecords.forEach((record) => {
+          switch (record.attendance_attendance) {
+            case 'Present':
+              presentCount++;
+              break;
+            case 'Late':
+              lateCount++;
+              break;
+            case 'Absent':
+              absentCount++;
+              break;
+            case 'Half Day':
+              halfDayCount++;
+              break;
+            case 'Holiday':
+              holidayCount++;
+              break;
+            default:
+              break;
+          }
+        });
+
+        const attendance = {
+          Present: presentCount,
+          Late: lateCount,
+          Absent: absentCount,
+          HalfDay: halfDayCount,
+          Holiday: holidayCount,
+        };
+
+        return { month: m, attendance };
+      }),
+    );
+
+    const response = {
+      employeeDetails: employee,
+      staffLoanExists: staffLoanExists,
+      installmentAmount: installmentAmount,
+      attendance: attendanceData,
+    };
+
+    sendResponse(res, 200, 'Employee details fetched successfully', response);
+  } catch (error) {
+    console.error(error);
+    sendError(res, 500, 'Failed to fetch employee details');
+  }
+};
+
+const getPreviousMonth = (currentMonth: string): string => {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  const index = months.findIndex((month) => month === currentMonth);
+  const previousIndex = index === 0 ? 11 : index - 1;
+  return months[previousIndex];
 };

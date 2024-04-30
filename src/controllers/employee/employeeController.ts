@@ -212,6 +212,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
     const employeeRepository = AppDataSource.getRepository(Employee);
     const employee = await employeeRepository.findOne({
       where: { id: +id },
+      relations: ['department', 'designation', 'user', 'user.role'],
     });
     if (!employee) {
       return sendError(res, 404, 'Employee not found');
