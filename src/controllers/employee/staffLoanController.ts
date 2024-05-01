@@ -216,53 +216,68 @@ export const getAllStaffLoans = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
+
       let query = staffLoanRepository
         .createQueryBuilder('staffLoan')
         .leftJoinAndSelect('staffLoan.employee', 'employee')
         .leftJoinAndSelect('employee.user', 'user')
         .leftJoinAndSelect('user.role', 'role')
         .leftJoinAndSelect('employee.designation', 'designation')
+        .where('staffLoan.type = :type', { type: 'Staff Loan' })
         .orderBy('staffLoan.createdAt', 'DESC');
 
       if (search) {
-        query = query
-          .where('employee.staff_id ILIKE :search', {
-            search: `%${search}%`,
-          })
-          .orWhere('user.first_name ILIKE :search', { search: `%${search}%` })
-          .orWhere('user.last_name ILIKE :search', { search: `%${search}%` })
-          .orWhere('user.father_name ILIKE :search', { search: `%${search}%` })
-          .orWhere('designation.designation ILIKE :search', {
-            search: `%${search}%`,
-          });
+        query = query.andWhere(
+          '(employee.staff_id ILIKE :search OR user.first_name ILIKE :search OR user.last_name ILIKE :search OR user.father_name ILIKE :search OR designation.designation ILIKE :search)',
+          { search: `%${search}%` },
+        );
       }
 
       if (role) {
-        query = query.andWhere('role.name ILIKE :role', {
-          role: `%${role}%`,
-        });
+        query = query.andWhere('role.name ILIKE :role', { role: `%${role}%` });
       }
 
       const totalCount = await query.getCount();
 
-      let totalNoOfRecords = 0;
+      let totalNoOfRecords = totalCount;
+      let staffLoans: StaffLoan[] = [];
+
       if (page && limit) {
         const pageNumber = parseInt(page as string, 10);
         const limitNumber = parseInt(limit as string, 10);
         const skip = (pageNumber - 1) * limitNumber;
 
-        const staffLoans = await query.skip(skip).take(limitNumber).getMany();
-
+        staffLoans = await query.skip(skip).take(limitNumber).getMany();
         totalNoOfRecords = staffLoans.length;
       } else {
-        totalNoOfRecords = totalCount;
+        staffLoans = await query.getMany();
       }
 
-      query = query.skip(0).take(totalNoOfRecords);
-      const staffLoans = await query.getMany();
+      const modifiedStaffLoans = await Promise.all(
+        staffLoans.map(async (loan) => {
+          const installments = await queryRunner.manager
+            .getRepository(Installment)
+            .find({ where: { staff_loan: { id: loan.id }, status: false } });
+
+          const remainingAmount = installments.reduce(
+            (total, installment) => total + installment.amount,
+            0,
+          );
+
+          const remainingEMIs = await queryRunner.manager
+            .getRepository(Installment)
+            .count({ where: { staff_loan: { id: loan.id }, status: false } });
+
+          return {
+            ...loan,
+            remainingAmount,
+            remainingEMIs,
+          };
+        }),
+      );
 
       sendResponse(res, 200, 'Success', {
-        staffLoans,
+        staffLoans: modifiedStaffLoans,
         totalCount,
         totalNoOfRecords,
       });
