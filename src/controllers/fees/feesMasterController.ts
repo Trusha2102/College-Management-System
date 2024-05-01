@@ -7,6 +7,8 @@ import { Student } from '../../entity/Student';
 import { FeesGroup } from '../../entity/FeesGroup';
 import { FeesPayment } from '../../entity/FeesPayment';
 import { BankPayment } from '../../entity/BankPayment';
+import { Discount } from '../../entity/Discount';
+import { Fine } from '../../entity/Fine';
 
 export const feesAllocation = async (req: Request, res: Response) => {
   try {
@@ -169,10 +171,8 @@ export const collectFees = async (req: Request, res: Response) => {
   try {
     const { student_id, dos, payment_mode, payment } = req.body;
 
-    // Create a query runner using AppDataSource
     const queryRunner = AppDataSource.createQueryRunner();
 
-    // Run the transaction
     await runTransaction(queryRunner, async () => {
       const studentRepository = queryRunner.manager.getRepository(Student);
       const feesMasterRepository =
@@ -181,6 +181,8 @@ export const collectFees = async (req: Request, res: Response) => {
         queryRunner.manager.getRepository(FeesPayment);
       const bankPaymentRepository =
         queryRunner.manager.getRepository(BankPayment);
+      const discountRepository = queryRunner.manager.getRepository(Discount);
+      const fineRepository = queryRunner.manager.getRepository(Fine);
 
       const student = await studentRepository.findOne({
         where: { id: student_id },
@@ -190,13 +192,13 @@ export const collectFees = async (req: Request, res: Response) => {
         return;
       }
 
-      // Iterate over each payment object
       for (const paymentData of payment) {
         const {
           fees_master_id,
           amount,
           discount_id,
           discount_amount,
+          fine_type_id,
           fine_amount,
         } = paymentData;
 
@@ -212,7 +214,26 @@ export const collectFees = async (req: Request, res: Response) => {
           return;
         }
 
-        // Apply discount amount and fine amount
+        if (discount_id) {
+          const discount = await discountRepository.findOne({
+            where: { id: discount_id },
+          });
+          if (!discount) {
+            sendError(res, 400, 'Discount Type Not Found');
+            return;
+          }
+        }
+
+        if (fine_type_id) {
+          const fine = await fineRepository.findOne({
+            where: { id: fine_type_id },
+          });
+          if (!fine) {
+            sendError(res, 400, 'Fine Type Not Found');
+            return;
+          }
+        }
+
         if (discount_amount) {
           feesMaster.net_amount -= discount_amount;
         }
@@ -220,7 +241,6 @@ export const collectFees = async (req: Request, res: Response) => {
           feesMaster.net_amount += fine_amount;
         }
 
-        // Create a fees payment record
         const feesPayment = new FeesPayment();
         feesPayment.payment_id = (Math.random() + 1).toString(36).substring(7);
         feesPayment.student = student;
@@ -233,7 +253,6 @@ export const collectFees = async (req: Request, res: Response) => {
 
         await feesPaymentRepository.save(feesPayment);
 
-        // If payment mode is Bank Transfer, create bank payment record
         if (payment_mode === 'Bank Transfer') {
           const bankPayment = new BankPayment();
           bankPayment.feesPayment = feesPayment;
@@ -242,9 +261,9 @@ export const collectFees = async (req: Request, res: Response) => {
           await bankPaymentRepository.save(bankPayment);
         }
 
-        // Update fees master record
         feesMaster.discount_id = discount_id || null;
         feesMaster.discount_amount = discount_amount || null;
+        feesMaster.fineTypeId = fine_type_id || null;
         feesMaster.fine_amount = fine_amount || null;
         feesMaster.paid_amount += amount;
         feesMaster.status =
