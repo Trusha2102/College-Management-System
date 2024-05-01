@@ -221,23 +221,26 @@ export const updatePayrollById = async (req: Request, res: Response) => {
         const staffLoanRepository =
           queryRunner.manager.getRepository(StaffLoan);
         const staffLoan = await staffLoanRepository.findOne({
-          where: { employee: req.body.employee_id },
+          where: {
+            employee: { id: payrollToUpdate.employee.id },
+            type: 'Deduction',
+          },
         });
         if (staffLoan) {
           staffLoan.status = 'Paid';
           staffLoan.collected_on_date = req.body.deduction_collected_on_date;
           await staffLoanRepository.save(staffLoan);
-        }
 
-        const installmentRepository =
-          queryRunner.manager.getRepository(Installment);
-        const installment = await installmentRepository.findOne({
-          where: { staff_loan: staffLoan || undefined },
-        });
-        if (installment) {
-          installment.status = true;
-          installment.pay_date = req.body.deduction_collected_on_date;
-          await installmentRepository.save(installment);
+          const installmentRepository =
+            queryRunner.manager.getRepository(Installment);
+          const installment = await installmentRepository.findOne({
+            where: { staff_loan: { id: staffLoan.id } },
+          });
+          if (installment) {
+            installment.status = true;
+            installment.pay_date = req.body.deduction_collected_on_date;
+            await installmentRepository.save(installment);
+          }
         }
       }
 
