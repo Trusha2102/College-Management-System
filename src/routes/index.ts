@@ -34,6 +34,7 @@ import fineRoutes from './fees/fineRoutes';
 import bankPaymentRoutes from './fees/bankPaymentRoutes';
 import leaveTypeRoutes from './leave/leaveTypeRoutes';
 import leaveDetailRoutes from './leave/leaveDetailsRoutes';
+import leaveRoutes from './leave/leaveRoutes';
 
 const router = express.Router();
 
@@ -72,5 +73,6 @@ router.use('/fine', fineRoutes);
 router.use('/bank-payment', bankPaymentRoutes);
 router.use('/leave-type', leaveTypeRoutes);
 router.use('/leave-detail', leaveDetailRoutes);
+router.use('/leave', leaveRoutes);
 
 export default router;

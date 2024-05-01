@@ -35,7 +35,7 @@ export class Leave {
   @Column({ type: 'text', nullable: true })
   attachment!: string | null;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', default: 'Requested' })
   status!: string;
 
   @Column({ type: 'int' })
