@@ -100,7 +100,7 @@ export const getPayrollById = async (req: Request, res: Response) => {
 export const createPayroll = async (req: Request, res: Response) => {
   try {
     const { body } = req;
-    const { employee_id, month, year } = body;
+    const { employee_id, month, year, tax } = body;
 
     const employeeRepository = AppDataSource.getRepository(Employee);
     const employee = await employeeRepository.findOne({
@@ -124,18 +124,17 @@ export const createPayroll = async (req: Request, res: Response) => {
       const deductionTotal = calculateTotalAmount(body.deduction);
       const gross_salary =
         employee.salary + earningTotal.amount - deductionTotal.amount;
-      const tax = body.tax;
       const net_salary = gross_salary - tax;
 
       const newPayroll: DeepPartial<Payroll> = {
         employee: { id: employee_id },
         status: 'Generated',
-        month: month,
-        year: year,
+        month,
+        year,
         earning: req.body.earning,
         deduction: req.body.deduction,
         gross_salary: gross_salary,
-        tax: tax,
+        tax,
         net_amount: net_salary,
         is_staff_loan: existingStaffLoan ? true : false,
         loan_deduction_amount: existingStaffLoan
@@ -162,9 +161,8 @@ export const createPayroll = async (req: Request, res: Response) => {
         staff_loan: newStaffLoan,
         pay_date: null as any,
         amount: employee.deduction,
-        month: month,
-        year: year,
-        status: false,
+        month,
+        year,
       });
       await installmentRepository.save(newInstallment);
 

@@ -28,7 +28,7 @@ export class Installment {
   @Column()
   year!: string;
 
-  @Column()
+  @Column({ default: false })
   status!: boolean;
 
   @CreateDateColumn({
