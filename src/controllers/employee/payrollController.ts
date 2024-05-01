@@ -122,7 +122,6 @@ export const createPayroll = async (req: Request, res: Response) => {
         installment_amount: deduction,
         status: 'Generated',
         action_by: req.user?.role_id,
-        type: 'Staff Loan',
       });
       await staffLoanRepository.save(newStaffLoan);
 
