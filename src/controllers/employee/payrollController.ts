@@ -7,7 +7,7 @@ import { Employee } from '../../entity/Employee';
 import { StaffLoan } from '../../entity/StaffLoan';
 import { Installment } from '../../entity/Installment';
 import { Attendance } from '../../entity/Attendance';
-import { Like } from 'typeorm';
+import { DeepPartial, Like } from 'typeorm';
 
 // Get all payrolls
 export const getAllPayrolls = async (req: Request, res: Response) => {
@@ -100,7 +100,7 @@ export const getPayrollById = async (req: Request, res: Response) => {
 export const createPayroll = async (req: Request, res: Response) => {
   try {
     const { body } = req;
-    const { employee_id, deduction, month, year } = body;
+    const { employee_id, month, year } = body;
 
     const employeeRepository = AppDataSource.getRepository(Employee);
     const employee = await employeeRepository.findOne({
@@ -113,44 +113,81 @@ export const createPayroll = async (req: Request, res: Response) => {
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
-      // Create record in StaffLoan table
+      const payrollRepository = queryRunner.manager.getRepository(Payroll);
+      const existingStaffLoan = await queryRunner.manager
+        .getRepository(StaffLoan)
+        .findOne({
+          where: { type: 'Staff Loan', employee: { id: employee_id } },
+        });
+
+      const earningTotal = calculateTotalAmount(body.earning);
+      const deductionTotal = calculateTotalAmount(body.deduction);
+      const gross_salary =
+        employee.salary + earningTotal.amount - deductionTotal.amount;
+      const tax = body.tax;
+      const net_salary = gross_salary - tax;
+
+      const newPayroll: DeepPartial<Payroll> = {
+        employee: { id: employee_id },
+        status: 'Generated',
+        month: month,
+        year: year,
+        earning: req.body.earning,
+        deduction: req.body.deduction,
+        gross_salary: gross_salary,
+        tax: tax,
+        net_amount: net_salary,
+        is_staff_loan: existingStaffLoan ? true : false,
+        loan_deduction_amount: existingStaffLoan
+          ? req.body.loan_deduction_amount
+          : null,
+      };
+      await payrollRepository.save(newPayroll);
+
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
       const newStaffLoan = staffLoanRepository.create({
         employee: employee,
-        loan_amount: deduction,
+        loan_amount: employee.deduction,
         no_of_installments: 1,
-        installment_amount: deduction,
-        status: 'Generated',
+        installment_amount: employee.deduction,
+        status: 'Pending',
         action_by: req.user?.role_id,
+        type: 'Deduction',
       });
       await staffLoanRepository.save(newStaffLoan);
 
-      // Create record in Installment table
       const installmentRepository =
         queryRunner.manager.getRepository(Installment);
       const newInstallment = installmentRepository.create({
         staff_loan: newStaffLoan,
         pay_date: null as any,
-        amount: deduction,
+        amount: employee.deduction,
         month: month,
         year: year,
         status: false,
       });
       await installmentRepository.save(newInstallment);
 
-      // Create record in Payroll table
-      const payrollRepository = queryRunner.manager.getRepository(Payroll);
-      const newPayroll = payrollRepository.create({
-        ...body,
-        employee: employee,
-      });
-      await payrollRepository.save(newPayroll);
-
       sendResponse(res, 201, 'Payroll created successfully', newPayroll);
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to create payroll', error.message);
   }
+};
+
+const calculateTotalAmount = (
+  items: any[],
+): { name: string; amount: number } => {
+  let totalAmount = 0;
+  for (const item of items) {
+    if (!item.name || !item.amount || isNaN(item.amount)) {
+      throw new Error(
+        'Invalid payload. Name and amount are required for each item.',
+      );
+    }
+    totalAmount += item.amount;
+  }
+  return { name: 'Total', amount: totalAmount };
 };
 
 // Update payroll by ID

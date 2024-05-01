@@ -25,11 +25,41 @@ export class Payroll {
   @Column()
   status!: string;
 
-  @Column()
-  earning!: number;
+  // @Column()
+  // earning!: number;
 
-  @Column()
-  deduction!: number;
+  @Column({
+    type: 'jsonb',
+    array: false,
+    name: 'earning',
+    default: () => "'[]'",
+    nullable: false,
+  })
+  public earning!: Array<{
+    name: string;
+    amount: number;
+  }>;
+
+  // @Column()
+  // deduction!: number;
+
+  @Column({
+    type: 'jsonb',
+    array: false,
+    name: 'deduction',
+    default: () => "'[]'",
+    nullable: false,
+  })
+  public deduction!: Array<{
+    name: string;
+    amount: number;
+  }>;
+
+  @Column({ nullable: true })
+  gross_salary!: number;
+
+  @Column({ nullable: true })
+  tax!: number;
 
   @Column()
   net_amount!: number;
@@ -37,16 +67,16 @@ export class Payroll {
   @Column()
   is_staff_loan!: boolean;
 
-  @Column()
+  @Column({ nullable: true })
   loan_deduction_amount!: number;
 
-  @Column()
+  @Column({ nullable: true })
   payment_mode!: string;
 
   @Column({ nullable: true })
   payment_date!: Date;
 
-  @Column()
+  @Column({ nullable: true })
   note!: string;
 
   @Column({ nullable: true })
