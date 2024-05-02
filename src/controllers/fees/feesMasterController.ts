@@ -9,6 +9,10 @@ import { FeesPayment } from '../../entity/FeesPayment';
 import { BankPayment } from '../../entity/BankPayment';
 import { Discount } from '../../entity/Discount';
 import { Fine } from '../../entity/Fine';
+import * as ejs from 'ejs';
+import * as pdf from 'html-pdf';
+import path from 'path';
+import fs from 'fs';
 
 export const feesAllocation = async (req: Request, res: Response) => {
   try {
@@ -333,4 +337,148 @@ export const searchFeeDues = async (req: Request, res: Response) => {
   } catch (error: any) {
     sendError(res, 500, 'Failed to get FeesMaster records', error.message);
   }
+};
+
+export const generateInvoice = async (req: Request, res: Response) => {
+  try {
+    const { student_id } = req.params;
+
+    if (!student_id) {
+      return res.status(400).json({ error: 'Student ID is required' });
+    }
+
+    const studentRepository = AppDataSource.getRepository(Student);
+    const studentRecord = await studentRepository.findOne({
+      where: { id: +student_id },
+    });
+
+    if (!studentRecord) {
+      return sendError(res, 400, `Student with ID ${student_id} not found`);
+    }
+
+    const feesMasterRepository = AppDataSource.getRepository(FeesMaster);
+    const feesMasters = await feesMasterRepository
+      .createQueryBuilder('feesMaster')
+      .leftJoinAndSelect('feesMaster.feesGroups', 'feesGroup')
+      .leftJoinAndSelect('feesMaster.feesPayments', 'feesPayment')
+      .leftJoinAndSelect('feesMaster.student', 'student')
+      .leftJoinAndSelect('student.course', 'course')
+      .leftJoinAndSelect('student.semester', 'semester')
+      .leftJoinAndSelect('student.session', 'session')
+      .leftJoinAndSelect('student.section', 'section')
+      .where('feesMaster.student_id = :studentId', {
+        studentId: parseInt(student_id),
+      })
+      .getMany();
+
+    const feesData = feesMasters.map((feesMaster) => ({
+      feesGroups: feesMaster.feesGroups.map((feesGroup) => ({
+        ...feesGroup,
+        due_date: new Date(feesGroup.due_date).toLocaleDateString('en-GB'),
+      })),
+      feesMaster: feesMaster,
+    }));
+
+    if (feesMasters.length === 0) {
+      return res
+        .status(404)
+        .json({ error: 'No records found for the specified student ID' });
+    }
+
+    // Generate invoice number
+    const invoiceNumber = generateInvoiceNumber();
+
+    const invoiceDate = new Date().toLocaleDateString('en-GB');
+
+    // Render the EJS template with the data
+    const htmlContent = await ejs.renderFile(ejsFilePath, {
+      feesData,
+      invoiceNumber,
+      invoiceDate,
+      studentName: feesMasters[0].student?.first_name,
+      enrollment: feesMasters[0].student?.enrollment_no,
+      address: feesMasters[0].student?.current_address,
+      course: feesMasters[0].student.course?.name,
+      semester: feesMasters[0].student.semester?.semester,
+      section: feesMasters[0].student.section?.section,
+      year: feesMasters[0].student.session?.session,
+    });
+
+    // Define PDF options
+    const pdfOptions: pdf.CreateOptions = {
+      format: 'A4',
+      border: { top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' },
+      footer: {
+        height: '15mm',
+        contents: {
+          default:
+            '<div style="text-align:center;"><span>{{page}} of {{pages}}</span></div>',
+        },
+      },
+    };
+
+    // Generate PDF
+    const uploadFolder = path.join(__dirname, '../../../', 'uploads/Invoice');
+    if (!fs.existsSync(uploadFolder)) {
+      fs.mkdirSync(uploadFolder, { recursive: true });
+    }
+    const pdfFileName = `invoice_${student_id}.pdf`;
+    const pdfFilePath = path.join(uploadFolder, pdfFileName);
+    await generatePDF(htmlContent, pdfOptions, pdfFilePath);
+
+    // Send response
+    return res
+      .status(200)
+      .json({ message: 'PDF generated successfully', pdfFilePath });
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    return res.status(500).json({ error: 'Failed to generate PDF' });
+  }
+};
+
+// Define the path to your EJS file
+const ejsFilePath = path.join(
+  __dirname,
+  '../../../',
+  'src',
+  'html',
+  'feesInvoice.ejs',
+);
+
+// Function to generate the PDF
+const generatePDF = async (
+  htmlContent: string,
+  pdfOptions: pdf.CreateOptions,
+  pdfFilePath: string,
+) => {
+  const options: pdf.CreateOptions = {
+    ...pdfOptions,
+    childProcessOptions: {
+      //@ts-ignore
+      env: {
+        ...process.env,
+        OPENSSL_CONF: '/dev/null',
+      },
+    },
+  };
+  return new Promise<void>((resolve, reject) => {
+    pdf.create(htmlContent, options).toFile(pdfFilePath, (err, res) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+};
+
+const generateInvoiceNumber = () => {
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hour = String(now.getHours()).padStart(2, '0');
+  const minute = String(now.getMinutes()).padStart(2, '0');
+  const second = String(now.getSeconds()).padStart(2, '0');
+  return `${year}${month}${day}${hour}${minute}${second}`;
 };

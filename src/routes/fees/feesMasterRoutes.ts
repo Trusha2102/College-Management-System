@@ -37,4 +37,9 @@ router.get(
 
 // router.get('/list', permissionProtect, feesGroupController.getAllFeesGroups);
 
+router.get(
+  '/generate-invoice/view/:student_id',
+  feesMasterController.generateInvoice,
+);
+
 export default router;

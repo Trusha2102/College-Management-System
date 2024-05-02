@@ -18,7 +18,15 @@ export const getFeesPaymentByPaymentId = async (
 
     const feesPayment = await feesPaymentRepository.findOne({
       where: { payment_id },
-      relations: ['student', 'feesMaster'],
+      relations: [
+        'student',
+        'feesMaster',
+        'feesMaster.feesGroups',
+        'student.course',
+        'student.semester',
+        'student.section',
+        'student.session',
+      ],
     });
 
     if (!feesPayment) {

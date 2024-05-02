@@ -43,6 +43,12 @@ export const getAllBankPayments = async (req: Request, res: Response) => {
       .createQueryBuilder('bank_payment')
       .leftJoinAndSelect('bank_payment.feesPayment', 'feesPayment')
       .leftJoinAndSelect('feesPayment.student', 'student')
+      .leftJoinAndSelect('feesPayment.feesMaster', 'feesMaster')
+      .leftJoinAndSelect('feesMaster.feesGroups', 'feesGroups')
+      .leftJoinAndSelect('student.course', 'course')
+      .leftJoinAndSelect('student.semester', 'semester')
+      .leftJoinAndSelect('student.session', 'session')
+      .leftJoinAndSelect('student.section', 'section')
       .orderBy('bank_payment.id', 'DESC');
 
     if (search) {

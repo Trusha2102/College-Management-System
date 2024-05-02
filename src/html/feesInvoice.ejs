@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fees Invoice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px; 
+            margin: 0;
+            padding: 0; 
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 20px; 
+        }
+        .logo img {
+            max-width: 150px;
+        }
+        .invoice-number {
+            text-align: right;
+        }
+        .details {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 20px; 
+            border-top: 1px solid #ddd; 
+            border-bottom: 1px solid #ddd; 
+        }
+        .school-heading {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .school-heading-h2, .school-heading-h3 {
+            margin-top: 5px;
+            margin-bottom: 5px;
+            font-size: 16px;
+            text-align: center;
+            width:100%
+        }
+        table {
+            width: 100%;
+            max-width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px; 
+            text-align: left;
+            font-size: 9px; 
+            font-family: 'Courier New', Courier, monospace; 
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .calculation {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 10px; 
+            text-align: right;
+            padding: 20px; 
+            font-family: 'Courier New', Courier, monospace;
+            flex-basis: 45%;
+        }
+        .student-details p,
+        .calculation p {
+            text-align: justify; 
+            margin: 0; 
+            padding: 2px 0; 
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="school-heading">R. H. Patel Institute of Technology<br><h2>Approved by AICTE & Affiliated with GTU Ahmedabad</h2><br><h3 class="school-heading-h3">Fees Receipt</h3></h1>
+        <div class="invoice-number">
+            Invoice Number: <%= invoiceNumber %><br>
+            Date: <%= invoiceDate %>
+        </div>
+    </div>
+    <div class="details">
+        <div class="student-details">
+            <p><strong>Student Details</strong></p>
+            <p>Student Name: <%= studentName %></p>
+            <p>Enrollment: <%= enrollment %></p>
+            <p>Course: <%= course %></p>
+            <p>Semester: <%= semester %></p>
+            <p>Section: <%= section %></p>
+            <p>Year: <%= year %></p>
+            <p>Address: <%= address %></p>
+
+        </div>
+    </div>
+    <div class="invoice-details">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 20%;">Fees Group</th> 
+                    <th style="width: 10%;">Due Date</th>
+                    <th style="width: 10%;">Status</th>
+                    <th style="width: 10%;">Amount</th>
+                    <th style="width: 10%;">Discount</th>
+                    <th style="width: 10%;">Fine</th>
+                    <th style="width: 10%;">Paid</th>
+                    <th style="width: 10%;">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% let grandTotal = 0; %>
+                <% let totalDiscount = 0; %>
+                <% let totalPaid = 0; %>
+                <% let totalFine = 0; %>
+                <% let totalBalance = 0; %>
+                <% let totalPaidWithFine = 0; %>
+                <% feesData.forEach(function(item) { %>
+                    <% item.feesGroups.forEach(function(feesGroup) { %>
+                        <% const amount = item.feesMaster.net_amount || 0; %>
+                        <% const discount = item.feesMaster.discount_amount || 0; %>
+                        <% const fine = item.feesMaster.fine_amount || 0; %>
+                        <% const paid = item.feesMaster.paid_amount || 0; %>
+                        <% const balance = amount - discount - paid + fine; %>
+                        <tr>
+                            <td><%= feesGroup.name %></td>
+                            <td><%= feesGroup.due_date %></td>
+                            <td><%= item.feesMaster.status %></td>
+                            <td><%= amount %></td>
+                            <td><%= discount %></td>
+                            <td><%= fine %></td>
+                            <td><%= paid %></td>
+                            <td><%= balance %></td>
+                        </tr>
+                        <% grandTotal += amount; %>
+                        <% totalDiscount += discount; %>
+                        <% totalPaidWithFine += paid + fine; %>
+                        <% totalFine += fine; %>
+                        <% totalPaid += paid; %>
+                        <% totalBalance += balance; %>
+
+
+                    <% }); %>
+                <% }); %>
+            </tbody>
+        </table>
+        <div class="calculation">
+            <p>Grand Total: <%= grandTotal %></p>
+            <p>Discount: <%= totalDiscount %></p>
+            <p>Fine: <%= totalFine %></p>
+            <p>Paid: <%= totalPaid %></p>
+            <p>Total Paid: <%= totalPaidWithFine %></p>
+            <p>Total Balance: <%= totalBalance %></p>
+
+        </div>
+    </div>
+</body>
+</html>
