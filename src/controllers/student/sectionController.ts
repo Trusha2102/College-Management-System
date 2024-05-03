@@ -5,6 +5,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike } from 'typeorm';
 import { Semester } from '../../entity/Semester';
+import { createActivityLog } from '../../utils/activityLog';
 
 export const createSection = async (req: Request, res: Response) => {
   try {
@@ -44,6 +45,11 @@ export const createSection = async (req: Request, res: Response) => {
         section: trimmedSectionName,
         semester: semester,
       });
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Section named ${trimmedSectionName}  for Semester: ${section.semester.semester} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       await sectionRepository.save(newSection);
       sendResponse(res, 201, 'Section created successfully', newSection);
@@ -162,6 +168,12 @@ export const updateSectionById = async (req: Request, res: Response) => {
       updatedSection.section = section;
       updatedSection.semester = semester;
       await sectionRepository.save(updatedSection);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Section named ${updatedSection.section} for Semester: ${section.semester.semester} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Section updated successfully', updatedSection);
     });
   } catch (error: any) {
@@ -183,6 +195,11 @@ export const deleteSectionById = async (req: Request, res: Response) => {
         sendError(res, 404, 'Section not found');
         return;
       }
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Section named ${section.section} for Semester: ${section.semester.semester} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       await sectionRepository.remove(section);
       sendResponse(res, 200, 'Section deleted successfully');

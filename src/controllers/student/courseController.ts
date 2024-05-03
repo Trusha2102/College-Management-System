@@ -138,6 +138,12 @@ export const updateCourseById = async (req: Request, res: Response) => {
 
       courseRepository.merge(course, { ...req.body, name: trimmedCourseName });
       const updatedCourse = await courseRepository.save(course);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Course titled ${course.name} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Course updated successfully', updatedCourse);
     });
   } catch (error: any) {
@@ -160,6 +166,12 @@ export const deleteCourseById = async (req: Request, res: Response) => {
         return;
       }
       await courseRepository.remove(course);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Course titled ${course.name} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Course deleted successfully');
     });
   } catch (error: any) {

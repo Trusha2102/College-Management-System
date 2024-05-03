@@ -6,6 +6,7 @@ import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike } from 'typeorm';
+import { createActivityLog } from '../../utils/activityLog';
 
 export const createSemester = async (req: Request, res: Response) => {
   try {
@@ -50,6 +51,12 @@ export const createSemester = async (req: Request, res: Response) => {
         course,
       });
       await semesterRepository.save(newSemester);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Semester named ${newSemester.semester} for Course: ${newSemester.course.name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 201, 'Semester created successfully', newSemester);
     });
   } catch (error: any) {
@@ -123,6 +130,12 @@ export const updateSemesterById = async (req: Request, res: Response) => {
       semesterToUpdate.course = courseId;
 
       await semesterRepository.save(semesterToUpdate);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Semester named ${semesterToUpdate.semester} for Course: ${semesterToUpdate.course.name} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Semester updated successfully', semesterToUpdate);
     });
   } catch (error: any) {
@@ -145,6 +158,12 @@ export const deleteSemesterById = async (req: Request, res: Response) => {
         return;
       }
       await semesterRepository.remove(semesterToDelete);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Semester named ${semesterToDelete.semester} for Course: ${semesterToDelete.course.name} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Semester deleted successfully');
     });
   } catch (error: any) {

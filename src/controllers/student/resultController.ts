@@ -8,6 +8,7 @@ import { Course } from '../../entity/Course';
 import { Semester } from '../../entity/Semester';
 import { StudentHistory } from '../../entity/StudentHistory';
 import { Session } from '../../entity/Session';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create a new result
 export const createResult = async (req: Request, res: Response) => {
@@ -91,6 +92,10 @@ export const createResult = async (req: Request, res: Response) => {
           validateExistence(courseRepository, courseId, 'Course'),
         ]);
 
+        const student = await studentRepository.findOne({
+          where: { id: studentId },
+        });
+
         if (validateResult.includes(false)) return;
 
         const newResult = resultRepository.create({
@@ -118,6 +123,11 @@ export const createResult = async (req: Request, res: Response) => {
           .where('studentId = :studentId', { studentId })
           .andWhere('courseId = :courseId', { courseId })
           .execute();
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Result Added for Student: ${student?.first_name + ' ' + student?.last_name} in Course & Semester: ${student?.course.name + '(' + student?.semester.semester + ')' + '-' + student?.session.session} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
       }
 
       sendResponse(res, 201, 'Results created successfully');

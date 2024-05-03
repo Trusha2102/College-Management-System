@@ -3,6 +3,7 @@ import { Discount } from '../../entity/Discount';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { createActivityLog } from '../../utils/activityLog';
 
 export const createDiscount = async (req: Request, res: Response) => {
   try {
@@ -13,6 +14,11 @@ export const createDiscount = async (req: Request, res: Response) => {
       const discountRepository = AppDataSource.getRepository(Discount);
       const newDiscount = discountRepository.create({ name, discount_code });
       await discountRepository.save(newDiscount);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Discount titled ${newDiscount.name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(res, 201, 'Discount created successfully', newDiscount);
     });
@@ -45,6 +51,11 @@ export const updateDiscount = async (req: Request, res: Response) => {
 
       await discountRepository.save(existingDiscount);
 
+      await createActivityLog(
+        req.user?.id || 0,
+        `Discount titled ${existingDiscount.name} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Discount updated successfully', existingDiscount);
     });
   } catch (error: any) {
@@ -70,6 +81,11 @@ export const deleteDiscount = async (req: Request, res: Response) => {
       }
 
       await discountRepository.remove(existingDiscount);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Discount titled ${existingDiscount.name} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(res, 200, 'Discount deleted successfully');
     });

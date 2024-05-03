@@ -5,6 +5,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
 import runTransaction from '../../utils/runTransaction';
+import { createActivityLog } from '../../utils/activityLog';
 
 const upload = configureMulter('./uploads/Notice', 2 * 1024 * 1024); //2MB Limit
 
@@ -107,6 +108,12 @@ const createNotice = async (req: Request, res: Response) => {
           attachment,
         });
         await noticeRepository.save(newNotice);
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Notice titled ${newNotice[0].title} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         sendResponse(res, 201, 'Notice created successfully', newNotice);
       });
     });
@@ -155,6 +162,12 @@ const updateNoticeById = async (req: Request, res: Response) => {
         });
 
         await noticeRepository.save(notice);
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Notice titled ${notice.title} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         sendResponse(res, 200, 'Notice updated successfully', notice);
       });
     });
@@ -179,6 +192,12 @@ const deleteNoticeById = async (req: Request, res: Response) => {
         return;
       }
       await noticeRepository.remove(notice);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Notice titled ${notice.title} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Notice deleted successfully');
     });
   } catch (error) {

@@ -7,6 +7,7 @@ import { Role } from '../../entity/Role';
 import { Module } from '../../entity/Module';
 import { CasbinService } from '../../casbin/enforcer';
 import { In, Not } from 'typeorm';
+import { createActivityLog } from '../../utils/activityLog';
 const casbinService = new CasbinService();
 
 interface GroupedPermissions {
@@ -69,6 +70,11 @@ const createPermission = async (req: Request, res: Response) => {
           createdPermissions.push(permissionRecord);
         }
       }
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Permission created for Role: ${role.name} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(res, 201, 'Permission Created Successfully');
     });
@@ -160,6 +166,11 @@ const updatePermissionById = async (req: Request, res: Response) => {
     });
 
     if (!errorOccurred) {
+      await createActivityLog(
+        req.user?.id || 0,
+        `Permission updated for Role: ${role.name} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Permissions updated successfully');
     }
   } catch (error) {

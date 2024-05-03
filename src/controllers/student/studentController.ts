@@ -13,6 +13,7 @@ import { ParentDetails } from '../../entity/ParentDetails';
 import { Section } from '../../entity/Section';
 import { FeesMaster } from '../../entity/FeesMaster';
 import { FeesGroup } from '../../entity/FeesGroup';
+import { createActivityLog } from '../../utils/activityLog';
 
 const upload = configureMulter('./uploads/Student', 200 * 1024 * 1024); // 200MB limit
 
@@ -190,6 +191,11 @@ const createStudent = async (req: Request, res: Response) => {
           session: session,
           section: section,
         });
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Student: ${req.body.first_name + ' ' + req.body.first_name} in Course & Semester: ${course.name + '(' + semester.semester + ')' + '-' + session.session} with Enrollment No: ${body.enrollment_no} created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
 
         await studentRepository.save(student);
 
@@ -508,6 +514,11 @@ const updateStudentById = async (req: Request, res: Response) => {
 
         studentRepository.merge(student, updatedData);
 
+        await createActivityLog(
+          req.user?.id || 0,
+          `Student: ${req.body.first_name + ' ' + req.body.first_name} in Course & Semester: ${student.course.name + '(' + student.semester.semester + ')' + '-' + student.session.session} with Enrollment No: ${student.enrollment_no} updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         updatedStudent = await studentRepository.save(student);
 
         if (updatedStudent && updatedStudent.parent_details) {
@@ -639,6 +650,12 @@ const deleteStudentsByIds = async (req: Request, res: Response) => {
         }
 
         student.is_active = false;
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Student: ${req.body.first_name + ' ' + req.body.first_name} in Course & Semester: ${student.course.name + '(' + student.semester.semester + ')' + '-' + student.session.session} with Enrollment No: ${student.enrollment_no} deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         await studentRepository.save(student);
       }
       sendResponse(
