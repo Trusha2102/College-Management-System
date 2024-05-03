@@ -39,7 +39,7 @@ export const createLeaveType = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Leave Type titled ${createdLeaveType[0].name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Leave Type titled ${req.body.name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       sendResponse(

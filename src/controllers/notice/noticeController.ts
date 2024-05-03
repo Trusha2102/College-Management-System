@@ -111,7 +111,7 @@ const createNotice = async (req: Request, res: Response) => {
 
         await createActivityLog(
           req.user?.id || 0,
-          `Notice titled ${newNotice[0].title} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+          `Notice titled ${req.body.title} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
         );
 
         sendResponse(res, 201, 'Notice created successfully', newNotice);
