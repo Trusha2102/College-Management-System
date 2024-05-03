@@ -305,7 +305,7 @@ export const searchFeeDues = async (req: Request, res: Response) => {
 
     const currentDate = new Date();
     const feesMasterRepository = AppDataSource.getRepository(FeesMaster);
-    const { feesGroup, section, course, semester } = req.query;
+    const { fees_group_id, section_id, course_id, semester_id } = req.query;
 
     let query = feesMasterRepository
       .createQueryBuilder('feesMaster')
@@ -319,24 +319,24 @@ export const searchFeeDues = async (req: Request, res: Response) => {
       })
       .andWhere('feesGroup.due_date <= :currentDate', { currentDate });
 
-    if (feesGroup) {
-      query = query.andWhere('feesGroup.name ILIKE :feesGroup', {
-        feesGroup: `%${feesGroup}%`,
+    if (fees_group_id) {
+      query = query.andWhere('feesGroup.id = :fees_group_id', {
+        fees_group_id: +fees_group_id,
       });
     }
-    if (section) {
-      query = query.andWhere('section.section ILIKE :section', {
-        section: `%${section}%`,
+    if (section_id) {
+      query = query.andWhere('section.id = :section_id', {
+        section_id: +section_id,
       });
     }
-    if (course) {
-      query = query.andWhere('course.name ILIKE :course', {
-        course: `%${course}%`,
+    if (course_id) {
+      query = query.andWhere('course.id = :course_id', {
+        course_id: +course_id,
       });
     }
-    if (semester) {
-      query = query.andWhere('semester.semester ILIKE :semester', {
-        semester: `%${semester}%`,
+    if (semester_id) {
+      query = query.andWhere('semester.id = :semester_id', {
+        semester_id: +semester_id,
       });
     }
 
@@ -357,7 +357,7 @@ export const searchFeeDues = async (req: Request, res: Response) => {
       totalPages,
     });
   } catch (error: any) {
-    sendError(res, 500, 'Failed to get FeesMaster records', error.message);
+    sendError(res, 500, 'Failed to get Fees Due records', error.message);
   }
 };
 
