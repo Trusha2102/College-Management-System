@@ -14,6 +14,13 @@ export const updateBankPayment = async (req: Request, res: Response) => {
 
     const bankPayment = await bankPaymentRepository.findOne({
       where: { id: +id },
+      relations: [
+        'feesPayment',
+        'feesPayment.student',
+        'feesPayment.student.course',
+        'feesPayment.student.semester',
+        'feesPayment.student.session',
+      ],
     });
     if (!bankPayment) {
       sendError(res, 404, 'BankPayment not found');
@@ -123,6 +130,13 @@ export const deleteBankPayment = async (req: Request, res: Response) => {
     // Find the BankPayment record by ID
     const bankPayment = await bankPaymentRepository.findOne({
       where: { id: +id },
+      relations: [
+        'feesPayment',
+        'feesPayment.student',
+        'feesPayment.student.course',
+        'feesPayment.student.semester',
+        'feesPayment.student.session',
+      ],
     });
 
     if (!bankPayment) {
@@ -135,7 +149,7 @@ export const deleteBankPayment = async (req: Request, res: Response) => {
 
     await createActivityLog(
       req.user?.id || 0,
-      `Bank Payment for Student: ${bankPayment.feesPayment.student.first_name + ' ' + bankPayment.feesPayment.student.last_name} in Course & Semester: ${bankPayment.feesPayment.student.course.name + '(' + bankPayment.feesPayment.student.semester.semester + ')' + '-' + bankPayment.feesPayment.student.session.session} deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      `Bank Payment for Student: ${bankPayment.feesPayment?.student?.first_name + ' ' + bankPayment.feesPayment?.student?.last_name} in Course & Semester: ${bankPayment.feesPayment?.student?.course.name + '(' + bankPayment.feesPayment?.student?.semester.semester + ')' + '-' + bankPayment.feesPayment?.student?.session.session} deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
     );
 
     // Send success response

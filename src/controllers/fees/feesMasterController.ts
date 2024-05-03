@@ -40,6 +40,7 @@ export const feesAllocation = async (req: Request, res: Response) => {
       for (const student_id of student_ids) {
         const existingStudent = await studentRepository.findOne({
           where: { id: student_id },
+          relations: ['course', 'semester', 'session'],
         });
         if (!existingStudent) {
           errors.push(`Student with id ${student_id} not found`);
@@ -95,7 +96,7 @@ export const feesAllocation = async (req: Request, res: Response) => {
 
         await createActivityLog(
           req.user?.id || 0,
-          `Fees Allocation of Student: ${existingStudent.first_name + ' ' + existingStudent.last_name}, Enrollment No:${existingStudent.enrollment_no}  in Course & Semester: ${existingStudent.course.name + '(' + existingStudent.semester.semester + ')' + '-' + existingStudent.session.session} done by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+          `Fees Allocation of Student: ${existingStudent.first_name + ' ' + existingStudent.last_name}, Enrollment No:${existingStudent.enrollment_no}  in Course & Semester: ${existingStudent.course?.name + '(' + existingStudent.semester?.semester + ')' + '-' + existingStudent.session?.session} done by ${req.user?.first_name + ' ' + req.user?.last_name}`,
         );
       }
     });
@@ -214,6 +215,12 @@ export const collectFees = async (req: Request, res: Response) => {
 
         const feesMaster = await feesMasterRepository.findOne({
           where: { id: fees_master_id, student_id: student_id },
+          relations: [
+            'student',
+            'student.course',
+            'student.semester',
+            'student.session',
+          ],
         });
         if (!feesMaster) {
           sendError(
@@ -285,7 +292,7 @@ export const collectFees = async (req: Request, res: Response) => {
 
         await createActivityLog(
           req.user?.id || 0,
-          `Fees Collected of Student: ${feesMaster.student.first_name + ' ' + feesMaster.student.last_name}, Enrollment No:${feesMaster.student.enrollment_no}  in Course & Semester: ${feesMaster.student.course.name + '(' + feesMaster.student.semester.semester + ')' + '-' + feesMaster.student.session.session} of Amount: ${amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+          `Fees Collected of Student: ${feesMaster.student.first_name + ' ' + feesMaster.student.last_name}, Enrollment No:${feesMaster.student.enrollment_no}  in Course & Semester: ${feesMaster.student.course?.name + '(' + feesMaster.student.semester?.semester + ')' + '-' + feesMaster.student.session?.session} of Amount: ${amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
         );
       }
 

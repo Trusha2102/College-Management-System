@@ -166,10 +166,10 @@ const updatePermissionById = async (req: Request, res: Response) => {
     });
 
     if (!errorOccurred) {
-      await createActivityLog(
-        req.user?.id || 0,
-        `Permission updated for Role: ${role.name} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
-      );
+      // await createActivityLog(
+      //   req.user?.id || 0,
+      //   `Permission updated for Role: ${role.name} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      // );
 
       sendResponse(res, 200, 'Permissions updated successfully');
     }

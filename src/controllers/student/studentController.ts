@@ -194,7 +194,7 @@ const createStudent = async (req: Request, res: Response) => {
 
         await createActivityLog(
           req.user?.id || 0,
-          `Student: ${req.body.first_name + ' ' + req.body.first_name} in Course & Semester: ${course.name + '(' + semester.semester + ')' + '-' + session.session} with Enrollment No: ${body.enrollment_no} created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+          `Student: ${req.body.first_name + ' ' + req.body?.last_name} in Course & Semester: ${course.name + '(' + semester.semester + ')' + '-' + session.session} with Enrollment No: ${body.enrollment_no} created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
         );
 
         await studentRepository.save(student);
@@ -440,7 +440,7 @@ const updateStudentById = async (req: Request, res: Response) => {
           queryRunner.manager.getRepository(ParentDetails);
         const student = await studentRepository.findOne({
           where: { id: +id },
-          relations: ['parent_details'],
+          relations: ['parent_details', 'course', 'semester', 'session'],
         });
         if (!student) {
           sendError(res, 404, 'Student not found');
@@ -516,7 +516,7 @@ const updateStudentById = async (req: Request, res: Response) => {
 
         await createActivityLog(
           req.user?.id || 0,
-          `Student: ${req.body.first_name + ' ' + req.body.first_name} in Course & Semester: ${student.course.name + '(' + student.semester.semester + ')' + '-' + student.session.session} with Enrollment No: ${student.enrollment_no} updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+          `Student: ${student.first_name + ' ' + student.last_name} in Course & Semester: ${student.course?.name + '(' + student.semester?.semester + ')' + '-' + student.session?.session} with Enrollment No: ${student.enrollment_no} updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
         );
 
         updatedStudent = await studentRepository.save(student);
@@ -640,6 +640,7 @@ const deleteStudentsByIds = async (req: Request, res: Response) => {
       for (const idOfStudent of id) {
         let student = await studentRepository.findOne({
           where: { id: +idOfStudent },
+          relations: ['course', 'semester', 'session'],
         });
         if (!student) {
           console.warn(
@@ -653,7 +654,7 @@ const deleteStudentsByIds = async (req: Request, res: Response) => {
 
         await createActivityLog(
           req.user?.id || 0,
-          `Student: ${req.body.first_name + ' ' + req.body.first_name} in Course & Semester: ${student.course.name + '(' + student.semester.semester + ')' + '-' + student.session.session} with Enrollment No: ${student.enrollment_no} deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+          `Student: ${student.first_name + ' ' + student.last_name} in Course & Semester: ${student.course?.name + '(' + student.semester?.semester + ')' + '-' + student.session?.session} with Enrollment No: ${student?.enrollment_no} deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
         );
 
         await studentRepository.save(student);

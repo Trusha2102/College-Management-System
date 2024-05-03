@@ -94,6 +94,7 @@ export const createResult = async (req: Request, res: Response) => {
 
         const student = await studentRepository.findOne({
           where: { id: studentId },
+          relations: ['course', 'semester', 'session'],
         });
 
         if (validateResult.includes(false)) return;
@@ -126,7 +127,7 @@ export const createResult = async (req: Request, res: Response) => {
 
         await createActivityLog(
           req.user?.id || 0,
-          `Result Added for Student: ${student?.first_name + ' ' + student?.last_name} in Course & Semester: ${student?.course.name + '(' + student?.semester.semester + ')' + '-' + student?.session.session} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+          `Result Added for Student: ${student?.first_name + ' ' + student?.last_name} in Course & Semester: ${student?.course?.name + '(' + student?.semester?.semester + ')' + '-' + student?.session?.session} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
         );
       }
 

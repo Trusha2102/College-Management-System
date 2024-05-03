@@ -48,7 +48,7 @@ export const createSection = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Section named ${trimmedSectionName}  for Semester: ${section.semester.semester} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Section named ${trimmedSectionName}  for Semester: ${section.semester?.semester} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       await sectionRepository.save(newSection);
@@ -141,6 +141,7 @@ export const updateSectionById = async (req: Request, res: Response) => {
 
       const updatedSection = await sectionRepository.findOne({
         where: { id: +id },
+        relations: ['semester'],
       });
       if (!updatedSection) {
         sendError(res, 404, 'Section not found');
@@ -171,7 +172,7 @@ export const updateSectionById = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Section named ${updatedSection.section} for Semester: ${section.semester.semester} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Section named ${updatedSection.section} for Semester: ${updatedSection.semester.semester} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       sendResponse(res, 200, 'Section updated successfully', updatedSection);
@@ -190,6 +191,7 @@ export const deleteSectionById = async (req: Request, res: Response) => {
       const sectionRepository = queryRunner.manager.getRepository(Section);
       const section = await sectionRepository.findOne({
         where: { id: +id },
+        relations: ['semester'],
       });
       if (!section) {
         sendError(res, 404, 'Section not found');

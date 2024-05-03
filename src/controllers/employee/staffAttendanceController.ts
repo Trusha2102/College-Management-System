@@ -21,6 +21,7 @@ export const createAttendance = async (req: Request, res: Response) => {
       for (const attendanceData of attendanceRecords) {
         const employee = await employeeRepository.findOne({
           where: { id: attendanceData.employee_id },
+          relations: ['user'],
         });
 
         if (!employee) {
@@ -144,6 +145,7 @@ export const updateAttendanceById = async (req: Request, res: Response) => {
     const attendanceRepository = queryRunner.manager.getRepository(Attendance);
     const attendanceToUpdate = await attendanceRepository.findOne({
       where: { id: +id },
+      relations: ['employee', 'employee.user'],
     });
     if (!attendanceToUpdate) {
       return sendError(res, 404, 'Attendance not found');
@@ -159,7 +161,7 @@ export const updateAttendanceById = async (req: Request, res: Response) => {
 
     await createActivityLog(
       req.user?.id || 0,
-      `Attendance for Employee ${attendanceToUpdate.employee.user.first_name + ' ' + attendanceToUpdate.employee.user.last_name} on Date: ${date} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      `Attendance for Employee ${attendanceToUpdate.employee?.user?.first_name + ' ' + attendanceToUpdate.employee?.user?.last_name} on Date: ${date} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
     );
 
     sendResponse(

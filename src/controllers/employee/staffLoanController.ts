@@ -15,6 +15,7 @@ export const createStaffLoan = async (req: Request, res: Response) => {
     const employeeRepository = queryRunner.manager.getRepository(Employee);
     const employee = await employeeRepository.findOne({
       where: { id: +req.body.employee_id },
+      relations: ['user'],
     });
     if (!employee) {
       sendError(res, 404, 'Employee not found');
@@ -82,7 +83,7 @@ export const createStaffLoan = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Staff Loan applied for Employee ${employee.user.first_name + ' ' + employee.user.last_name} of Amount: ${'Rs' + req.body.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Staff Loan applied for Employee ${employee.user.first_name + ' ' + employee.user.last_name} of Amount: ${'Rs.' + req.body.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       // Save Installment records
@@ -137,6 +138,7 @@ export const updateStaffLoanById = async (req: Request, res: Response) => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
       const staffLoanToUpdate = await staffLoanRepository.findOne({
         where: { id: +id },
+        relations: ['employee', 'employee.user'],
       });
       if (!staffLoanToUpdate) {
         sendError(res, 404, 'StaffLoan not found');
@@ -148,7 +150,7 @@ export const updateStaffLoanById = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Staff Loan details updated for Employee ${staffLoanToUpdate.employee.user.first_name + ' ' + staffLoanToUpdate.employee.user.last_name} of Amount: ${'Rs' + updatedStaffLoan.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Staff Loan details updated for Employee ${staffLoanToUpdate.employee?.user?.first_name + ' ' + staffLoanToUpdate.employee?.user?.last_name} of Amount: ${'Rs.' + updatedStaffLoan.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       sendResponse(
@@ -190,6 +192,7 @@ export const deleteStaffLoanById = async (req: Request, res: Response) => {
       // If not found, proceed with deleting the StaffLoan
       const staffLoanToDelete = await staffLoanRepository.findOne({
         where: { id: +id },
+        relations: ['employee', 'employee.user'],
       });
 
       if (!staffLoanToDelete) {
@@ -201,7 +204,7 @@ export const deleteStaffLoanById = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Staff Loan deleted for Employee ${staffLoanToDelete.employee.user.first_name + ' ' + staffLoanToDelete.employee.user.last_name} of Amount: ${'Rs' + staffLoanToDelete.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Staff Loan deleted for Employee ${staffLoanToDelete.employee?.user?.first_name + ' ' + staffLoanToDelete.employee?.user?.last_name} of Amount: ${'Rs.' + staffLoanToDelete.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       sendResponse(res, 200, 'StaffLoan deleted successfully');

@@ -106,6 +106,7 @@ export const createPayroll = async (req: Request, res: Response) => {
     const employeeRepository = AppDataSource.getRepository(Employee);
     const employee = await employeeRepository.findOne({
       where: { id: employee_id },
+      relations: ['user'],
     });
     if (!employee) {
       sendError(res, 404, 'Employee not found');
@@ -210,6 +211,7 @@ export const updatePayrollById = async (req: Request, res: Response) => {
     const employeeRepository = AppDataSource.getRepository(Employee);
     const employee = await employeeRepository.findOne({
       where: { id: req.body.employee_id },
+      relations: ['user'],
     });
     if (!employee) {
       return sendError(res, 404, 'Employee not found');
@@ -269,7 +271,10 @@ export const deletePayrollById = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const payrollRepository = queryRunner.manager.getRepository(Payroll);
-      const payroll = await payrollRepository.findOne({ where: { id: +id } });
+      const payroll = await payrollRepository.findOne({
+        where: { id: +id },
+        relations: ['employee', 'employee.user'],
+      });
       if (!payroll) {
         sendError(res, 404, 'Payroll not found');
         return;
@@ -278,7 +283,7 @@ export const deletePayrollById = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Payroll for Employee ${payroll.employee.user.first_name + ' ' + payroll.employee.user.last_name} of Month & Year: ${payroll.month + ' ' + payroll.year} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Payroll for Employee ${payroll.employee.user?.first_name + ' ' + payroll.employee.user?.last_name} of Month & Year: ${payroll.month + ' ' + payroll.year} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       sendResponse(res, 200, 'Payroll deleted successfully');
