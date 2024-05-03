@@ -1,6 +1,6 @@
 import express from 'express';
 import * as permissionController from '../../controllers/permissions/permissionController';
-import permissionProtect from '../../middlewares/permissionMiddleware';
+// import permissionProtect from '../../middlewares/permissionMiddleware';
 
 const router = express.Router();
 
