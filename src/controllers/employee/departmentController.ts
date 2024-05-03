@@ -5,6 +5,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike } from 'typeorm';
 import { Employee } from '../../entity/Employee';
+import { createActivityLog } from '../../utils/activityLog';
 
 //Create Department
 export const createDepartment = async (req: Request, res: Response) => {
@@ -37,6 +38,11 @@ export const createDepartment = async (req: Request, res: Response) => {
 
       // Save the new department
       await departmentRepository.save(newDepartment);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Department named ${newDepartment.department} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(res, 201, 'Department created successfully', newDepartment);
     });
@@ -130,6 +136,11 @@ export const updateDepartment = async (req: Request, res: Response) => {
       departmentRepository.merge(existingDepartment, { department });
       await departmentRepository.save(existingDepartment);
 
+      await createActivityLog(
+        req.user?.id || 0,
+        `Department named ${existingDepartment.department} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(
         res,
         200,
@@ -176,6 +187,11 @@ export const deleteDepartmentById = async (req: Request, res: Response) => {
       }
 
       await departmentRepository.remove(department);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Department named ${department.department} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(res, 200, 'Department deleted successfully');
     });

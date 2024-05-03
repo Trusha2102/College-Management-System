@@ -283,6 +283,7 @@ const listStudents = async (req: Request, res: Response) => {
       section,
       course_id,
       semester_id,
+      discount_id,
       page = 1,
       limit = 10,
     } = req.query;
@@ -338,6 +339,12 @@ const listStudents = async (req: Request, res: Response) => {
     if (semester_id) {
       query = query.andWhere('semester.id = :semester_id', {
         semester_id,
+      });
+    }
+
+    if (discount_id) {
+      query = query.andWhere('feesMaster.discount_id = :discount_id', {
+        discount_id,
       });
     }
 

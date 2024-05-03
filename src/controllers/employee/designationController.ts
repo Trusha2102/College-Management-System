@@ -5,6 +5,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike } from 'typeorm';
 import { Employee } from '../../entity/Employee';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create Designation with Transaction and QueryRunner
 export const createDesignation = async (req: Request, res: Response) => {
@@ -37,6 +38,11 @@ export const createDesignation = async (req: Request, res: Response) => {
 
       // Save the new designation
       await designationRepository.save(newDesignation);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Designation named ${req.body.designation} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(
         res,
@@ -135,6 +141,11 @@ export const updateDesignation = async (req: Request, res: Response) => {
       designationRepository.merge(designation, req.body);
       await designationRepository.save(designation);
 
+      await createActivityLog(
+        req.user?.id || 0,
+        `Designation named ${designation.designation} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Designation updated successfully', designation);
     });
   } catch (error: any) {
@@ -176,6 +187,11 @@ export const deleteDesignationById = async (req: Request, res: Response) => {
       }
 
       await designationRepository.remove(designation);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Designation named ${designation.designation} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(res, 200, 'Designation deleted successfully');
     });

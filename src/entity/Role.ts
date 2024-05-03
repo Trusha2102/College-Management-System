@@ -8,7 +8,6 @@ import {
 } from 'typeorm';
 import { Permission } from './Permission';
 import { User } from './User';
-import { ActivityLog } from './ActivityLog';
 
 @Entity()
 export class Role {
@@ -23,9 +22,6 @@ export class Role {
 
   @OneToMany(() => User, (user) => user.role)
   user!: User[];
-
-  @OneToMany(() => ActivityLog, (activityLog) => activityLog.role)
-  activityLog!: ActivityLog[];
 
   @CreateDateColumn({
     name: 'created_at',

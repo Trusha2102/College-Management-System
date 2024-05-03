@@ -4,7 +4,12 @@ import jwt, { VerifyErrors, JwtPayload } from 'jsonwebtoken';
 declare global {
   namespace Express {
     interface Request {
-      user?: { role_id?: number };
+      user?: {
+        role_id?: number;
+        id?: number;
+        first_name?: string;
+        last_name?: string;
+      };
     }
   }
 }
@@ -19,23 +24,27 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   try {
     decodedToken = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'your_secret_key_here'
+      process.env.JWT_SECRET || 'your_secret_key_here',
     ) as JwtPayload;
   } catch (error) {
     return res.status(401).json({ message: 'Unauthorized: Invalid token' });
   }
 
   if (!decodedToken || typeof decodedToken !== 'object') {
-    return res.status(401).json({ message: 'Unauthorized: Invalid token format' });
+    return res
+      .status(401)
+      .json({ message: 'Unauthorized: Invalid token format' });
   }
 
-  const { role_id } = decodedToken;
+  const { role_id, id, first_name, last_name } = decodedToken;
   if (role_id === undefined) {
-    return res.status(401).json({ message: 'Unauthorized: Missing role_id in token' });
+    return res
+      .status(401)
+      .json({ message: 'Unauthorized: Missing role_id in token' });
   }
 
   // Attach the decoded token to the request object
-  req.user = { role_id };
+  req.user = { role_id, id, first_name, last_name };
 
   next();
 };

@@ -1,4 +1,3 @@
-// src/entities/ActivityLog.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,7 +7,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './User';
-import { Role } from './Role';
 
 @Entity()
 export class ActivityLog {
@@ -21,14 +19,11 @@ export class ActivityLog {
   @Column()
   user_id!: number;
 
-  @ManyToOne(() => Role, (role) => role.activityLog)
-  role!: Role;
-
-  @Column()
-  role_id!: number;
-
   @Column()
   action!: string;
+
+  @Column()
+  date!: Date;
 
   @CreateDateColumn({
     name: 'created_at',
