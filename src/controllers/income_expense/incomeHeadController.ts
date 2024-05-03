@@ -3,6 +3,7 @@ import AppDataSource from '../../data-source';
 import { IncomeHead } from '../../entity/IncomeHead';
 import runTransaction from '../../utils/runTransaction';
 import { sendResponse, sendError } from '../../utils/commonResponse';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create a new income head
 export const createIncomeHead = async (req: Request, res: Response) => {
@@ -18,6 +19,11 @@ export const createIncomeHead = async (req: Request, res: Response) => {
         description,
       });
       await incomeHeadRepository.save(newIncomeHead);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Income Head record titled ${newIncomeHead.income_head} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
       sendResponse(res, 201, 'Income head created successfully', newIncomeHead);
     });
   } catch (error: any) {
@@ -127,6 +133,12 @@ export const updateIncomeHeadById = async (req: Request, res: Response) => {
       incomeHead.income_head = income_head || incomeHead.income_head;
       incomeHead.description = description || incomeHead.description;
       await incomeHeadRepository.save(incomeHead);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Income Head record titled ${incomeHead.income_head} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Income head updated successfully', incomeHead);
     });
   } catch (error: any) {
@@ -151,6 +163,12 @@ export const deleteIncomeHeadById = async (req: Request, res: Response) => {
         return;
       }
       await incomeHeadRepository.remove(incomeHead);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Income Head record titled ${incomeHead.income_head} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Income head deleted successfully');
     });
   } catch (error: any) {

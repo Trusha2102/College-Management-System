@@ -7,6 +7,7 @@ import { Employee } from '../../entity/Employee';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
 import { LeaveDetail } from '../../entity/LeaveDetails';
+import { createActivityLog } from '../../utils/activityLog';
 
 const upload = configureMulter('./uploads/Leave', 2 * 1024 * 1024); // 2MB limit
 
@@ -165,7 +166,11 @@ export const updateLeave = async (req: Request, res: Response) => {
 
       await leaveRepository.save(leave);
 
-      await leaveRepository.save(leave);
+      await createActivityLog(
+        req.user?.id || 0,
+        `Leave record of Employee: ${leave.employee.user.first_name} of Days: ${leave.no_of_leave_days} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Leave updated successfully', leave);
     });
   } catch (error: any) {
@@ -189,6 +194,11 @@ export const deleteLeave = async (req: Request, res: Response) => {
       sendError(res, 404, 'Leave not found');
       return;
     }
+
+    await createActivityLog(
+      req.user?.id || 0,
+      `Leave record of Employee: ${leave.employee.user.first_name} of Days: ${leave.no_of_leave_days} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+    );
 
     await leaveRepository.remove(leave);
     sendResponse(res, 200, 'Leave deleted successfully');

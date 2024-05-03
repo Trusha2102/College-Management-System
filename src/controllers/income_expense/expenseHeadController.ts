@@ -3,6 +3,7 @@ import AppDataSource from '../../data-source';
 import { ExpenseHead } from '../../entity/ExpenseHead';
 import runTransaction from '../../utils/runTransaction';
 import { sendResponse, sendError } from '../../utils/commonResponse';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create a new expense head
 export const createExpenseHead = async (req: Request, res: Response) => {
@@ -18,6 +19,11 @@ export const createExpenseHead = async (req: Request, res: Response) => {
         description,
       });
       await expenseHeadRepository.save(newExpenseHead);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Expense Head record titled ${newExpenseHead.expense_head} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
       sendResponse(
         res,
         201,
@@ -113,6 +119,11 @@ export const updateExpenseHeadById = async (req: Request, res: Response) => {
       }
       expenseHead.expense_head = expense_head || expenseHead.expense_head;
       expenseHead.description = description || expenseHead.description;
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Expense Head record titled ${expenseHead.expense_head} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
       await expenseHeadRepository.save(expenseHead);
       sendResponse(res, 200, 'Expense head updated successfully', expenseHead);
     });
@@ -138,6 +149,12 @@ export const deleteExpenseHeadById = async (req: Request, res: Response) => {
         return;
       }
       await expenseHeadRepository.remove(expenseHead);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Expense Head record titled ${expenseHead.expense_head} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Expense head deleted successfully');
     });
   } catch (error: any) {

@@ -4,6 +4,7 @@ import AppDataSource from '../../data-source';
 import { Installment } from '../../entity/Installment';
 import { sendError, sendResponse } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Define the GET API handler function
 export const getInstallmentsByStaffLoanId = async (
@@ -108,6 +109,11 @@ export const updateInstallment = async (req: Request, res: Response) => {
       installmentRepository.merge(installmentToUpdate, req.body);
       const updatedInstallment =
         await installmentRepository.save(installmentToUpdate);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Installment with Staff Loan ID: ${installmentToUpdate.staff_loan.id} of Month & Year: ${installmentToUpdate.month + ' ' + installmentToUpdate.year} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
       sendResponse(
         res,
         200,
@@ -128,11 +134,22 @@ export const deleteInstallment = async (req: Request, res: Response) => {
       const installmentRepository =
         queryRunner.manager.getRepository(Installment);
       const { id } = req.params;
-      const deleteResult = await installmentRepository.delete(id);
-      if (deleteResult.affected === 0) {
+
+      const toBeDeletedInstallment = await installmentRepository.findOne({
+        where: { id: +id },
+      });
+
+      if (toBeDeletedInstallment) {
+        await installmentRepository.delete(id);
+      } else {
         sendError(res, 404, 'Installment not found');
         return;
       }
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Installment with Staff Loan ID: ${toBeDeletedInstallment.staff_loan.id} of Month & Year: ${toBeDeletedInstallment.month + ' ' + toBeDeletedInstallment.year} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
       sendResponse(res, 200, 'Installment deleted successfully');
     });
   } catch (error: any) {

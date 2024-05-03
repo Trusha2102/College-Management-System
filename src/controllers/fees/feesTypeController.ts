@@ -4,6 +4,7 @@ import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import { FeesType } from '../../entity/FeesType';
 import { FeesGroup } from '../../entity/FeesGroup';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create FeesType
 export const createFeesType = async (req: Request, res: Response) => {
@@ -12,6 +13,12 @@ export const createFeesType = async (req: Request, res: Response) => {
       const feesTypeRepository = AppDataSource.getRepository(FeesType);
       const newFeesType = feesTypeRepository.create(req.body);
       const savedFeesType = await feesTypeRepository.save(newFeesType);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fees Type named ${req.body.name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 201, 'FeesType created successfully', savedFeesType);
     });
   } catch (error: any) {
@@ -33,6 +40,12 @@ export const updateFeesType = async (req: Request, res: Response) => {
       const updatedFeesType = await feesTypeRepository.findOne({
         where: { id: +id },
       });
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fees Type named ${updatedFeesType?.name} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'FeesType updated successfully', updatedFeesType);
     });
   } catch (error: any) {
@@ -79,6 +92,11 @@ export const deleteFeesType = async (req: Request, res: Response) => {
       }
 
       await feesTypeRepository.delete(id);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fees Type named ${feesType.name} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(res, 200, 'FeesType deleted successfully');
     });

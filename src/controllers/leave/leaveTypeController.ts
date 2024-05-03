@@ -5,6 +5,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { Employee } from '../../entity/Employee';
 import { LeaveDetail } from '../../entity/LeaveDetails';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create a LeaveType
 export const createLeaveType = async (req: Request, res: Response) => {
@@ -36,6 +37,11 @@ export const createLeaveType = async (req: Request, res: Response) => {
 
       await Promise.all(leaveDetailsPromises);
 
+      await createActivityLog(
+        req.user?.id || 0,
+        `Leave Type titled ${createdLeaveType[0].name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(
         res,
         201,
@@ -64,6 +70,11 @@ export const updateLeaveType = async (req: Request, res: Response) => {
       leaveTypeRepository.merge(existingLeaveType, req.body);
       const updatedLeaveType =
         await leaveTypeRepository.save(existingLeaveType);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Leave Type titled ${updatedLeaveType.name} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
       sendResponse(
         res,
         200,
@@ -82,11 +93,20 @@ export const deleteLeaveType = async (req: Request, res: Response) => {
     await runTransaction(AppDataSource.createQueryRunner(), async () => {
       const { id } = req.params;
       const leaveTypeRepository = AppDataSource.getRepository(LeaveType);
+
+      const leaveTypeToBeDeleted = await leaveTypeRepository.findOne({
+        where: { id: +id },
+      });
       const deleteResult = await leaveTypeRepository.delete(id);
       if (deleteResult.affected === 0) {
         sendError(res, 404, 'Leave type not found');
         return;
       }
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Leave Type titled ${leaveTypeToBeDeleted?.name} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
       sendResponse(res, 200, 'Leave type deleted successfully');
     });
   } catch (error) {

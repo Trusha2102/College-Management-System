@@ -7,6 +7,7 @@ import configureMulter from '../../utils/multerConfig';
 import { ExpenseHead } from '../../entity/ExpenseHead';
 import multer from 'multer';
 import { Repository } from 'typeorm';
+import { createActivityLog } from '../../utils/activityLog';
 
 const multerConfig = configureMulter('./uploads/Expense', 2 * 1024 * 1024);
 
@@ -54,6 +55,12 @@ export const createExpense = async (req: Request, res: Response) => {
           attached_doc,
         });
         await expenseRepository.save(newExpense);
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Expense record titled ${newExpense.name} of Amount: ${newExpense.amount} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         sendResponse(res, 201, 'Expense created successfully', newExpense);
       });
     });
@@ -168,6 +175,12 @@ export const updateExpenseById = async (req: Request, res: Response) => {
         expense.expense_head = existingExpenseHead;
 
         await expenseRepository.save(expense);
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Expense record titled ${expense.name} of Amount: ${expense.amount} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         sendResponse(res, 200, 'Expense updated successfully', expense);
       });
     });
@@ -192,6 +205,12 @@ export const deleteExpenseById = async (req: Request, res: Response) => {
         return;
       }
       await expenseRepository.remove(expense);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Expense record titled ${expense.name} of Amount: ${expense.amount} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Expense deleted successfully');
     });
   } catch (error: any) {

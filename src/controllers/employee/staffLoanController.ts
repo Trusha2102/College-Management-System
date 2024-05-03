@@ -5,6 +5,7 @@ import runTransaction from '../../utils/runTransaction';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import { Installment } from '../../entity/Installment';
 import { Employee } from '../../entity/Employee';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create StaffLoan and Installment
 export const createStaffLoan = async (req: Request, res: Response) => {
@@ -79,6 +80,11 @@ export const createStaffLoan = async (req: Request, res: Response) => {
         }
       }
 
+      await createActivityLog(
+        req.user?.id || 0,
+        `Staff Loan applied for Employee ${employee.user.first_name + ' ' + employee.user.last_name} of Amount: ${'Rs' + req.body.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       // Save Installment records
       await installmentRepository.save(installmentRecords);
 
@@ -139,6 +145,12 @@ export const updateStaffLoanById = async (req: Request, res: Response) => {
       staffLoanRepository.merge(staffLoanToUpdate, req.body);
       const updatedStaffLoan =
         await staffLoanRepository.save(staffLoanToUpdate);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Staff Loan details updated for Employee ${staffLoanToUpdate.employee.user.first_name + ' ' + staffLoanToUpdate.employee.user.last_name} of Amount: ${'Rs' + updatedStaffLoan.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(
         res,
         200,
@@ -186,6 +198,12 @@ export const deleteStaffLoanById = async (req: Request, res: Response) => {
       }
 
       await staffLoanRepository.remove(staffLoanToDelete);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Staff Loan deleted for Employee ${staffLoanToDelete.employee.user.first_name + ' ' + staffLoanToDelete.employee.user.last_name} of Amount: ${'Rs' + staffLoanToDelete.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'StaffLoan deleted successfully');
     });
   } catch (error: any) {

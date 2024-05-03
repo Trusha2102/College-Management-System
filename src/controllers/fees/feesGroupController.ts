@@ -5,6 +5,7 @@ import { FeesType } from '../../entity/FeesType';
 import runTransaction from '../../utils/runTransaction';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import { FeesMaster } from '../../entity/FeesMaster';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create a new Fees Group
 export const createFeesGroup = async (req: Request, res: Response) => {
@@ -44,6 +45,11 @@ export const createFeesGroup = async (req: Request, res: Response) => {
       }
 
       feesGroup.feesTypeData = feesTypeData;
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fees Group named ${feesGroup.name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       await feesGroupRepository.save(newFeesGroup);
 
@@ -136,6 +142,11 @@ export const updateFeesGroupById = async (req: Request, res: Response) => {
 
       const updatedFeesGroup = await feesGroupRepository.save(feesGroup);
 
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fees Group named ${updatedFeesGroup.name} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(
         res,
         200,
@@ -181,6 +192,12 @@ export const deleteFeesGroupById = async (req: Request, res: Response) => {
       }
 
       await feesGroupRepository.remove(feesGroup);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fees Group named ${feesGroup.name} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Fees Group deleted successfully');
     });
   } catch (error: any) {

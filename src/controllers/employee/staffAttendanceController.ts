@@ -4,6 +4,7 @@ import { Attendance } from '../../entity/Attendance';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { Employee } from '../../entity/Employee';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create attendance
 export const createAttendance = async (req: Request, res: Response) => {
@@ -49,6 +50,11 @@ export const createAttendance = async (req: Request, res: Response) => {
         attendanceInstance.employee = employee;
         attendanceInstance.date = new Date(formattedDate);
         attendanceInstance.attendance = attendanceData.attendance;
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Attendance for Employee ${employee.user.first_name + ' ' + employee.user.last_name} on Date: ${attendanceInstance.date} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
 
         // Save the attendance record
         await attendanceRepository.save(attendanceInstance);
@@ -151,6 +157,11 @@ export const updateAttendanceById = async (req: Request, res: Response) => {
       await attendanceRepository.save(attendanceToUpdate);
     });
 
+    await createActivityLog(
+      req.user?.id || 0,
+      `Attendance for Employee ${attendanceToUpdate.employee.user.first_name + ' ' + attendanceToUpdate.employee.user.last_name} on Date: ${date} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+    );
+
     sendResponse(
       res,
       200,
@@ -179,6 +190,11 @@ export const deleteAttendanceById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       await attendanceRepository.delete(id);
     });
+
+    await createActivityLog(
+      req.user?.id || 0,
+      `Attendance for Employee ${attendanceToDelete.employee.user.first_name + ' ' + attendanceToDelete.employee.user.last_name} on Date: ${attendanceToDelete.date} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+    );
 
     sendResponse(res, 200, 'Attendance deleted successfully');
   } catch (error: any) {

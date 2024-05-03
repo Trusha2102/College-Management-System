@@ -3,6 +3,7 @@ import { Fine } from '../../entity/Fine';
 import AppDataSource from '../../data-source';
 import { sendError, sendResponse } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create Fine
 export const createFine = async (req: Request, res: Response) => {
@@ -11,6 +12,12 @@ export const createFine = async (req: Request, res: Response) => {
       const fineRepository = AppDataSource.getRepository(Fine);
       const newFine = fineRepository.create(req.body);
       const savedFine = await fineRepository.save(newFine);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fine Type named ${req.body.fine_type} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 201, 'Fine created successfully', savedFine);
     });
   } catch (error: any) {
@@ -32,6 +39,12 @@ export const updateFineById = async (req: Request, res: Response) => {
       }
       fineRepository.merge(fineToUpdate, req.body);
       const updatedFine = await fineRepository.save(fineToUpdate);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fine Type named ${updatedFine.fine_type} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Fine updated successfully', updatedFine);
     });
   } catch (error: any) {
@@ -46,11 +59,21 @@ export const deleteFineById = async (req: Request, res: Response) => {
     await runTransaction(queryRunner, async () => {
       const fineRepository = queryRunner.manager.getRepository(Fine);
       const { id } = req.params;
+
+      const fineToBeDeleted = await fineRepository.findOne({
+        where: { id: +id },
+      });
       const deleteResult = await fineRepository.delete(id);
       if (deleteResult.affected === 0) {
         sendError(res, 404, 'Fine not found');
         return;
       }
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Fine Type named ${fineToBeDeleted?.fine_type} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Fine deleted successfully');
     });
   } catch (error: any) {

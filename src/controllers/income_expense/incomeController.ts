@@ -7,6 +7,7 @@ import configureMulter from '../../utils/multerConfig';
 import { IncomeHead } from '../../entity/IncomeHead';
 import multer from 'multer';
 import { Repository } from 'typeorm';
+import { createActivityLog } from '../../utils/activityLog';
 
 const multerConfig = configureMulter('./uploads/Income', 2 * 1024 * 1024);
 
@@ -54,6 +55,12 @@ export const createIncome = async (req: Request, res: Response) => {
           attached_doc,
         });
         await incomeRepository.save(newIncome);
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Income record titled ${newIncome.name} of Amount: ${newIncome.amount} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         sendResponse(res, 201, 'Income created successfully', newIncome);
       });
     });
@@ -168,6 +175,12 @@ export const updateIncomeById = async (req: Request, res: Response) => {
         income.income_head = existingIncomeHead;
 
         await incomeRepository.save(income);
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Income record titled ${income.name} of Amount: ${income.amount} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         sendResponse(res, 200, 'Income updated successfully', income);
       });
     });
@@ -192,6 +205,12 @@ export const deleteIncomeById = async (req: Request, res: Response) => {
         return;
       }
       await incomeRepository.remove(income);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Income record titled ${income.name} of Amount: ${income.amount} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 200, 'Income deleted successfully');
     });
   } catch (error: any) {

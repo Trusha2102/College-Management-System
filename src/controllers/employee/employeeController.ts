@@ -11,6 +11,7 @@ import bcrypt from 'bcrypt';
 import configureMulter from '../../utils/multerConfig';
 import multer from 'multer';
 import { BankAccount } from '../../entity/BankAccount';
+import { createActivityLog } from '../../utils/activityLog';
 
 const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024); // 2MB limit
 
@@ -324,14 +325,20 @@ export const deleteEmployeeById = async (req: Request, res: Response) => {
       const employeeRepository = queryRunner.manager.getRepository(Employee);
       const employee = await employeeRepository.findOne({
         where: { id: +id },
+        relations: ['user'],
       });
       if (!employee) {
         sendError(res, 404, 'Employee not found');
-        return; // Return here to exit the callback
+        return;
       }
 
-      employee.is_active = false; // Soft delete by setting is_active to false
+      employee.is_active = false;
       await employeeRepository.save(employee);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Employee named ${employee?.user.first_name + ' ' + employee?.user.last_name} with Staff ID: ${employee?.staff_id} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
 
       sendResponse(res, 200, 'Employee deleted successfully');
     } catch (error: any) {
@@ -512,6 +519,11 @@ export const createEmployeeWithUser = async (req: Request, res: Response) => {
           relations: ['user', 'designation', 'department'],
         });
 
+        await createActivityLog(
+          req.user?.id || 0,
+          `Employee named ${displayEmployee?.user.first_name + ' ' + displayEmployee?.user.last_name} with Staff ID: ${displayEmployee?.staff_id} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
+
         sendResponse(
           res,
           201,
@@ -686,6 +698,11 @@ export const updateEmployeeWithUser = async (req: Request, res: Response) => {
 
         await userRepository.save(employee.user);
         await employeeRepository.save(employee);
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Employee named ${employee?.user.first_name + ' ' + employee?.user.last_name} with Staff ID: ${employee?.staff_id} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
 
         // Send success response
         sendResponse(res, 200, 'Employee updated successfully', employee);

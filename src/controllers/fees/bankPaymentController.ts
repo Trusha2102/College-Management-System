@@ -1,5 +1,6 @@
 import AppDataSource from '../../data-source';
 import { BankPayment } from '../../entity/BankPayment';
+import { createActivityLog } from '../../utils/activityLog';
 import { sendError, sendResponse } from '../../utils/commonResponse';
 import { Request, Response } from 'express';
 
@@ -24,6 +25,11 @@ export const updateBankPayment = async (req: Request, res: Response) => {
     bankPayment.comment = comment || bankPayment.comment || null;
 
     await bankPaymentRepository.save(bankPayment);
+
+    await createActivityLog(
+      req.user?.id || 0,
+      `Bank Payment for Student: ${bankPayment.feesPayment.student.first_name + ' ' + bankPayment.feesPayment.student.last_name} in Course & Semester: ${bankPayment.feesPayment.student.course.name + '(' + bankPayment.feesPayment.student.semester.semester + ')' + '-' + bankPayment.feesPayment.student.session.session} updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+    );
 
     sendResponse(res, 200, 'BankPayment updated successfully', bankPayment);
   } catch (error: any) {
@@ -126,6 +132,11 @@ export const deleteBankPayment = async (req: Request, res: Response) => {
 
     // Delete the BankPayment record
     await bankPaymentRepository.remove(bankPayment);
+
+    await createActivityLog(
+      req.user?.id || 0,
+      `Bank Payment for Student: ${bankPayment.feesPayment.student.first_name + ' ' + bankPayment.feesPayment.student.last_name} in Course & Semester: ${bankPayment.feesPayment.student.course.name + '(' + bankPayment.feesPayment.student.semester.semester + ')' + '-' + bankPayment.feesPayment.student.session.session} deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+    );
 
     // Send success response
     sendResponse(res, 200, 'BankPayment deleted successfully');

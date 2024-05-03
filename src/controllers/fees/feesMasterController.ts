@@ -13,6 +13,7 @@ import * as ejs from 'ejs';
 import * as pdf from 'html-pdf';
 import path from 'path';
 import fs from 'fs';
+import { createActivityLog } from '../../utils/activityLog';
 
 export const feesAllocation = async (req: Request, res: Response) => {
   try {
@@ -91,6 +92,11 @@ export const feesAllocation = async (req: Request, res: Response) => {
 
           await feesMasterRepository.save(feesMaster);
         }
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Fees Allocation of Student: ${existingStudent.first_name + ' ' + existingStudent.last_name}, Enrollment No:${existingStudent.enrollment_no}  in Course & Semester: ${existingStudent.course.name + '(' + existingStudent.semester.semester + ')' + '-' + existingStudent.session.session} done by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
       }
     });
 
@@ -276,6 +282,11 @@ export const collectFees = async (req: Request, res: Response) => {
             : 'Paid';
 
         await feesMasterRepository.save(feesMaster);
+
+        await createActivityLog(
+          req.user?.id || 0,
+          `Fees Collected of Student: ${feesMaster.student.first_name + ' ' + feesMaster.student.last_name}, Enrollment No:${feesMaster.student.enrollment_no}  in Course & Semester: ${feesMaster.student.course.name + '(' + feesMaster.student.semester.semester + ')' + '-' + feesMaster.student.session.session} of Amount: ${amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        );
       }
 
       sendResponse(res, 200, 'Fees collected successfully');
@@ -290,13 +301,12 @@ export const collectFees = async (req: Request, res: Response) => {
 
 export const searchFeeDues = async (req: Request, res: Response) => {
   try {
+    const { page = 1, limit = 10 } = req.query;
+
     const currentDate = new Date();
-
     const feesMasterRepository = AppDataSource.getRepository(FeesMaster);
-
     const { feesGroup, section, course, semester } = req.query;
 
-    // Build the base query
     let query = feesMasterRepository
       .createQueryBuilder('feesMaster')
       .innerJoinAndSelect('feesMaster.feesGroups', 'feesGroup')
@@ -309,7 +319,6 @@ export const searchFeeDues = async (req: Request, res: Response) => {
       })
       .andWhere('feesGroup.due_date <= :currentDate', { currentDate });
 
-    // Add optional search conditions
     if (feesGroup) {
       query = query.andWhere('feesGroup.name ILIKE :feesGroup', {
         feesGroup: `%${feesGroup}%`,
@@ -331,9 +340,22 @@ export const searchFeeDues = async (req: Request, res: Response) => {
       });
     }
 
+    const totalCount = await query.getCount();
+    const totalPages = Math.ceil(totalCount / +limit);
+    const offset = (+page - 1) * +limit;
+
+    query = query.skip(offset).take(+limit);
+
     const feesMasters = await query.getMany();
 
-    sendResponse(res, 200, 'FeesMaster records found', feesMasters);
+    const totalNoOfRecords = feesMasters.length;
+
+    sendResponse(res, 200, 'FeesMaster records found', {
+      feesMasters,
+      totalCount,
+      totalNoOfRecords,
+      totalPages,
+    });
   } catch (error: any) {
     sendError(res, 500, 'Failed to get FeesMaster records', error.message);
   }

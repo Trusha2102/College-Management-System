@@ -4,6 +4,7 @@ import { Course } from '../../entity/Course';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike } from 'typeorm';
+import { createActivityLog } from '../../utils/activityLog';
 
 // Create a new course
 export const createCourse = async (req: Request, res: Response) => {
@@ -34,6 +35,12 @@ export const createCourse = async (req: Request, res: Response) => {
         name: trimmedCourseName,
       });
       await courseRepository.save(newCourse);
+
+      await createActivityLog(
+        req.user?.id || 0,
+        `Course titled ${req.body.name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      );
+
       sendResponse(res, 201, 'Course created successfully', newCourse);
     });
   } catch (error: any) {
