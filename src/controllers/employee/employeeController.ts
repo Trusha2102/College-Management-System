@@ -13,7 +13,7 @@ import multer from 'multer';
 import { BankAccount } from '../../entity/BankAccount';
 import { createActivityLog } from '../../utils/activityLog';
 
-const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024); // 2MB limit
+const upload = configureMulter('./uploads/profilePicture', 2 * 1024 * 1024); //2MB Limit
 
 // Create Employee with Transaction and QueryRunner
 export const createEmployee = async (req: Request, res: Response) => {

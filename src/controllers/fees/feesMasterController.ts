@@ -373,7 +373,7 @@ export const generateInvoice = async (req: Request, res: Response) => {
     const { student_id } = req.params;
 
     if (!student_id) {
-      return res.status(400).json({ error: 'Student ID is required' });
+      return sendError(res, 400, 'Student ID is required');
     }
 
     const studentRepository = AppDataSource.getRepository(Student);
@@ -409,9 +409,11 @@ export const generateInvoice = async (req: Request, res: Response) => {
     }));
 
     if (feesMasters.length === 0) {
-      return res
-        .status(404)
-        .json({ error: 'No records found for the specified student ID' });
+      return sendError(
+        res,
+        404,
+        'No records found for the specified student ID',
+      );
     }
 
     // Generate invoice number
@@ -455,13 +457,19 @@ export const generateInvoice = async (req: Request, res: Response) => {
     const pdfFilePath = path.join(uploadFolder, pdfFileName);
     await generatePDF(htmlContent, pdfOptions, pdfFilePath);
 
+    //Changing path for response
+    const relativePath = path.relative(
+      path.join(__dirname, '../../../'),
+      pdfFilePath,
+    );
+
     // Send response
-    return res
-      .status(200)
-      .json({ message: 'PDF generated successfully', pdfFilePath });
+    return sendResponse(res, 200, 'PDF generated successfully', {
+      pdfFilePath: '/' + relativePath,
+    });
   } catch (error) {
     console.error('Error generating PDF:', error);
-    return res.status(500).json({ error: 'Failed to generate PDF' });
+    return sendError(res, 500, 'Failed to generate PDF');
   }
 };
 
