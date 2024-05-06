@@ -74,12 +74,12 @@ export const applyLeave = async (req: Request, res: Response) => {
       const newLeave = leaveRepository.create({
         leaveType: leaveType,
         employee: employee,
-        apply_date,
-        leave_from,
-        leave_to,
+        apply_date: new Date(apply_date),
+        leave_from: new Date(leave_from),
+        leave_to: new Date(leave_to),
         reason: reason || null,
         attachment: attachment || null,
-        no_of_leave_days,
+        no_of_leave_days: no_of_leave_days + 1,
       });
       await leaveRepository.save(newLeave);
       sendResponse(res, 201, 'Leave created successfully', newLeave);
@@ -191,7 +191,10 @@ export const deleteLeave = async (req: Request, res: Response) => {
     }
 
     const leaveRepository = AppDataSource.getRepository(Leave);
-    const leave = await leaveRepository.findOne({ where: { id: +id } });
+    const leave = await leaveRepository.findOne({
+      where: { id: +id },
+      relations: ['employee', 'employee.user'],
+    });
 
     if (!leave) {
       sendError(res, 404, 'Leave not found');
@@ -200,7 +203,7 @@ export const deleteLeave = async (req: Request, res: Response) => {
 
     await createActivityLog(
       req.user?.id || 0,
-      `Leave record of Employee: ${leave.employee.user.first_name} of Days: ${leave.no_of_leave_days} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+      `Leave record of Employee: ${leave.employee.user?.first_name} of Days: ${leave.no_of_leave_days} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
     );
 
     await leaveRepository.remove(leave);

@@ -61,7 +61,7 @@ export const createSection = async (req: Request, res: Response) => {
 
 export const listSections = async (req: Request, res: Response) => {
   try {
-    const { page, limit, section } = req.query;
+    const { page, limit, section, is_dropdown } = req.query;
 
     // Convert page and limit parameters to numbers
     const pageNumber = page ? parseInt(page as string) : 1;
@@ -79,15 +79,29 @@ export const listSections = async (req: Request, res: Response) => {
     }
 
     // Fetch sections with pagination and filter
-    const [sections, totalCount] = await AppDataSource.getRepository(
-      Section,
-    ).findAndCount({
-      where: filter,
-      order: { createdAt: 'DESC' },
-      skip: offset,
-      take: limitNumber,
-      relations: ['semester'],
-    });
+    let sections;
+    let totalCount;
+    if (is_dropdown) {
+      [sections, totalCount] = await AppDataSource.getRepository(
+        Section,
+      ).findAndCount({
+        where: filter,
+        order: { section: 'ASC' },
+        skip: offset,
+        take: limitNumber,
+        relations: ['semester'],
+      });
+    } else {
+      [sections, totalCount] = await AppDataSource.getRepository(
+        Section,
+      ).findAndCount({
+        where: filter,
+        order: { createdAt: 'DESC' },
+        skip: offset,
+        take: limitNumber,
+        relations: ['semester'],
+      });
+    }
 
     const totalNoOfRecords = sections.length;
 
