@@ -3,7 +3,7 @@ import AppDataSource from '../../data-source';
 import { Course } from '../../entity/Course';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
-import { ILike } from 'typeorm';
+import { FindOptionsOrder, ILike } from 'typeorm';
 import { createActivityLog } from '../../utils/activityLog';
 import { Semester } from '../../entity/Semester';
 
@@ -69,27 +69,18 @@ export const getAllCourses = async (req: Request, res: Response) => {
       filter.name = ILike(`%${name}%`);
     }
 
-    let courses;
-    let totalCount;
-    if (is_dropdown) {
-      [courses, totalCount] = await AppDataSource.getRepository(
-        Course,
-      ).findAndCount({
-        where: filter,
-        order: { name: 'ASC' },
-        skip: offset,
-        take: limitNumber,
-      });
-    } else {
-      [courses, totalCount] = await AppDataSource.getRepository(
-        Course,
-      ).findAndCount({
-        where: filter,
-        order: { createdAt: 'DESC' },
-        skip: offset,
-        take: limitNumber,
-      });
-    }
+    const order: FindOptionsOrder<Course> = is_dropdown
+      ? { name: 'ASC' }
+      : { createdAt: 'DESC' };
+
+    const [courses, totalCount] = await AppDataSource.getRepository(
+      Course,
+    ).findAndCount({
+      where: filter,
+      order,
+      skip: offset,
+      take: limitNumber,
+    });
 
     const totalNoOfRecords = courses.length;
 

@@ -3,7 +3,7 @@ import { Section } from '../../entity/Section';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
-import { ILike } from 'typeorm';
+import { FindOptionsOrder, ILike } from 'typeorm';
 import { Semester } from '../../entity/Semester';
 import { createActivityLog } from '../../utils/activityLog';
 
@@ -78,30 +78,21 @@ export const listSections = async (req: Request, res: Response) => {
       filter.section = ILike(`%${section}%`);
     }
 
-    // Fetch sections with pagination and filter
-    let sections;
-    let totalCount;
-    if (is_dropdown) {
-      [sections, totalCount] = await AppDataSource.getRepository(
-        Section,
-      ).findAndCount({
-        where: filter,
-        order: { section: 'ASC' },
-        skip: offset,
-        take: limitNumber,
-        relations: ['semester'],
-      });
-    } else {
-      [sections, totalCount] = await AppDataSource.getRepository(
-        Section,
-      ).findAndCount({
-        where: filter,
-        order: { createdAt: 'DESC' },
-        skip: offset,
-        take: limitNumber,
-        relations: ['semester'],
-      });
-    }
+    // Define the order object with a conditional expression
+    const order: FindOptionsOrder<Section> = is_dropdown
+      ? { section: 'ASC' }
+      : { createdAt: 'DESC' };
+
+    // Fetch sections with pagination, filter, and order
+    const [sections, totalCount] = await AppDataSource.getRepository(
+      Section,
+    ).findAndCount({
+      where: filter,
+      order,
+      skip: offset,
+      take: limitNumber,
+      relations: ['semester'],
+    });
 
     const totalNoOfRecords = sections.length;
 
