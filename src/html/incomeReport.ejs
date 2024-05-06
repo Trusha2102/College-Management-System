@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Income Records</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px; /* Adjust font size */
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 6px; /* Adjust padding */
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h2>Income Records</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Invoice Number</th>
+                <th>Income Head</th>
+                <th>Date</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% incomes.forEach(income => { %>
+                <tr>
+                    <td><%= income.name %></td>
+                    <td><%= income.invoice_number %></td>
+                    <td><%= income.income_head.income_head %></td>
+                    <td><%= income.date.toLocaleDateString('en-GB') %></td>
+                    <td><%= income.amount %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</body>
+</html>

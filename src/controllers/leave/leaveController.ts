@@ -220,6 +220,7 @@ export const listLeaveByEmployeeId = async (req: Request, res: Response) => {
 
     const employee = await employeeRepository.findOne({
       where: { id: +employeeId },
+      // relations: ['leaveType', 'employee', 'employee.user', 'user.role'],
     });
 
     if (!employee) {
@@ -231,6 +232,10 @@ export const listLeaveByEmployeeId = async (req: Request, res: Response) => {
 
     const qb = leaveRepository
       .createQueryBuilder('leave')
+      .leftJoinAndSelect('leave.leaveType', 'leaveType')
+      .leftJoinAndSelect('leave.employee', 'employee')
+      .leftJoinAndSelect('employee.user', 'user')
+      .leftJoinAndSelect('user.role', 'role')
       .where('leave.employee = :employeeId', { employeeId: +employeeId });
 
     if (req.query.page && req.query.limit) {

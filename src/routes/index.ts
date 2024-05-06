@@ -36,6 +36,7 @@ import leaveTypeRoutes from './leave/leaveTypeRoutes';
 import leaveDetailRoutes from './leave/leaveDetailsRoutes';
 import leaveRoutes from './leave/leaveRoutes';
 import activityRoutes from './activityLog/activityLogRoutes';
+import reportRoutes from './report/reportRoutes';
 
 const router = express.Router();
 
@@ -76,5 +77,6 @@ router.use('/leave-type', leaveTypeRoutes);
 router.use('/leave-detail', leaveDetailRoutes);
 router.use('/leave', leaveRoutes);
 router.use('/activity-log', activityRoutes);
+router.use('/report', reportRoutes);
 
 export default router;

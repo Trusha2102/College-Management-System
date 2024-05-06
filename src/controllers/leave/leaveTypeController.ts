@@ -6,6 +6,7 @@ import runTransaction from '../../utils/runTransaction';
 import { Employee } from '../../entity/Employee';
 import { LeaveDetail } from '../../entity/LeaveDetails';
 import { createActivityLog } from '../../utils/activityLog';
+import { Leave } from '../../entity/Leave';
 
 // Create a LeaveType
 export const createLeaveType = async (req: Request, res: Response) => {
@@ -93,11 +94,29 @@ export const deleteLeaveType = async (req: Request, res: Response) => {
     await runTransaction(AppDataSource.createQueryRunner(), async () => {
       const { id } = req.params;
       const leaveTypeRepository = AppDataSource.getRepository(LeaveType);
+      const leaveRepository = AppDataSource.getRepository(Leave);
 
       const leaveTypeToBeDeleted = await leaveTypeRepository.findOne({
         where: { id: +id },
       });
-      const deleteResult = await leaveTypeRepository.delete(id);
+
+      const leave = await leaveRepository.findOne({
+        where: { leaveType: { id: +id } },
+      });
+
+      if (leave) {
+        sendError(
+          res,
+          400,
+          'Leave Type cannot be deleted if it is assigned to an Employee(s)',
+        );
+        return;
+      }
+
+      const deleteResult = await leaveTypeRepository.update(
+        { id: +id },
+        { is_active: false },
+      );
       if (deleteResult.affected === 0) {
         sendError(res, 404, 'Leave type not found');
         return;
@@ -119,6 +138,10 @@ export const getAllLeaveTypes = async (req: Request, res: Response) => {
   try {
     const leaveTypeRepository = AppDataSource.getRepository(LeaveType);
     let query = leaveTypeRepository.createQueryBuilder('leaveType');
+
+    query = query.where('leaveType.is_active = :is_active', {
+      is_active: true,
+    });
 
     // Pagination
     const { page, limit } = req.query;
