@@ -2,17 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Income Report</title>
+    <title>Expense Report</title>
     <style>
+        /* Define your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px; /* Adjust font size */
         }
         th, td {
-            border: 1px solid black;
-            padding: 6px; /* Adjust padding */
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: left;
         }
         th {
@@ -21,25 +26,25 @@
     </style>
 </head>
 <body>
-    <h2>Income Report</h2>
+    <h2>Expense Report</h2>
     <table>
         <thead>
             <tr>
                 <th>Name</th>
                 <th>Invoice Number</th>
-                <th>Income Head</th>
+                <th>Expense Head</th>
                 <th>Date</th>
                 <th>Amount</th>
             </tr>
         </thead>
         <tbody>
-            <% incomes.forEach(income => { %>
+            <% expenses.forEach(expense => { %>
                 <tr>
-                    <td><%= income.name %></td>
-                    <td><%= income.invoice_number %></td>
-                    <td><%= income.income_head.income_head %></td>
-                    <td><%= income.date.toLocaleDateString('en-GB') %></td>
-                    <td><%= income.amount %></td>
+                    <td><%= expense.name %></td>
+                    <td><%= expense.invoice_number %></td>
+                    <td><%= expense.expense_head.expense_head %></td>
+                    <td><%= expense.date.toDateString() %></td>
+                    <td><%= expense.amount %></td>
                 </tr>
             <% }); %>
         </tbody>

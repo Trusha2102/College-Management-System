@@ -16,6 +16,7 @@ const login = async (req: Request, res: Response) => {
     // Find the user by email
     const user = await AppDataSource.manager.findOne(User, {
       where: { email },
+      relations: ['employee'],
     });
     // If user not found, return 404
     if (!user) {
@@ -34,6 +35,7 @@ const login = async (req: Request, res: Response) => {
       process.env.JWT_SECRET || '',
       { expiresIn: '30d' },
     );
+
     sendResponse(res, 200, 'Login successful', { token, user });
   } catch (error) {
     console.error(error);

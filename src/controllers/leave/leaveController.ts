@@ -111,7 +111,10 @@ export const updateLeave = async (req: Request, res: Response) => {
       const employeeRepository = AppDataSource.getRepository(Employee);
       const leaveDetailRepository = AppDataSource.getRepository(LeaveDetail);
 
-      const leave = await leaveRepository.findOne({ where: { id: +id } });
+      const leave = await leaveRepository.findOne({
+        where: { id: +id },
+        relations: ['employee', 'leaveType', 'employee.user'],
+      });
       if (!leave) {
         sendError(res, 404, 'Leave not found');
         return;
@@ -168,7 +171,7 @@ export const updateLeave = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Leave record of Employee: ${leave.employee.user.first_name} of Days: ${leave.no_of_leave_days} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Leave record of Employee: ${leave.employee.user?.first_name} of Days: ${leave.no_of_leave_days} was updated by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       sendResponse(res, 200, 'Leave updated successfully', leave);

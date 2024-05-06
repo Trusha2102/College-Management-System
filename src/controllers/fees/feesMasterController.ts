@@ -310,7 +310,7 @@ export const searchFeeDues = async (req: Request, res: Response) => {
   try {
     const { page = 1, limit = 10 } = req.query;
 
-    const currentDate = new Date();
+    const currentDate = new Date().toISOString().split('T')[0];
     const feesMasterRepository = AppDataSource.getRepository(FeesMaster);
     const { fees_group_id, section_id, course_id, semester_id } = req.query;
 
@@ -323,8 +323,7 @@ export const searchFeeDues = async (req: Request, res: Response) => {
       .innerJoinAndSelect('student.section', 'section')
       .where('feesMaster.status IN (:...statuses)', {
         statuses: ['Partially Paid', 'Unpaid'],
-      })
-      .andWhere('feesGroup.due_date <= :currentDate', { currentDate });
+      });
 
     if (fees_group_id) {
       query = query.andWhere('feesGroup.id = :fees_group_id', {
@@ -347,20 +346,29 @@ export const searchFeeDues = async (req: Request, res: Response) => {
       });
     }
 
-    const totalCount = await query.getCount();
-    const totalPages = Math.ceil(totalCount / +limit);
-    const offset = (+page - 1) * +limit;
-
-    query = query.skip(offset).take(+limit);
-
     const feesMasters = await query.getMany();
 
-    const totalNoOfRecords = feesMasters.length;
+    const filteredFeesMasters = feesMasters.filter((feesMaster) => {
+      return feesMaster.feesGroups.some((feesGroup) => {
+        return feesGroup.feesTypeData.some((feesTypeData) => {
+          console.log(new Date(feesTypeData.due_date), new Date(currentDate));
+          return new Date(feesTypeData.due_date) <= new Date(currentDate);
+        });
+      });
+    });
+
+    const totalCount = filteredFeesMasters.length;
+    const totalPages = Math.ceil(totalCount / +limit);
+    const offset = (+page - 1) * +limit;
+    const paginatedFeesMasters = filteredFeesMasters.slice(
+      offset,
+      offset + +limit,
+    );
 
     sendResponse(res, 200, 'FeesMaster records found', {
-      feesMasters,
+      feesMasters: paginatedFeesMasters,
       totalCount,
-      totalNoOfRecords,
+      totalNoOfRecords: paginatedFeesMasters.length,
       totalPages,
     });
   } catch (error: any) {

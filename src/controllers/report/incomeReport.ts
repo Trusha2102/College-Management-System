@@ -8,7 +8,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import { Income } from '../../entity/Income';
 import AppDataSource from '../../data-source';
 
-export const listAndGeneratePDF = async (req: Request, res: Response) => {
+export const incomeReport = async (req: Request, res: Response) => {
   try {
     const { date_from, date_to, if_pdf_download, page, limit, search } =
       req.query;
@@ -26,7 +26,6 @@ export const listAndGeneratePDF = async (req: Request, res: Response) => {
       createdAt: Between(new Date(fromDate), new Date(toDate)),
     };
 
-    // Add search filter if search parameter exists
     if (search) {
       filter = {
         ...filter,
@@ -71,7 +70,7 @@ export const listAndGeneratePDF = async (req: Request, res: Response) => {
       if (!fs.existsSync(uploadFolder)) {
         fs.mkdirSync(uploadFolder, { recursive: true });
       }
-      const pdfFileName = `income_records_${Date.now()}.pdf`; // Unique filename
+      const pdfFileName = `income_report_${Date.now()}.pdf`;
       const pdfFilePath = path.join(uploadFolder, pdfFileName);
       await generatePDF(htmlContent, pdfOptions, pdfFilePath);
 
@@ -112,7 +111,6 @@ export const listAndGeneratePDF = async (req: Request, res: Response) => {
   }
 };
 
-// Define the path to your EJS file
 const ejsFilePath = path.join(
   __dirname,
   '../../../',
@@ -121,7 +119,6 @@ const ejsFilePath = path.join(
   'incomeReport.ejs',
 );
 
-// Function to generate the PDF
 const generatePDF = async (
   htmlContent: string,
   pdfOptions: pdf.CreateOptions,
