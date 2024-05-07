@@ -232,7 +232,7 @@ export const getStaffLoanById = async (req: Request, res: Response) => {
 // Get all StaffLoans
 export const getAllStaffLoans = async (req: Request, res: Response) => {
   try {
-    const { page, limit, search, role } = req.query;
+    const { page, limit, search, role, status } = req.query;
 
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
@@ -256,6 +256,10 @@ export const getAllStaffLoans = async (req: Request, res: Response) => {
 
       if (role) {
         query = query.andWhere('role.name ILIKE :role', { role: `%${role}%` });
+      }
+
+      if (status) {
+        query = query.andWhere('staffLoan.status = :status', { status });
       }
 
       const totalCount = await query.getCount();
