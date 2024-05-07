@@ -244,6 +244,7 @@ export const getAllStaffLoans = async (req: Request, res: Response) => {
         .leftJoinAndSelect('employee.user', 'user')
         .leftJoinAndSelect('user.role', 'role')
         .leftJoinAndSelect('employee.designation', 'designation')
+        .leftJoinAndSelect('employee.payroll', 'payroll')
         .where('staffLoan.type = :type', { type: 'Staff Loan' })
         .orderBy('staffLoan.createdAt', 'DESC');
 
