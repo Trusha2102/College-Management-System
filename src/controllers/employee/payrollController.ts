@@ -307,6 +307,7 @@ export const staffDeduction = async (req: Request, res: Response) => {
     queryBuilder
       .leftJoinAndSelect('staffLoan.employee', 'employee')
       .leftJoinAndSelect('employee.user', 'user')
+      .leftJoinAndSelect('employee.payroll', 'payroll')
       .leftJoinAndSelect('employee.designation', 'designation')
       .leftJoinAndSelect('user.role', 'employeeRole');
 
