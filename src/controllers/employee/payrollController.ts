@@ -86,7 +86,7 @@ export const getPayrollById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const payrollRepository = AppDataSource.getRepository(Payroll);
-    const payroll = await payrollRepository.findOne({ where: { id: +id } });
+    const payroll = await payrollRepository.findOne({ where: { id: +id }, relations: ['employee'] });
     if (!payroll) {
       sendError(res, 404, 'Payroll not found');
       return;
@@ -203,6 +203,7 @@ export const updatePayrollById = async (req: Request, res: Response) => {
     const payrollRepository = AppDataSource.getRepository(Payroll);
     const payrollToUpdate = await payrollRepository.findOne({
       where: { id: +id },
+      relations: ['employee']
     });
     if (!payrollToUpdate) {
       return sendError(res, 404, 'Payroll not found');
@@ -210,7 +211,7 @@ export const updatePayrollById = async (req: Request, res: Response) => {
 
     const employeeRepository = AppDataSource.getRepository(Employee);
     const employee = await employeeRepository.findOne({
-      where: { id: req.body.employee_id },
+      where: { id: payrollToUpdate.employee.id },
       relations: ['user'],
     });
     if (!employee) {
