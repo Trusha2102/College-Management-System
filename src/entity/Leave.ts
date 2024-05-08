@@ -20,13 +20,13 @@ export class Leave {
   @ManyToOne(() => Employee)
   employee!: Employee;
 
-  @Column({ type: 'date' })
+  @Column({ nullable: true })
   apply_date!: Date;
 
-  @Column({ type: 'date' })
+  @Column({ nullable: true })
   leave_from!: Date;
 
-  @Column({ type: 'date' })
+  @Column({ nullable: true })
   leave_to!: Date;
 
   @Column({ type: 'text', nullable: true })

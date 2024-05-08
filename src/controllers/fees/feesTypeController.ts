@@ -32,6 +32,7 @@ export const updateFeesType = async (req: Request, res: Response) => {
     await runTransaction(AppDataSource.createQueryRunner(), async () => {
       const feesTypeRepository = AppDataSource.getRepository(FeesType);
       const { id } = req.params;
+      const { name: newName } = req.body;
       const updateResult = await feesTypeRepository.update(id, req.body);
       if (updateResult.affected === 0) {
         sendError(res, 404, 'FeesType not found');
@@ -40,6 +41,23 @@ export const updateFeesType = async (req: Request, res: Response) => {
       const updatedFeesType = await feesTypeRepository.findOne({
         where: { id: +id },
       });
+
+      const feesGroupRepository = AppDataSource.getRepository(FeesGroup);
+      const feesGroupsToUpdate = await feesGroupRepository
+        .createQueryBuilder('feesGroup')
+        .where(
+          `'${id}'::jsonb IN (SELECT (value ->> 'fees_type_id')::jsonb FROM jsonb_array_elements(feesGroup.fees_type_data))`,
+        )
+        .getMany();
+
+      for (const feesGroup of feesGroupsToUpdate) {
+        feesGroup.feesTypeData.forEach((data: any) => {
+          if (data.fees_type_id === +id) {
+            data.name = newName;
+          }
+        });
+        await feesGroupRepository.save(feesGroup);
+      }
 
       await createActivityLog(
         req.user?.id || 0,

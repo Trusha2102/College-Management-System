@@ -35,6 +35,8 @@ export const createFeesGroup = async (req: Request, res: Response) => {
         });
         if (!existingFeesType) {
           missingFeesTypes.push(item.fees_type_id);
+        } else {
+          item.name = existingFeesType.name;
         }
       }
 
@@ -135,6 +137,26 @@ export const updateFeesGroupById = async (req: Request, res: Response) => {
 
         if (!Array.isArray(feesTypeData)) {
           throw new Error('feesTypeData should be an array');
+        }
+
+        const feesTypeRepository = queryRunner.manager.getRepository(FeesType);
+        const missingFeesTypes: number[] = [];
+
+        for (const item of feesTypeData) {
+          const existingFeesType = await feesTypeRepository.findOne({
+            where: { id: item.fees_type_id },
+          });
+          if (!existingFeesType) {
+            missingFeesTypes.push(item.fees_type_id);
+          } else {
+            item.name = existingFeesType.name;
+          }
+        }
+
+        if (missingFeesTypes.length > 0) {
+          throw new Error(
+            `Fees Type(s) with ID(s) ${missingFeesTypes.join(', ')} not found`,
+          );
         }
 
         feesGroup.feesTypeData = feesTypeData;

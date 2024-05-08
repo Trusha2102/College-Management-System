@@ -163,7 +163,7 @@ export const updateLeave = async (req: Request, res: Response) => {
         ...req.body,
         leaveType,
         employee,
-        no_of_leave_days,
+        no_of_leave_days: no_of_leave_days + 1,
         attachment,
       });
 

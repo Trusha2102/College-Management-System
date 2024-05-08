@@ -9,6 +9,10 @@ import { Installment } from '../../entity/Installment';
 import { Attendance } from '../../entity/Attendance';
 import { DeepPartial, Like } from 'typeorm';
 import { createActivityLog } from '../../utils/activityLog';
+import ejs from 'ejs';
+import path from 'path';
+import fs from 'fs';
+import * as pdf from 'html-pdf';
 
 // Get all payrolls
 export const getAllPayrolls = async (req: Request, res: Response) => {
@@ -489,4 +493,99 @@ const getPreviousMonth = (currentMonth: string): string => {
   const index = months.findIndex((month) => month === currentMonth);
   const previousIndex = index === 0 ? 11 : index - 1;
   return months[previousIndex];
+};
+
+export const payrollReceipt = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return sendError(res, 400, 'Payroll ID is required');
+    }
+
+    const payrollRepository = AppDataSource.getRepository(Payroll);
+    const payrollRecord = await payrollRepository.findOne({
+      where: { id: +id },
+      relations: [
+        'employee',
+        'employee.department',
+        'employee.designation',
+        'employee.user',
+      ],
+    });
+
+    if (!payrollRecord) {
+      return sendError(res, 404, `Payroll with ID ${id} not found`);
+    }
+
+    const htmlContent = await ejs.renderFile(ejsFilePath, {
+      payroll: payrollRecord,
+    });
+
+    const pdfOptions: pdf.CreateOptions = {
+      format: 'A4',
+      border: { top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' },
+      footer: {
+        height: '15mm',
+        contents: {
+          default:
+            '<div style="text-align:center;"><span>{{page}} of {{pages}}</span></div>',
+        },
+      },
+    };
+
+    const uploadFolder = path.join(__dirname, '../../../', 'uploads/Receipt');
+    if (!fs.existsSync(uploadFolder)) {
+      fs.mkdirSync(uploadFolder, { recursive: true });
+    }
+    const pdfFileName = `payroll_receipt_${id}.pdf`;
+    const pdfFilePath = path.join(uploadFolder, pdfFileName);
+    await generatePDF(htmlContent, pdfOptions, pdfFilePath);
+
+    const relativePath = path.relative(
+      path.join(__dirname, '../../../'),
+      pdfFilePath,
+    );
+
+    return sendResponse(res, 200, 'PDF generated successfully', {
+      pdfFilePath: '/' + relativePath,
+    });
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    return sendError(res, 500, 'Failed to generate PDF');
+  }
+};
+
+const ejsFilePath = path.join(
+  __dirname,
+  '../../../',
+  'src',
+  'html',
+  'payrollReceipt.ejs',
+);
+
+const generatePDF = async (
+  htmlContent: string,
+  pdfOptions: pdf.CreateOptions,
+  pdfFilePath: string,
+) => {
+  const options: pdf.CreateOptions = {
+    ...pdfOptions,
+    childProcessOptions: {
+      //@ts-ignore
+      env: {
+        ...process.env,
+        OPENSSL_CONF: '/dev/null',
+      },
+    },
+  };
+  return new Promise<void>((resolve, reject) => {
+    pdf.create(htmlContent, options).toFile(pdfFilePath, (err, res) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
 };

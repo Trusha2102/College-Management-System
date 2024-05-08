@@ -527,85 +527,85 @@ const updateStudentById = async (req: Request, res: Response) => {
           await parentDetailsRepository.save(parentDetails);
         }
 
-        // Handling fees_group_id update
-        const feesGroupIdsToUpdate = Array.isArray(req.body.fees_group_id)
-          ? req.body.fees_group_id
-          : req.body.fees_group_id
-              .split(',')
-              .map((id: string) => parseInt(id.trim(), 10));
+        if (req.body.fees_group_id) {
+          console.log('The fees group part was updated');
+          const feesGroupIdsToUpdate = Array.isArray(req.body.fees_group_id)
+            ? req.body.fees_group_id
+            : req.body.fees_group_id
+                .split(',')
+                .map((id: string) => parseInt(id.trim(), 10));
 
-        if (feesGroupIdsToUpdate.length > 0) {
-          const existingFeesMaster = await feesMasterRepository.find({
-            where: { student_id: updatedStudent.id },
-          });
+          if (feesGroupIdsToUpdate.length > 0) {
+            const existingFeesMaster = await feesMasterRepository.find({
+              where: { student_id: updatedStudent.id },
+            });
 
-          const existingFeesGroupIds = existingFeesMaster.map(
-            (feesMaster) => feesMaster.fees_group_id,
-          );
-
-          // Delete records where fees_group_id is not in the update list
-          const feesGroupIdsToDelete = existingFeesGroupIds.filter(
-            (feesGroupId) => !feesGroupIdsToUpdate.includes(feesGroupId),
-          );
-
-          if (feesGroupIdsToDelete.length > 0) {
-            // Create an array to store promises for each delete operation
-            const deletePromises = feesGroupIdsToDelete.map(
-              async (feesGroupId) => {
-                const deleted = await feesMasterRepository
-                  .createQueryBuilder()
-                  .delete()
-                  .from(FeesMaster)
-                  .where('student_id = :studentId', { studentId: id })
-                  .andWhere('fees_group_id = :feesGroupId', { feesGroupId })
-                  .execute();
-                return deleted;
-              },
+            const existingFeesGroupIds = existingFeesMaster.map(
+              (feesMaster) => feesMaster.fees_group_id,
             );
 
-            // Execute all delete operations asynchronously
-            await Promise.all(deletePromises);
-          }
+            const feesGroupIdsToDelete = existingFeesGroupIds.filter(
+              (feesGroupId) => !feesGroupIdsToUpdate.includes(feesGroupId),
+            );
 
-          for (const feesGroupId of feesGroupIdsToUpdate) {
-            if (!existingFeesGroupIds.includes(feesGroupId)) {
-              const feesGroup = await feesGroupRepository.findOne({
-                where: { id: feesGroupId },
-              });
+            if (feesGroupIdsToDelete.length > 0) {
+              const deletePromises = feesGroupIdsToDelete.map(
+                async (feesGroupId) => {
+                  const deleted = await feesMasterRepository
+                    .createQueryBuilder()
+                    .delete()
+                    .from(FeesMaster)
+                    .where('student_id = :studentId', { studentId: id })
+                    .andWhere('fees_group_id = :feesGroupId', { feesGroupId })
+                    .execute();
+                  return deleted;
+                },
+              );
 
-              if (!feesGroup) {
-                sendError(
-                  res,
-                  404,
-                  `Fees group with ID ${feesGroupId} not found`,
-                );
-                return;
-              }
+              await Promise.all(deletePromises);
+            }
 
-              let netAmount = 0;
-              try {
-                const feesTypeData = feesGroup.feesTypeData;
-                if (Array.isArray(feesTypeData)) {
-                  feesTypeData.forEach((fee: any) => {
-                    if (fee.amount) {
-                      netAmount += fee.amount;
-                    }
-                  });
+            for (const feesGroupId of feesGroupIdsToUpdate) {
+              if (!existingFeesGroupIds.includes(feesGroupId)) {
+                const feesGroup = await feesGroupRepository.findOne({
+                  where: { id: feesGroupId },
+                });
+
+                if (!feesGroup) {
+                  sendError(
+                    res,
+                    404,
+                    `Fees group with ID ${feesGroupId} not found`,
+                  );
+                  return;
                 }
-              } catch (error) {
-                console.error('Error parsing fees type data:', error);
-                sendError(res, 500, 'Failed to parse fees type data');
-                return;
+
+                let netAmount = 0;
+                try {
+                  const feesTypeData = feesGroup.feesTypeData;
+
+                  if (Array.isArray(feesTypeData)) {
+                    feesTypeData.forEach((fee: any) => {
+                      if (fee.amount) {
+                        netAmount += fee.amount;
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error('Error parsing fees type data:', error);
+                  sendError(res, 500, 'Failed to parse fees type data');
+                  return;
+                }
+
+                const newFeesMaster = feesMasterRepository.create({
+                  student: updatedStudent,
+                  student_id: updatedStudent.id,
+                  fees_group_id: feesGroupId,
+                  net_amount: netAmount,
+                });
+
+                await feesMasterRepository.save(newFeesMaster);
               }
-
-              const newFeesMaster = feesMasterRepository.create({
-                student: updatedStudent,
-                student_id: updatedStudent.id,
-                fees_group_id: feesGroupId,
-                net_amount: netAmount,
-              });
-
-              await feesMasterRepository.save(newFeesMaster);
             }
           }
         }

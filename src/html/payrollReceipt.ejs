@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payroll Receipt</title>
+    <style>
+      /* Add your CSS styles here */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+        font-size: 8px;
+      }
+      .container {
+        width: 14.8cm;
+        min-height: 20.8cm;
+        padding: 10px;
+        margin: 10px auto;
+        background-color: #fff;
+        border: 0.5px solid #ccc;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        page-break-after: always;
+        box-sizing: border-box;
+        border-radius: 10px;
+      }
+
+      .details-clip {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 15px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 14px;
+      }
+      .header h1 {
+        margin: 3px 0;
+        font-size: 14px;
+        color: #fff;
+        background-color: #000;
+        padding: 6px 0px;
+      }
+      .institute-info {
+        display: grid;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+        width: 100%;
+        grid-template-columns: 1fr 230px;
+      }
+      .institute-info img {
+        max-width: 50px;
+        max-height: 50px;
+      }
+      .image-name p {
+        font-size: 13px;
+        font-weight: 700;
+        margin: 0px;
+      }
+      .address {
+        color: #000;
+        font-size: 10px;
+        text-align: end;
+        font-weight: 700;
+        line-height: 6px;
+        margin-right: 40px;
+      }
+      .payroll-period {
+        text-align: center;
+        margin-bottom: 14px;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .payroll-details {
+        padding: 5px;
+        border-top: 1px solid #ccc;
+      }
+      .payroll-details h2 {
+        margin: 0;
+        padding-bottom: 5px;
+        font-size: 10px;
+        color: #333;
+        border-bottom: 0.5px solid #ccc;
+      }
+      .payroll-details table {
+        width: 100%;
+        margin-top: 5px;
+        border-collapse: collapse;
+      }
+      .payroll-details th,
+      .payroll-details td {
+        padding: 4px 0;
+        border-bottom: 0.5px solid #ccc;
+        text-align: left;
+        font-size: 8px;
+      }
+      .payroll-details th {
+        font-weight: bold;
+        font-size: 11px;
+      }
+      .payroll-details td {
+        color: #000;
+        font-size: 11px;
+      }
+      .payroll-details .totals td {
+        font-weight: bold;
+        font-size: 11px;
+        color: #000;
+      }
+      h3.earning {
+        font-size: 11px;
+      }
+      h3.deduction {
+        font-size: 11px;
+        
+      }
+      p.salary-mode {
+        font-size: 11px;
+      }
+      .footer {
+        text-align: end;
+      }
+      .footer button {
+        padding: 10px 24px;
+        border-radius: 28px;
+        color: #ff0000;
+        background: #ffc0cb54;
+        border: none;
+      }
+
+      .demo{
+        padding-right: 1em;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+        <div class="details-clip">
+            <h3>Details</h3>
+            <span>128203</span>
+        </div>
+        <div class="institute-info">
+            <div class="image-name">
+                <img src="../../cropped-logo1.jpg" alt="Institute Logo" />
+                <p>R.H.PATEL INSTITUTE OF TECHNOLOGY</p>
+            </div>
+            <div class="address">
+                <p>NH64, Malarpura, Gujarat 387120</p>
+                <p>Phone: 9979160750</p>
+                <p>Email: info@rhpit.org</p>
+                <p>Website: http://www.rhpit.org</p>
+            </div>
+        </div>
+        <div class="header">
+            <h1>Payroll Receipt</h1>
+        </div>
+        <div class="payroll-period">
+            <p>Payslip for the period of <%= payroll.month %>-<%= payroll.year %></p>
+        </div>
+        <div class="payroll-details">
+            <h2>Payroll Details</h2>
+            <table>
+                <tr>
+                    <th>Staff ID</th>
+                    <td><%= payroll.employee.staff_id %></td>
+                    <th>Name</th>
+                    <td><%= payroll.employee.user.first_name %></td>
+                </tr>
+                <tr>
+                    <th>Department</th>
+                    <td><%= payroll.employee.department.department %></td>
+                    <th>Designation</th>
+                    <td><%= payroll.employee.designation.designation %></td>
+                </tr>
+            </table>
+            <h3 class="earning">Earnings</h3>
+            <table>
+                <% let totalEarning = 0; %>
+                <% payroll.earning.forEach(entry => { %>
+                    <% totalEarning += entry.amount; %>
+                    <tr>
+                        <td><%= entry.name %></td>
+                        <td><%= entry.amount %></td>
+                    </tr>
+                <% }); %>
+                <tr class="totals">
+                    <td>Total Earnings</td>
+                    <td><%= totalEarning %></td>
+                </tr>
+            </table>
+            <h3 class="deduction">Deductions</h3>
+            <table>
+                <% let totalDeduction = 0; %>
+                <% payroll.deduction.forEach(entry => { %>
+                    <% totalDeduction += entry.amount; %>
+                    <tr class="demo">
+                        <td><%= entry.name %></td>
+                        <td><%= entry.amount %></td>
+                    </tr>
+                <% }); %>
+                <tr class="totals">
+                    <td>Total Deductions</td>
+                    <td><%= totalDeduction %></td>
+                </tr>
+            </table>
+            <p class="salary-mode"><strong>Payment Mode:</strong> <%= payroll.payment_mode %></p>
+            <p class="salary-mode"><strong>Basic Salary:</strong> <%= payroll.employee.salary %></p>
+            <p class="salary-mode"><strong>Gross Salary:</strong> <%= payroll.gross_salary %></p>
+            <p class="salary-mode"><strong>Net Salary:</strong> <%= payroll.net_amount %></p>
+            <!-- Add more details as needed -->
+        </div>
+    </div>
+</body>
+</html>

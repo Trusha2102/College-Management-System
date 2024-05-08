@@ -27,5 +27,10 @@ router.get(
   permissionProtect,
   payrollController.getEmployeePayrollDetails,
 );
+router.get(
+  '/payroll-receipt/view/:id',
+  permissionProtect,
+  payrollController.payrollReceipt,
+);
 
 export default router;

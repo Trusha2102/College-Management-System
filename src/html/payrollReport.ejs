@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payroll Table</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+      }
+      .container {
+        max-width: 100%; 
+        margin: 0 auto; 
+        padding: 5px; 
+        background-color: #fff;
+        border: 1px solid #ccc;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 5px;
+      }
+      .header h1 {
+        margin: 5px 0;
+        color: #333;
+        font-size: 16px; 
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 5px; 
+        font-size: 10px; 
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 2px; 
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .small-column {
+        width: 80px; 
+      }
+
+      @media print {
+        .container {
+          page-break-before: always;
+          max-width: 100%;
+          margin: 0 auto; 
+          padding: 5px;
+          background-color: #fff;
+          border: 1px solid #ccc;
+          box-shadow: none;
+        }
+        table {
+          font-size: 8px; 
+        }
+        th,
+        td {
+          padding: 1px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Payroll Report</h1>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th class="small-column">Employee Name</th>
+            <th class="small-column">Role</th>
+            <th class="small-column">Designation</th>
+            <th class="small-column">Month-Year</th>
+            <th class="small-column">Basic Salary</th>
+            <th class="small-column">Total Earnings</th>
+            <th class="small-column">Total Deductions</th>
+            <th class="small-column">Gross Salary</th>
+            <th class="small-column">Tax</th>
+            <th class="small-column">Net Salary</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% payroll.forEach((payrollRecord, index) => { %>
+                    <tr>
+                        <td><%= payrollRecord.employee.user?.first_name %> <%= payrollRecord.employee.user?.last_name %></td>
+                        <td><%= payrollRecord.employee.user.role?.name %></td>
+                        <td><%= payrollRecord.employee.designation.designation %></td>
+                        <td><%= payrollRecord.month %> - <%= payrollRecord.year %></td>
+                        <td><%= payrollRecord.employee.salary %></td>
+                        <td>
+                            <% let totalEarning = 0; %>
+                            <% payrollRecord.earning.forEach(entry => { %>
+                                <% totalEarning += entry.amount; %>
+                            <% }); %>
+                            <%= totalEarning %>
+                        </td>
+                        <td>
+                            <% let totalDeduction = 0; %>
+                            <% payrollRecord.deduction.forEach(entry => { %>
+                                <% totalDeduction += entry.amount; %>
+                            <% }); %>
+                            <%= totalDeduction %>
+                        </td>
+                        <td><%= payrollRecord.gross_salary %></td>
+                        <td><%= payrollRecord.tax %></td>
+                        <td><%= payrollRecord.net_amount %></td>
+                    </tr>
+                <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>
