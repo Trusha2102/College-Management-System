@@ -86,7 +86,10 @@ export const getPayrollById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const payrollRepository = AppDataSource.getRepository(Payroll);
-    const payroll = await payrollRepository.findOne({ where: { id: +id }, relations: ['employee'] });
+    const payroll = await payrollRepository.findOne({
+      where: { id: +id },
+      relations: ['employee'],
+    });
     if (!payroll) {
       sendError(res, 404, 'Payroll not found');
       return;
@@ -125,7 +128,10 @@ export const createPayroll = async (req: Request, res: Response) => {
       const earningTotal = calculateTotalAmount(body.earning);
       const deductionTotal = calculateTotalAmount(body.deduction);
       const gross_salary =
-        employee.salary + earningTotal.amount - deductionTotal.amount;
+        employee.salary +
+        earningTotal.amount -
+        deductionTotal.amount -
+        (existingStaffLoan ? existingStaffLoan.installment_amount : 0);
       const net_salary = gross_salary - tax;
 
       const newPayroll: DeepPartial<Payroll> = {
@@ -203,7 +209,7 @@ export const updatePayrollById = async (req: Request, res: Response) => {
     const payrollRepository = AppDataSource.getRepository(Payroll);
     const payrollToUpdate = await payrollRepository.findOne({
       where: { id: +id },
-      relations: ['employee']
+      relations: ['employee'],
     });
     if (!payrollToUpdate) {
       return sendError(res, 404, 'Payroll not found');

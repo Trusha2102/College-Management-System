@@ -27,6 +27,8 @@ export const createStaffLoan = async (req: Request, res: Response) => {
       const newStaffLoan = staffLoanRepository.create({
         ...req.body,
         type: 'Staff Loan',
+        action_by: req.user?.id,
+        status: 'Pending',
         employee: req.body.employee_id,
       });
       const savedStaffLoan = await staffLoanRepository.save(newStaffLoan);
@@ -43,51 +45,10 @@ export const createStaffLoan = async (req: Request, res: Response) => {
         return;
       }
 
-      const staffLoanId = fetchedStaffLoan.id;
-
-      // Generate Installment records
-      const installmentRepository =
-        queryRunner.manager.getRepository(Installment);
-      const noOfInstallments = req.body.no_of_installments;
-      const installmentAmount = req.body.installment_amount;
-      const currentMonth = new Date().getMonth();
-      let currentYear = new Date().getFullYear();
-      const installmentRecords = [];
-
-      for (let i = 0; i < noOfInstallments; i++) {
-        // Determine the month and year for the installment
-        const monthIndex = (currentMonth + i) % 12;
-        const monthName = getMonthName(monthIndex);
-        const installmentYear = getInstallmentYear(
-          currentYear,
-          currentMonth,
-          monthIndex,
-        );
-
-        // Create Installment record
-        const installmentRecord = installmentRepository.create({
-          staff_loan: { id: staffLoanId },
-          amount: req.body.installment_amount,
-          month: monthName,
-          year: installmentYear.toString(),
-          status: false,
-        });
-
-        installmentRecords.push(installmentRecord);
-
-        // Update current year if December is encountered
-        if (monthName === 'December') {
-          currentYear++;
-        }
-      }
-
       await createActivityLog(
         req.user?.id || 0,
         `Staff Loan applied for Employee ${employee.user.first_name + ' ' + employee.user.last_name} of Amount: ${'Rs.' + req.body.loan_amount} by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
-
-      // Save Installment records
-      await installmentRepository.save(installmentRecords);
 
       sendResponse(res, 201, 'StaffLoan created successfully', savedStaffLoan);
     });
@@ -147,6 +108,45 @@ export const updateStaffLoanById = async (req: Request, res: Response) => {
       staffLoanRepository.merge(staffLoanToUpdate, req.body);
       const updatedStaffLoan =
         await staffLoanRepository.save(staffLoanToUpdate);
+
+      if ((req.body.status = 'Active')) {
+        // Generate Installment records
+        const installmentRepository =
+          queryRunner.manager.getRepository(Installment);
+        const noOfInstallments = staffLoanToUpdate.no_of_installments;
+        const currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        const installmentRecords = [];
+
+        for (let i = 0; i < noOfInstallments; i++) {
+          // Determine the month and year for the installment
+          const monthIndex = (currentMonth + i) % 12;
+          const monthName = getMonthName(monthIndex);
+          const installmentYear = getInstallmentYear(
+            currentYear,
+            currentMonth,
+            monthIndex,
+          );
+
+          // Create Installment record
+          const installmentRecord = installmentRepository.create({
+            staff_loan: { id: +id },
+            amount: staffLoanToUpdate.installment_amount,
+            month: monthName,
+            year: installmentYear.toString(),
+            status: false,
+          });
+
+          installmentRecords.push(installmentRecord);
+
+          // Update current year if December is encountered
+          if (monthName === 'December') {
+            currentYear++;
+          }
+        }
+
+        await installmentRepository.save(installmentRecords);
+      }
 
       await createActivityLog(
         req.user?.id || 0,
@@ -279,6 +279,16 @@ export const getAllStaffLoans = async (req: Request, res: Response) => {
       } else {
         staffLoans = await query.getMany();
       }
+
+      // Define custom order of status
+      const customOrder = ['Pending', 'Active', 'Paid', 'Rejected'];
+
+      // Sort staffLoans array based on custom order of status
+      staffLoans.sort(
+        (a, b) =>
+          customOrder.indexOf(a.status as string) -
+          customOrder.indexOf(b.status as string),
+      );
 
       const modifiedStaffLoans = await Promise.all(
         staffLoans.map(async (loan) => {
