@@ -47,6 +47,12 @@ export class FeesPayment {
   @Column({ nullable: true })
   comment!: string;
 
+  @Column({ nullable: true })
+  discount!: string;
+
+  @Column({ nullable: true })
+  fine!: string;
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',

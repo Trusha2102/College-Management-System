@@ -159,13 +159,11 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
       }),
     );
 
-    // Send response using commonResponse as sendResponse
     sendResponse(res, 200, 'Fees masters fetched successfully', {
       feesMasters: feesMastersWithFineAmounts,
     });
   } catch (error: any) {
     console.error('Error fetching fees masters:', error);
-    // Send error using commonResponse as sendError
     sendError(res, 500, 'Failed to fetch fees masters', error.message);
   }
 };
@@ -257,6 +255,8 @@ export const collectFees = async (req: Request, res: Response) => {
         feesPayment.dos = dos;
         feesPayment.status = 'Paid';
         feesPayment.amount = amount;
+        feesPayment.discount = discount_amount || null;
+        feesPayment.fine = fine_amount || null;
         feesPayment.payment_from = student_id;
         feesPayment.payment_mode = payment_mode;
 

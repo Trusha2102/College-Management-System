@@ -111,12 +111,26 @@ export const createPayroll = async (req: Request, res: Response) => {
     const { employee_id, month, year, tax } = body;
 
     const employeeRepository = AppDataSource.getRepository(Employee);
+    const payrollRepository = AppDataSource.getRepository(Payroll);
     const employee = await employeeRepository.findOne({
       where: { id: employee_id },
       relations: ['user'],
     });
     if (!employee) {
       sendError(res, 404, 'Employee not found');
+      return;
+    }
+
+    const existingPayroll = await payrollRepository.findOne({
+      where: { employee: { id: employee_id }, month, year },
+    });
+
+    if (existingPayroll) {
+      sendError(
+        res,
+        400,
+        `Payroll for Month-Year: ${month + '-' + year} already exists`,
+      );
       return;
     }
 
