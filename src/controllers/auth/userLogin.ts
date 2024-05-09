@@ -13,21 +13,17 @@ dotenv.config();
 const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    // Find the user by email
     const user = await AppDataSource.manager.findOne(User, {
       where: { email },
       relations: ['employee'],
     });
-    // If user not found, return 404
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return sendError(res, 400, 'User Not Found!');
     }
-    // Check if the password is correct
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return sendError(res, 200, 'Invalid credentials');
     }
-    // Create JWT token with user object as payload
     const token = jwt.sign(
       {
         user,

@@ -123,19 +123,39 @@ export const createPayroll = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const payrollRepository = queryRunner.manager.getRepository(Payroll);
+      const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
+      const installmentRepository =
+        queryRunner.manager.getRepository(Installment);
       const existingStaffLoan = await queryRunner.manager
         .getRepository(StaffLoan)
-        .findOne({
+        .find({
           where: { type: 'Staff Loan', employee: { id: employee_id } },
         });
 
+      let totalInstallmentAmount = 0;
+      if (existingStaffLoan) {
+        for (const loan of existingStaffLoan) {
+          const installmentForMonthYear = await installmentRepository.find({
+            where: {
+              staff_loan: loan,
+              month: month,
+              year: year,
+            },
+          });
+
+          for (const installment of installmentForMonthYear) {
+            totalInstallmentAmount += installment.amount;
+          }
+        }
+      }
       const earningTotal = calculateTotalAmount(body.earning);
       const deductionTotal = calculateTotalAmount(body.deduction);
       const gross_salary =
         employee.salary +
         earningTotal.amount -
         deductionTotal.amount -
-        (existingStaffLoan ? existingStaffLoan.installment_amount : 0);
+        totalInstallmentAmount;
+
       const net_salary = gross_salary - tax;
 
       const newPayroll: DeepPartial<Payroll> = {
@@ -155,7 +175,32 @@ export const createPayroll = async (req: Request, res: Response) => {
       };
       await payrollRepository.save(newPayroll);
 
-      const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
+      if (existingStaffLoan && existingStaffLoan.length > 0) {
+        for (const loan of existingStaffLoan) {
+          await installmentRepository.update(
+            {
+              staff_loan: { id: loan.id },
+              month,
+              year,
+            },
+            {
+              status: true,
+            },
+          );
+
+          const paidLoan = await installmentRepository.find({
+            where: { staff_loan: { id: loan.id }, status: false },
+          });
+
+          if (paidLoan.length === 0) {
+            await staffLoanRepository.update(
+              { id: loan.id, employee: { id: employee_id } },
+              { status: 'Paid' },
+            );
+          }
+        }
+      }
+
       const newStaffLoan = staffLoanRepository.create({
         employee: employee,
         loan_amount: employee.deduction,
@@ -167,8 +212,6 @@ export const createPayroll = async (req: Request, res: Response) => {
       });
       await staffLoanRepository.save(newStaffLoan);
 
-      const installmentRepository =
-        queryRunner.manager.getRepository(Installment);
       const newInstallment = installmentRepository.create({
         staff_loan: newStaffLoan,
         pay_date: null as any,
@@ -310,19 +353,23 @@ export const staffDeduction = async (req: Request, res: Response) => {
     const { search, role, page, limit } = req.query;
 
     const staffLoanRepository = AppDataSource.getRepository(StaffLoan);
-    const queryBuilder = staffLoanRepository.createQueryBuilder('staffLoan');
 
-    queryBuilder.andWhere('staffLoan.type = :type', { type: 'Deduction' });
-
-    queryBuilder
+    let queryBuilder = staffLoanRepository
+      .createQueryBuilder('staffLoan')
       .leftJoinAndSelect('staffLoan.employee', 'employee')
+      .leftJoinAndSelect('staffLoan.installments', 'installment')
       .leftJoinAndSelect('employee.user', 'user')
-      .leftJoinAndSelect('employee.payroll', 'payroll')
       .leftJoinAndSelect('employee.designation', 'designation')
-      .leftJoinAndSelect('user.role', 'employeeRole');
+      .leftJoinAndSelect(
+        'employee.payroll',
+        'payroll',
+        'payroll.month = installment.month AND payroll.year = installment.year',
+      )
+      .leftJoinAndSelect('user.role', 'employeeRole')
+      .where('staffLoan.type = :type', { type: 'Deduction' });
 
     if (search) {
-      queryBuilder.andWhere((qb) => {
+      queryBuilder = queryBuilder.andWhere((qb) => {
         qb.where('employee.staff_id ILIKE :search', { search: `%${search}%` })
           .orWhere('user.first_name ILIKE :search', { search: `%${search}%` })
           .orWhere('user.last_name ILIKE :search', { search: `%${search}%` })
@@ -334,31 +381,33 @@ export const staffDeduction = async (req: Request, res: Response) => {
     }
 
     if (role) {
-      queryBuilder.andWhere('employeeRole.name ILIKE :role', {
+      queryBuilder = queryBuilder.andWhere('employeeRole.name ILIKE :role', {
         role: `%${role}%`,
       });
     }
 
-    const totalCount = await queryBuilder.getCount();
+    let totalCount = await queryBuilder.getCount();
 
-    let deductions: StaffLoan[];
+    let limitedDeductions;
 
     if (page && limit) {
       const pageNumber = parseInt(page as string, 10);
       const limitNumber = parseInt(limit as string, 10);
-      const skip = (pageNumber - 1) * limitNumber;
+      const startIndex = (pageNumber - 1) * limitNumber;
 
-      deductions = await queryBuilder.skip(skip).take(limitNumber).getMany();
+      limitedDeductions = await queryBuilder
+        .take(limitNumber)
+        .skip(startIndex)
+        .getMany();
     } else {
-      deductions = await queryBuilder.getMany();
+      // If page and limit are not provided, fetch all records
+      limitedDeductions = await queryBuilder.getMany();
     }
 
-    const totalNoOfRecords = deductions.length;
-
     sendResponse(res, 200, 'Deductions fetched successfully', {
-      deductions,
+      deductions: limitedDeductions,
       totalCount,
-      totalNoOfRecords,
+      totalNoOfRecords: totalCount,
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch deductions', error.message);

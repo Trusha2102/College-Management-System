@@ -21,5 +21,10 @@ router.get(
   staffLoanController.getStaffLoanById,
 );
 router.get('/list', permissionProtect, staffLoanController.getAllStaffLoans);
+router.get(
+  '/my-staff-loan/list',
+  permissionProtect,
+  staffLoanController.getMyStaffLoans,
+);
 
 export default router;

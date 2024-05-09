@@ -6,6 +6,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import { Installment } from '../../entity/Installment';
 import { Employee } from '../../entity/Employee';
 import { createActivityLog } from '../../utils/activityLog';
+import { Not } from 'typeorm';
 
 // Create StaffLoan and Installment
 export const createStaffLoan = async (req: Request, res: Response) => {
@@ -13,10 +14,12 @@ export const createStaffLoan = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
 
     const employeeRepository = queryRunner.manager.getRepository(Employee);
+    const employeeId = +req.body.employee_id;
     const employee = await employeeRepository.findOne({
-      where: { id: +req.body.employee_id },
+      where: { id: employeeId },
       relations: ['user'],
     });
+
     if (!employee) {
       sendError(res, 404, 'Employee not found');
       return;
@@ -24,26 +27,44 @@ export const createStaffLoan = async (req: Request, res: Response) => {
 
     await runTransaction(queryRunner, async () => {
       const staffLoanRepository = queryRunner.manager.getRepository(StaffLoan);
+
+      const existingLoans = await staffLoanRepository.find({
+        where: { employee: { id: +employeeId }, status: Not('Paid') },
+      });
+      let totalInstallmentAmount = 0;
+      existingLoans.forEach((loan) => {
+        totalInstallmentAmount += loan.installment_amount;
+      });
+
+      const totalLoanAmount =
+        totalInstallmentAmount + req.body.installment_amount;
+      if (totalLoanAmount > employee.salary) {
+        sendError(
+          res,
+          400,
+          'Total loan installment amount exceeds employee monthly salary',
+        );
+        return;
+      }
+
       const newStaffLoan = staffLoanRepository.create({
         ...req.body,
         type: 'Staff Loan',
         action_by: req.user?.id,
         status: 'Pending',
-        employee: req.body.employee_id,
+        employee: employeeId,
       });
       const savedStaffLoan = await staffLoanRepository.save(newStaffLoan);
 
-      // Fetch the saved StaffLoan record using the employee_id
-      const fetchedStaffLoan = await staffLoanRepository.findOne({
-        where: { employee: req.body.employee_id },
-        order: { id: 'DESC' },
-      });
+      // const fetchedStaffLoan = await staffLoanRepository.findOne({
+      //   where: { employee: { id: +employeeId } },
+      //   order: { id: 'DESC' },
+      // });
 
-      // Check if the StaffLoan record is found
-      if (!fetchedStaffLoan) {
-        sendError(res, 404, 'StaffLoan not found after creation');
-        return;
-      }
+      // if (!fetchedStaffLoan) {
+      //   sendError(res, 404, 'StaffLoan not found after creation');
+      //   return;
+      // }
 
       await createActivityLog(
         req.user?.id || 0,
@@ -321,5 +342,33 @@ export const getAllStaffLoans = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     sendError(res, 500, 'Failed to fetch StaffLoans', error.message);
+  }
+};
+
+export const getMyStaffLoans = async (req: Request, res: Response) => {
+  try {
+    const employeeRepository = AppDataSource.getRepository(Employee);
+    const staffLoanRepository = AppDataSource.getRepository(StaffLoan);
+
+    const employee = await employeeRepository.findOne({
+      where: { user: { id: req.user?.id } },
+    });
+
+    if (employee) {
+      const staffLoan = await staffLoanRepository.find({
+        where: { employee: { id: employee.id } },
+        relations: ['employee'],
+      });
+
+      if (!staffLoan) {
+        return sendError(res, 404, 'StaffLoan not found');
+      }
+      sendResponse(res, 200, 'Success', staffLoan);
+    } else {
+      sendError(res, 400, 'No Staff Loan Record Found');
+      return;
+    }
+  } catch (error: any) {
+    sendError(res, 500, 'Failed to fetch StaffLoan', error.message);
   }
 };

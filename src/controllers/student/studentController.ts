@@ -296,7 +296,6 @@ const listStudents = async (req: Request, res: Response) => {
     page = parseInt(page as string, 10);
     limit = parseInt(limit as string, 10);
 
-    // Get the repository for the Student entity
     const studentRepository = AppDataSource.getRepository(Student);
 
     // Create the base query
@@ -528,7 +527,6 @@ const updateStudentById = async (req: Request, res: Response) => {
         }
 
         if (req.body.fees_group_id) {
-          console.log('The fees group part was updated');
           const feesGroupIdsToUpdate = Array.isArray(req.body.fees_group_id)
             ? req.body.fees_group_id
             : req.body.fees_group_id

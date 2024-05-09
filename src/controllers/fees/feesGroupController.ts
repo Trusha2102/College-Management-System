@@ -18,42 +18,35 @@ export const createFeesGroup = async (req: Request, res: Response) => {
         throw new Error('feesTypeData should be an array');
       }
 
+      // Check if fees_type_id is unique in feesTypeData
+      const uniqueFeesTypeIds = new Set();
+      for (const item of feesTypeData) {
+        if (uniqueFeesTypeIds.has(item.fees_type_id)) {
+          sendError(
+            res,
+            400,
+            'Each Fee Type must be Unique!',
+            'Failed to create Fees Group',
+          );
+          return;
+        }
+        uniqueFeesTypeIds.add(item.fees_type_id);
+      }
+
       const feesGroup = new FeesGroup();
       feesGroup.name = name;
       feesGroup.description = description;
       feesGroup.due_date = due_date;
+      feesGroup.feesTypeData = feesTypeData;
 
       const feesGroupRepository = queryRunner.manager.getRepository(FeesGroup);
       const newFeesGroup = await feesGroupRepository.save(feesGroup);
 
-      const feesTypeRepository = queryRunner.manager.getRepository(FeesType);
-      const missingFeesTypes: number[] = [];
-
-      for (const item of feesTypeData) {
-        const existingFeesType = await feesTypeRepository.findOne({
-          where: { id: item.fees_type_id },
-        });
-        if (!existingFeesType) {
-          missingFeesTypes.push(item.fees_type_id);
-        } else {
-          item.name = existingFeesType.name;
-        }
-      }
-
-      if (missingFeesTypes.length > 0) {
-        throw new Error(
-          `Fees Type(s) with ID(s) ${missingFeesTypes.join(', ')} not found`,
-        );
-      }
-
-      feesGroup.feesTypeData = feesTypeData;
-
+      // Logging activity
       await createActivityLog(
         req.user?.id || 0,
         `Fees Group named ${feesGroup.name} was created by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
-
-      await feesGroupRepository.save(newFeesGroup);
 
       sendResponse(res, 201, 'Fees Group created successfully', newFeesGroup);
     });
@@ -137,6 +130,21 @@ export const updateFeesGroupById = async (req: Request, res: Response) => {
 
         if (!Array.isArray(feesTypeData)) {
           throw new Error('feesTypeData should be an array');
+        }
+
+        // Check if fees_type_id is unique in feesTypeData
+        const uniqueFeesTypeIds = new Set();
+        for (const item of feesTypeData) {
+          if (uniqueFeesTypeIds.has(item.fees_type_id)) {
+            sendError(
+              res,
+              400,
+              'Each Fee Type must be Unique!',
+              'Failed to create Fees Group',
+            );
+            return;
+          }
+          uniqueFeesTypeIds.add(item.fees_type_id);
         }
 
         const feesTypeRepository = queryRunner.manager.getRepository(FeesType);
