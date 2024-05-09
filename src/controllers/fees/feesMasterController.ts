@@ -123,58 +123,50 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
   try {
     const { student_id } = req.params;
 
-    if (!student_id) {
-      return res.status(400).json({ error: 'Student ID is required' });
-    }
-
-    const studentRepository = AppDataSource.getRepository(Student);
-
-    const studentRecord = await studentRepository.findOne({
-      where: { id: +student_id },
-    });
-
-    if (!studentRecord) {
-      return sendError(res, 400, `Student with ID ${student_id} not found`);
-    }
-
     const feesMasterRepository = AppDataSource.getRepository(FeesMaster);
+    const feesGroupRepository = AppDataSource.getRepository(FeesGroup);
+
     const feesMasters = await feesMasterRepository
       .createQueryBuilder('feesMaster')
-      .leftJoinAndSelect('feesMaster.feesGroups', 'feesGroup')
-      .leftJoinAndSelect('feesMaster.feesPayments', 'feesPayment')
       .leftJoinAndSelect('feesMaster.student', 'student')
-      .where('feesMaster.student_id = :studentId', {
-        studentId: parseInt(student_id),
-      })
+      .leftJoinAndSelect('feesMaster.feesGroups', 'feesGroup')
+
+      .where('feesMaster.student_id = :student_id', { student_id })
       .getMany();
 
-    if (feesMasters.length === 0) {
-      return res
-        .status(404)
-        .json({ error: 'No records found for the specified student ID' });
-    }
+    const feesMastersWithFineAmounts = await Promise.all(
+      feesMasters.map(async (feesMaster) => {
+        let fineAmount = 0;
 
-    const feesMastersWithFineAmounts = feesMasters.map((feesMaster) => {
-      const fineAmounts = feesMaster.feesGroups.flatMap((feesGroup) => {
-        const currentDate = new Date();
-        const dueDate = new Date(feesGroup.due_date);
-        if (dueDate <= currentDate && feesGroup.feesTypeData) {
-          const feesTypeData = feesGroup.feesTypeData;
-          return feesTypeData
-            .filter((item: any) => new Date(item.due_date) <= currentDate)
-            .map((item: any) => item.fine_amount);
+        // Check if feesGroup is defined
+        if (feesMaster.fees_group_id) {
+          const feesGroup = await feesGroupRepository.findOne({
+            where: { id: feesMaster.fees_group_id },
+          });
+
+          if (feesGroup && feesGroup.feesTypeData) {
+            feesGroup.feesTypeData.forEach((feesTypeDataItem) => {
+              const currentDate = new Date();
+              const dueDate = new Date(feesTypeDataItem.due_date);
+
+              if (dueDate <= currentDate) {
+                fineAmount += feesTypeDataItem.fine_amount;
+              }
+            });
+          }
         }
-        return [];
-      });
-      return { feesMaster, fineAmounts };
-    });
+        return { ...feesMaster, fineAmount };
+      }),
+    );
 
-    return res.status(200).json({ feesMastersWithFineAmounts });
-  } catch (error) {
-    console.error('Error fetching fees master records:', error);
-    return res
-      .status(500)
-      .json({ error: 'Failed to fetch fees master records' });
+    // Send response using commonResponse as sendResponse
+    sendResponse(res, 200, 'Fees masters fetched successfully', {
+      feesMasters: feesMastersWithFineAmounts,
+    });
+  } catch (error: any) {
+    console.error('Error fetching fees masters:', error);
+    // Send error using commonResponse as sendError
+    sendError(res, 500, 'Failed to fetch fees masters', error.message);
   }
 };
 

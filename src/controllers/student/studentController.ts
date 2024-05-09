@@ -261,7 +261,7 @@ const createStudent = async (req: Request, res: Response) => {
             student: newStudent,
             student_id: newStudent?.id,
             fees_group_id: feesGroupId,
-            feesGroups: feesGroup,
+            feesGroups: [feesGroup],
             net_amount: netAmount,
           });
 
@@ -599,6 +599,7 @@ const updateStudentById = async (req: Request, res: Response) => {
                   student: updatedStudent,
                   student_id: updatedStudent.id,
                   fees_group_id: feesGroupId,
+                  feesGroups: [feesGroup],
                   net_amount: netAmount,
                 });
 

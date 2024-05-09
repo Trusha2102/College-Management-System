@@ -5,7 +5,7 @@ import { Course } from '../../entity/Course';
 import AppDataSource from '../../data-source';
 import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
-import { ILike } from 'typeorm';
+import { ILike, Like } from 'typeorm';
 import { createActivityLog } from '../../utils/activityLog';
 
 export const createSemester = async (req: Request, res: Response) => {
@@ -104,7 +104,7 @@ export const updateSemesterById = async (req: Request, res: Response) => {
 
       const existingSemester = await AppDataSource.manager.findOne(Semester, {
         where: {
-          semester: ILike(trimmedSemesterName),
+          semester: Like(trimmedSemesterName),
           course: courseId,
         },
       });
@@ -152,6 +152,7 @@ export const deleteSemesterById = async (req: Request, res: Response) => {
       const semesterRepository = queryRunner.manager.getRepository(Semester);
       const semesterToDelete = await semesterRepository.findOne({
         where: { id: +id },
+        relations: ['course'],
       });
       if (!semesterToDelete) {
         sendError(res, 404, 'Semester not found');
@@ -161,7 +162,7 @@ export const deleteSemesterById = async (req: Request, res: Response) => {
 
       await createActivityLog(
         req.user?.id || 0,
-        `Semester named ${semesterToDelete.semester} for Course: ${semesterToDelete.course.name} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
+        `Semester named ${semesterToDelete.semester} for Course: ${semesterToDelete.course?.name} was deleted by ${req.user?.first_name + ' ' + req.user?.last_name}`,
       );
 
       sendResponse(res, 200, 'Semester deleted successfully');
