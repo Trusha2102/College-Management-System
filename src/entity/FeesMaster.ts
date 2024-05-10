@@ -39,7 +39,7 @@ export class FeesMaster {
   @Column({ nullable: true })
   discount_id!: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: 0 })
   discount_amount!: number;
 
   @Column({ nullable: true })
@@ -57,7 +57,7 @@ export class FeesMaster {
   @Column({ nullable: true, unique: false })
   fineTypeId!: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: 0 })
   fine_amount!: number;
 
   @Column({ nullable: true })

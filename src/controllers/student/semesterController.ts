@@ -7,6 +7,7 @@ import { sendResponse, sendError } from '../../utils/commonResponse';
 import runTransaction from '../../utils/runTransaction';
 import { ILike, Like } from 'typeorm';
 import { createActivityLog } from '../../utils/activityLog';
+import { Student } from '../../entity/Student';
 
 export const createSemester = async (req: Request, res: Response) => {
   try {
@@ -150,6 +151,7 @@ export const deleteSemesterById = async (req: Request, res: Response) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await runTransaction(queryRunner, async () => {
       const semesterRepository = queryRunner.manager.getRepository(Semester);
+      const studentRepository = queryRunner.manager.getRepository(Student);
       const semesterToDelete = await semesterRepository.findOne({
         where: { id: +id },
         relations: ['course'],
@@ -158,6 +160,16 @@ export const deleteSemesterById = async (req: Request, res: Response) => {
         sendError(res, 404, 'Semester not found');
         return;
       }
+
+      const student = await studentRepository.find({
+        where: { semester_id: +id },
+      });
+
+      if (student.length > 0) {
+        sendError(res, 404, 'Students have record in this Semester');
+        return;
+      }
+
       await semesterRepository.remove(semesterToDelete);
 
       await createActivityLog(

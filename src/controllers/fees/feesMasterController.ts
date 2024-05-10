@@ -199,7 +199,7 @@ export const collectFees = async (req: Request, res: Response) => {
           amount,
           discount_id,
           discount_amount,
-          fine_type_id,
+          // fine_type_id,
           fine_amount,
         } = paymentData;
 
@@ -231,15 +231,15 @@ export const collectFees = async (req: Request, res: Response) => {
           }
         }
 
-        if (fine_type_id) {
-          const fine = await fineRepository.findOne({
-            where: { id: fine_type_id },
-          });
-          if (!fine) {
-            sendError(res, 400, 'Fine Type Not Found');
-            return;
-          }
-        }
+        // if (fine_type_id) {
+        //   const fine = await fineRepository.findOne({
+        //     where: { id: fine_type_id },
+        //   });
+        //   if (!fine) {
+        //     sendError(res, 400, 'Fine Type Not Found');
+        //     return;
+        //   }
+        // }
 
         if (discount_amount) {
           feesMaster.net_amount -= discount_amount;
@@ -271,9 +271,9 @@ export const collectFees = async (req: Request, res: Response) => {
         }
 
         feesMaster.discount_id = discount_id || null;
-        feesMaster.discount_amount = discount_amount || null;
-        feesMaster.fineTypeId = fine_type_id || null;
-        feesMaster.fine_amount = fine_amount || null;
+        feesMaster.discount_amount += discount_amount || null;
+        // feesMaster.fineTypeId = fine_type_id || null;
+        feesMaster.fine_amount += fine_amount || null;
         feesMaster.paid_amount += amount;
         feesMaster.status =
           feesMaster.paid_amount < feesMaster.net_amount
