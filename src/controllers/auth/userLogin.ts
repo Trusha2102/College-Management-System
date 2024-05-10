@@ -18,7 +18,7 @@ const login = async (req: Request, res: Response) => {
       relations: ['employee'],
     });
     if (!user) {
-      return sendError(res, 200, 'User Not Found!');
+      return sendError(res, 202, 'User Not Found!');
     }
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
