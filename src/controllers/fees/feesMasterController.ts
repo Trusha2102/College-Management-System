@@ -8,7 +8,6 @@ import { FeesGroup } from '../../entity/FeesGroup';
 import { FeesPayment } from '../../entity/FeesPayment';
 import { BankPayment } from '../../entity/BankPayment';
 import { Discount } from '../../entity/Discount';
-import { Fine } from '../../entity/Fine';
 import * as ejs from 'ejs';
 import * as pdf from 'html-pdf';
 import path from 'path';
@@ -53,6 +52,20 @@ export const feesAllocation = async (req: Request, res: Response) => {
           });
           if (!feesGroup) {
             errors.push(`Fees group with id ${fees_group_id} not found`);
+            continue;
+          }
+
+          const existingFeesMaster = await feesMasterRepository.findOne({
+            where: {
+              fees_group_id: fees_group_id,
+              student_id: existingStudent.id,
+            },
+          });
+
+          if (existingFeesMaster) {
+            errors.push(
+              `Fees Group: ${feesGroup?.name} already added for Student: ${existingStudent?.first_name}`,
+            );
             continue;
           }
 
@@ -113,9 +126,14 @@ export const feesAllocation = async (req: Request, res: Response) => {
     }
 
     return sendResponse(res, 201, 'Fees master records created successfully');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating fees master records:', error);
-    return sendError(res, 500, 'Failed to create fees master records', error);
+    return sendError(
+      res,
+      500,
+      'Failed to create fees master records',
+      error.message,
+    );
   }
 };
 
@@ -183,7 +201,6 @@ export const collectFees = async (req: Request, res: Response) => {
       const bankPaymentRepository =
         queryRunner.manager.getRepository(BankPayment);
       const discountRepository = queryRunner.manager.getRepository(Discount);
-      const fineRepository = queryRunner.manager.getRepository(Fine);
 
       const student = await studentRepository.findOne({
         where: { id: student_id },
@@ -199,7 +216,6 @@ export const collectFees = async (req: Request, res: Response) => {
           amount,
           discount_id,
           discount_amount,
-          // fine_type_id,
           fine_amount,
         } = paymentData;
 
@@ -231,21 +247,20 @@ export const collectFees = async (req: Request, res: Response) => {
           }
         }
 
-        // if (fine_type_id) {
-        //   const fine = await fineRepository.findOne({
-        //     where: { id: fine_type_id },
-        //   });
-        //   if (!fine) {
-        //     sendError(res, 400, 'Fine Type Not Found');
-        //     return;
-        //   }
-        // }
-
         if (discount_amount) {
           feesMaster.net_amount -= discount_amount;
         }
         if (fine_amount) {
           feesMaster.net_amount += fine_amount;
+        }
+
+        if (feesMaster.paid_amount + amount > feesMaster.net_amount) {
+          sendError(
+            res,
+            400,
+            'Fees Amount Paid exceeds the actual Fees Amount',
+          );
+          return;
         }
 
         const feesPayment = new FeesPayment();
@@ -272,7 +287,6 @@ export const collectFees = async (req: Request, res: Response) => {
 
         feesMaster.discount_id = discount_id || null;
         feesMaster.discount_amount += discount_amount || null;
-        // feesMaster.fineTypeId = fine_type_id || null;
         feesMaster.fine_amount += fine_amount || null;
         feesMaster.paid_amount += amount;
         feesMaster.status =

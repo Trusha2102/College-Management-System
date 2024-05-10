@@ -239,6 +239,19 @@ const createStudent = async (req: Request, res: Response) => {
             return;
           }
 
+          const feesMaster = await feesMasterRepository.findOne({
+            where: { fees_group_id: feesGroupId, student_id: newStudent?.id },
+          });
+
+          if (feesMaster) {
+            sendError(
+              res,
+              400,
+              `Fees Group: ${feesGroup?.name} already added for Student: ${newStudent?.first_name}`,
+            );
+            return;
+          }
+
           let netAmount = 0;
           try {
             const feesTypeData = feesGroup.feesTypeData;
@@ -574,6 +587,22 @@ const updateStudentById = async (req: Request, res: Response) => {
                     res,
                     404,
                     `Fees group with ID ${feesGroupId} not found`,
+                  );
+                  return;
+                }
+
+                const feesMaster = await feesMasterRepository.findOne({
+                  where: {
+                    fees_group_id: feesGroupId,
+                    student_id: updatedStudent?.id,
+                  },
+                });
+
+                if (feesMaster) {
+                  sendError(
+                    res,
+                    400,
+                    `Fees Group: ${feesGroup?.name} already added for Student: ${updatedStudent?.first_name}`,
                   );
                   return;
                 }
