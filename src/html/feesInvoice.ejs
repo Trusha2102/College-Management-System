@@ -1,3 +1,10 @@
+<% let grandTotal = 0; %>
+<% let totalDiscount = 0; %>
+<% let totalPaidWithFine = 0; %>
+<% let totalFine = 0; %>
+<% let totalPaid = 0; %>
+<% let totalBalance = 0; %>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -83,10 +90,7 @@
 <body>
     <div class="header">
         <h1 class="school-heading">R. H. Patel Institute of Technology<br><h2>Approved by AICTE & Affiliated with GTU Ahmedabad</h2><br><h3 class="school-heading-h3">Fees Receipt</h3></h1>
-        <div class="invoice-number">
-            Invoice Number: <%= invoiceNumber %><br>
-            Date: <%= invoiceDate %>
-        </div>
+        <div class="invoice-number"> Invoice Number: <%= invoiceNumber %><br> Date: <%= invoiceDate %> </div>
     </div>
     <div class="details">
         <div class="student-details">
@@ -98,7 +102,6 @@
             <p>Section: <%= section %></p>
             <p>Year: <%= year %></p>
             <p>Address: <%= address %></p>
-
         </div>
     </div>
     <div class="invoice-details">
@@ -116,12 +119,6 @@
                 </tr>
             </thead>
             <tbody>
-                <% let grandTotal = 0; %>
-                <% let totalDiscount = 0; %>
-                <% let totalPaid = 0; %>
-                <% let totalFine = 0; %>
-                <% let totalBalance = 0; %>
-                <% let totalPaidWithFine = 0; %>
                 <% feesData.forEach(function(item) { %>
                     <% item.feesGroups.forEach(function(feesGroup) { %>
                         <% const amount = item.feesMaster.net_amount || 0; %>
@@ -145,9 +142,68 @@
                         <% totalFine += fine; %>
                         <% totalPaid += paid; %>
                         <% totalBalance += balance; %>
-
-
+                        <% if (feesGroup.feesPayments && feesGroup.feesPayments.length > 0) { %>
+                            <tr>
+                                <td colspan="8">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Payment ID</th>
+                                                <th>Mode</th>
+                                                <th>Date</th>
+                                                <th>Fine</th>
+                                                <th>Discount</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% feesGroup.feesPayments.forEach(function(payment) { %>
+                                                <tr>
+                                                    <td><%= payment.payment_id %></td>
+                                                    <td><%= payment.payment_mode %></td>
+                                                    <td><%= payment.dos %></td>
+                                                    <td><%= payment.fine %></td>
+                                                    <td><%= payment.discount %></td>
+                                                    <td><%= payment.amount %></td>
+                                                </tr>
+                                                <% paymentTotal += payment.amount; %>
+                                            <% }); %>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        <% } %>
                     <% }); %>
+                    <% if (item.feesMaster.feesPayments && item.feesMaster.feesPayments.length > 0) { %>
+                        <tr>
+                            <td colspan="8">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Payment ID</th>
+                                            <th>Mode</th>
+                                            <th>Date</th>
+                                            <th>Fine</th>
+                                            <th>Discount</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% item.feesMaster.feesPayments.forEach(function(payment) { %>
+                                            <tr>
+                                                <td><%= payment.payment_id %></td>
+                                                <td><%= payment.payment_mode %></td>
+                                                <td><%= payment.dos %></td>
+                                                <td><%= payment.fine %></td>
+                                                <td><%= payment.discount %></td>
+                                                <td><%= payment.amount %></td>
+                                            </tr>
+                                        <% }); %>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    <% } %>
                 <% }); %>
             </tbody>
         </table>
@@ -158,7 +214,6 @@
             <p>Paid: <%= totalPaid %></p>
             <p>Total Paid: <%= totalPaidWithFine %></p>
             <p>Total Balance: <%= totalBalance %></p>
-
         </div>
     </div>
 </body>

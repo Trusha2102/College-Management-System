@@ -79,7 +79,7 @@ export class Payroll {
   @Column({ nullable: true })
   note!: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: false })
   is_deduction_collected!: boolean;
 
   @Column({ nullable: true })

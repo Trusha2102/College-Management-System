@@ -154,7 +154,7 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
 
     const feesMastersWithFineAmounts = await Promise.all(
       feesMasters.map(async (feesMaster) => {
-        let fineAmount = 0;
+        let calculatedFineAmount = 0;
 
         // Check if feesGroup is defined
         if (feesMaster.fees_group_id) {
@@ -168,12 +168,12 @@ export const getFeesMasterByStudentId = async (req: Request, res: Response) => {
               const dueDate = new Date(feesTypeDataItem.due_date);
 
               if (dueDate <= currentDate) {
-                fineAmount += feesTypeDataItem.fine_amount;
+                calculatedFineAmount += feesTypeDataItem.fine_amount;
               }
             });
           }
         }
-        return { ...feesMaster, fineAmount };
+        return { ...feesMaster, calculatedFineAmount };
       }),
     );
 
@@ -420,7 +420,13 @@ export const generateInvoice = async (req: Request, res: Response) => {
         due_date: new Date(feesGroup.due_date).toLocaleDateString('en-GB'),
       })),
       feesMaster: feesMaster,
+      feesPayments: feesMaster.feesPayments.map((payment) => ({
+        ...payment,
+        dos: new Date(payment.dos).toLocaleDateString('en-GB'),
+      })),
     }));
+
+    console.log(feesData[4].feesPayments[1].dos);
 
     if (feesMasters.length === 0) {
       return sendError(
@@ -440,7 +446,10 @@ export const generateInvoice = async (req: Request, res: Response) => {
       feesData,
       invoiceNumber,
       invoiceDate,
-      studentName: feesMasters[0].student?.first_name,
+      studentName:
+        feesMasters[0].student?.first_name +
+        ' ' +
+        feesMasters[0].student?.last_name,
       enrollment: feesMasters[0].student?.enrollment_no,
       address: feesMasters[0].student?.current_address,
       course: feesMasters[0].student.course?.name,
