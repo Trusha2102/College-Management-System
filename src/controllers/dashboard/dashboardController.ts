@@ -58,34 +58,27 @@ const getRecordsCount = async (req: Request, res: Response) => {
 
 const getStudentCountByCourse = async (req: Request, res: Response) => {
   try {
-    // Query all courses
     const courseRepository = AppDataSource.getRepository(Course);
     const courses = await courseRepository.find();
-
-    // Object to store counts for each course
     const courseCounts: { [key: string]: number } = {};
 
-    // Loop through each course and get the student count
     for (const course of courses) {
       const courseId = course.id;
-
-      // Query the database to count students by course ID
       const studentRepository = AppDataSource.getRepository(Student);
-      const studentCount = await studentRepository.count({
-        where: { course_id: courseId },
-      });
-
-      // Store the count for the current course
+      const studentCount = await studentRepository.count({ where: { course_id: courseId } });
       courseCounts[course.name] = studentCount;
     }
 
-    sendResponse(res, 200, 'Student counts fetched successfully', {
-      courseCounts,
+    res.status(200).json({
+      success: true,
+      message: 'Student counts fetched successfully',
+      data: { courseCounts }
     });
   } catch (error) {
     sendError(res, 500, 'Failed to fetch student counts', error);
   }
 };
+
 
 const getEmployeeCountByDepartment = async (req: Request, res: Response) => {
   try {
